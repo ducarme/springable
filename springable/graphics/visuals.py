@@ -137,6 +137,7 @@ def animate(_result: Result, save_dir, save_name, show=True):
         ax2.set_xlabel('displacement')
         ax2.set_ylabel('force')
 
+
     def update(i):
         _model.get_assembly().set_general_coordinates(_natural_coordinates + u[i, :])
         fext_i[:] = fext[i, :]

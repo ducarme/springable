@@ -46,15 +46,15 @@ class NodeDrawing(Drawing):
         text = None
         if AA.show_node_numbers:
             text = self._ax.text(self._node.get_x(), self._node.get_y(), f'{self._node.get_node_nb()}', color=AA.node_nb_color)
-        graphic = self._ax.plot(self._node.get_x(), self._node.get_y(), zorder=2.0,
+        graphic = self._ax.plot([self._node.get_x()], [self._node.get_y()], zorder=2.0,
                                 marker=marker,
                                 markersize=markersize,
                                 color=markercolor)[0]
         return text, graphic
 
     def update(self):
-        self._node_graphic.set_xdata(self._node.get_x())
-        self._node_graphic.set_ydata(self._node.get_y())
+        self._node_graphic.set_xdata([self._node.get_x()])
+        self._node_graphic.set_ydata([self._node.get_y()])
         if AA.show_node_numbers:
             self._text.set_x(self._node.get_x())
             self._text.set_y(self._node.get_y())

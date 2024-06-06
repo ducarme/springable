@@ -1,6 +1,0 @@
-axes.grid: True   # display grid or not
-axes.grid.axis: both    # which axis the grid should apply to
-axes.grid.which: major   # grid lines at {major, minor, both} ticks
-grid.linestyle: --          # solid
-grid.linewidth: 0.6        # in points
-grid.alpha: 0.5        # transparency, between 0.0 and 1.0

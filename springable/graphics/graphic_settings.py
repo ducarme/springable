@@ -19,7 +19,7 @@ class PlotOptions:
                          'stable under displacement control only': '_',
                          'unstable': '|'}
     experiment_color = '#ff00ff'
-    stylesheet = 'src//graphics//figure_utils//article.mplstyle'
+    stylesheet = 'springable//graphics//figure_utils//default.mplstyle'
     figsize = (4, 4)
 
 
@@ -40,7 +40,7 @@ class AnimationOptions:
     # 1 = force-displacement plot
     # 2 = custom-plot
     side_plot_mode = 1
-    plotstylesheet = 'src//graphics//figure_utils//article.mplstyle'
+    plotstylesheet = 'springable//graphics//figure_utils//default.mplstyle'
 
 
 class AssemblyAppearance:
