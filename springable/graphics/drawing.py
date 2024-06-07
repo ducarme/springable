@@ -1,19 +1,20 @@
-from ..simulation.node import Node
-from ..simulation.element import Element
-from ..simulation.mechanical_behavior import BivariateBehavior
-from ..simulation.assembly import Assembly
-from ..simulation.model import Model
-from ..simulation import shape
-from .graphic_settings import AssemblyAppearance as AA
+from ..mechanics.node import Node
+from ..mechanics.element import Element
+from ..mechanics.mechanical_behavior import BivariateBehavior
+from ..mechanics.assembly import Assembly
+from ..mechanics.model import Model
+from ..mechanics import shape
+from .default_graphics_settings import DEFAULT_ASSEMBLY_APPEARANCE
 from .visual_helpers import compute_zigzag_line, compute_arc_line
+from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.interpolate import interp1d
 
 
 class Drawing:
-    def __init__(self, ax: plt.Axes):
+    def __init__(self, ax: plt.Axes, assembly_appearance: dict):
         self._ax = ax
+        self._aa = assembly_appearance
 
     def _make(self):
         raise NotImplementedError
@@ -24,10 +25,9 @@ class Drawing:
 
 class NodeDrawing(Drawing):
 
-    def __init__(self, ax: plt.Axes, _node: Node, is_loaded=False):
-        super().__init__(ax)
+    def __init__(self, ax: plt.Axes, _node: Node, assembly_appearance):
+        super().__init__(ax, assembly_appearance)
         self._node = _node
-        self._is_loaded = is_loaded
 
         # CREATE GRAPHICS FOR DRAWING
         self._text, self._node_graphic = self._make()
@@ -41,11 +41,12 @@ class NodeDrawing(Drawing):
             marker = '^'
         else:
             marker = 'o'
-        markersize = AA.node_size
-        markercolor = AA.node_color
+        markersize = self._aa['node_size']
+        markercolor = self._aa['node_color']
         text = None
-        if AA.show_node_numbers:
-            text = self._ax.text(self._node.get_x(), self._node.get_y(), f'{self._node.get_node_nb()}', color=AA.node_nb_color)
+        if self._aa['show_node_numbers']:
+            text = self._ax.text(self._node.get_x(), self._node.get_y(), f'{self._node.get_node_nb()}',
+                                 color=self._aa['node_nb_color'])
         graphic = self._ax.plot([self._node.get_x()], [self._node.get_y()], zorder=2.0,
                                 marker=marker,
                                 markersize=markersize,
@@ -55,14 +56,15 @@ class NodeDrawing(Drawing):
     def update(self):
         self._node_graphic.set_xdata([self._node.get_x()])
         self._node_graphic.set_ydata([self._node.get_y()])
-        if AA.show_node_numbers:
+        if self._aa['show_node_numbers']:
             self._text.set_x(self._node.get_x())
             self._text.set_y(self._node.get_y())
 
+
 class ElementDrawing(Drawing):
 
-    def __init__(self, ax: plt.Axes, _element: Element, width, color_handler=None, opacity_handler=None):
-        super().__init__(ax)
+    def __init__(self, ax: plt.Axes, _element: Element, width, assembly_appearance, color_handler=None, opacity_handler=None):
+        super().__init__(ax, assembly_appearance)
         self._element = _element
         self._color_handler = color_handler
         self._opacity_handler = opacity_handler
@@ -85,47 +87,45 @@ class ElementDrawing(Drawing):
 
         hysteron_state_drawing_position = None
         if isinstance(self._element.get_shape(), shape.Segment):
-            color = color if color is not None else AA.spring_default_color
-            opacity = opacity if opacity is not None else AA.spring_default_opacity
+            color = color if color is not None else self._aa['spring_default_color']
+            opacity = opacity if opacity is not None else self._aa['spring_default_opacity']
             x0, y0, x1, y1 = self._element.get_shape().get_nodal_coordinates()
-            x_coords, y_coords = compute_zigzag_line((x0, y0), (x1, y1), 8 + 2 * AA.nb_spring_coils,
-                                                     self._width * AA.spring_width_scaling)
-            node0, node1 = self._element.get_shape().get_nodes()
-            # if abs(node0.get_node_nb() - node1.get_node_nb()) > 1.5:
-            #     y_coords += .3 if node0.get_node_nb() % 3 == 0 else -.3
-            if AA.show_state_of_hysterons and self._hysteron_info:
+            x_coords, y_coords = compute_zigzag_line((x0, y0), (x1, y1), 8 + 2 * self._aa['nb_spring_coils'],
+                                                     self._width * self._aa['spring_width_scaling'])
+            if self._aa['show_state_of_hysterons'] and self._hysteron_info:
                 hysteron_state_drawing_position = ((x0 + x1) / 2, (y0 + y1) / 2)
             element_graphic = \
-            self._ax.plot(x_coords, y_coords, lw=AA.spring_linewidth, color=color, alpha=opacity, zorder=0.1)[0]
+                self._ax.plot(x_coords, y_coords, lw=self._aa['spring_linewidth'], color=color, alpha=opacity, zorder=0.1)[0]
         elif isinstance(self._element.get_shape(), shape.Angle):
-            color = color if color is not None else AA.rotation_spring_default_color
-            opacity = opacity if opacity is not None else AA.rotation_spring_default_opacity
+            color = color if color is not None else self._aa['rotation_spring_default_color']
+            opacity = opacity if opacity is not None else self._aa['rotation_spring_default_opacity']
             x0, y0, x1, y1, x2, y2 = self._element.get_shape().get_nodal_coordinates()
             center = (x1, y1)
             angle = shape.Angle.calculate_angle(x0, y0, x1, y1, x2, y2)
             end_angle = shape.Angle.calculate_angle(x1 + 1, y1, x1, y1, x2, y2)
             start_angle = end_angle - angle
-            x_coords, y_coords = compute_arc_line(center, self._width * AA.rotation_spring_radius_scaling, start_angle,
+            x_coords, y_coords = compute_arc_line(center, self._width * self._aa['rotation_spring_radius_scaling'], start_angle,
                                                   end_angle)
-            if AA.show_state_of_hysterons and self._hysteron_info:
+            if self._aa['show_state_of_hysterons'] and self._hysteron_info:
                 mid_angle = (start_angle + end_angle) / 2
                 hysteron_state_drawing_position = (
-                    center[0] + self._width * AA.rotation_spring_radius_scaling * np.cos(mid_angle),
-                    center[0] + self._width * AA.rotation_spring_radius_scaling * np.sin(mid_angle))
+                    center[0] + self._width * self._aa['rotation_spring_radius_scaling'] * np.cos(mid_angle),
+                    center[0] + self._width * self._aa['rotation_spring_radius_scaling'] * np.sin(mid_angle))
             element_graphic = \
-            self._ax.plot(x_coords, y_coords, lw=AA.rotation_spring_linewidth, color=color, alpha=opacity, zorder=0)[0]
+                self._ax.plot(x_coords, y_coords, lw=self._aa['rotation_spring_linewidth'], color=color, alpha=opacity,
+                              zorder=0)[0]
         elif isinstance(self._element.get_shape(), shape.Area):
-            color = color if color is not None else AA.area_spring_default_color
-            opacity = opacity if opacity is not None else AA.area_spring_default_opacity
+            color = color if color is not None else self._aa['area_spring_default_color']
+            opacity = opacity if opacity is not None else self._aa['area_spring_default_opacity']
             coordinates = self._element.get_shape().get_nodal_coordinates()
             x, y = coordinates[::2], coordinates[1::2]
             zorder = np.min(x) / np.abs(np.max(x) - np.min(x))
             element_graphic = self._ax.fill(x, y, color=color, alpha=opacity, zorder=zorder)[0]
-            if AA.show_state_of_hysterons and self._hysteron_info:
+            if self._aa['show_state_of_hysterons'] and self._hysteron_info:
                 hysteron_state_drawing_position = (np.mean(x), np.mean(y))
         elif isinstance(self._element.get_shape(), shape.Path):
-            color = color if color is not None else AA.line_spring_default_color
-            opacity = opacity if opacity is not None else AA.line_spring_default_opacity
+            color = color if color is not None else self._aa['line_spring_default_color']
+            opacity = opacity if opacity is not None else self._aa['line_spring_default_opacity']
             nodes = [_node for _shape in self._element.get_shape().get_shapes() for _node in _shape.get_nodes()]
             coordinates = []
             for i, _node in enumerate(nodes):
@@ -138,32 +138,32 @@ class ElementDrawing(Drawing):
             t = np.linspace(0, 1, 10) * lengths[-1]
             xx = interp1d(lengths, x)(t[1:-1])
             yy = interp1d(lengths, y)(t[1:-1])
-            element_graphic0 = self._ax.plot(x, y, lw=AA.line_spring_linewidth, color=color, alpha=opacity, zorder=0)[0]
+            element_graphic0 = self._ax.plot(x, y, lw=self._aa['line_spring_linewidth'], color=color, alpha=opacity, zorder=0)[0]
             element_graphic1 = \
-            self._ax.plot(xx, yy, ls='', marker='o', markersize=AA.line_spring_linewidth * 0.4, color='#CECECE',
-                          zorder=0.1)[0]
+                self._ax.plot(xx, yy, ls='', marker='o', markersize=self._aa['line_spring_linewidth'] * 0.4, color='#CECECE',
+                              zorder=0.1)[0]
             element_graphic = (element_graphic0, element_graphic1)
-            if AA.show_state_of_hysterons and self._hysteron_info:
+            if self._aa['show_state_of_hysterons'] and self._hysteron_info:
                 hysteron_state_drawing_position = (np.mean(x), np.mean(y))
         elif isinstance(self._element.get_shape(), (shape.DistancePointLine, shape.SquaredDistancePointSegment)):
-            color = color if color is not None else AA.distance_spring_line_default_color
-            opacity = opacity if opacity is not None else AA.distance_spring_line_default_opacity
+            color = color if color is not None else self._aa['distance_spring_line_default_color']
+            opacity = opacity if opacity is not None else self._aa['distance_spring_line_default_opacity']
             node0, _, _ = self._element.get_shape().get_nodes()
             x0, y0, x1, y1, x2, y2 = self._element.get_shape().get_nodal_coordinates()
             element_graphic0 = self._ax.plot(x0, y0, zorder=2.1,
                                              marker='.',
-                                             markersize=AA.node_size / 2.0,
+                                             markersize=self._aa['node_size'] / 2.0,
                                              alpha=opacity,
                                              color=color)[0]
-            element_graphic1 = self._ax.plot([x1, x2], [y1, y2], lw=AA.distance_spring_line_linewidth,
+            element_graphic1 = self._ax.plot([x1, x2], [y1, y2], lw=self._aa['distance_spring_line_linewidth'],
                                              color=color, alpha=opacity, zorder=0)[0]
             element_graphic2 = self._ax.plot([x1, x2], [y1, y2], lw=0.75,
-                                             color=AA.distance_spring_line_default_color, zorder=0)[0]
+                                             color=self._aa['distance_spring_line_default_color'], zorder=0)[0]
             element_graphic = (element_graphic0, element_graphic1, element_graphic2)
         else:
             raise NotImplementedError('Cannot draw element because no implementation of how to draw its shape')
 
-        if AA.show_state_of_hysterons and self._hysteron_info:
+        if self._aa['show_state_of_hysterons'] and self._hysteron_info:
             internal_coord = self._element.get_internal_coordinates()
             for i, interval in enumerate(self._hysteron_info['branch_intervals']):
                 if interval[0] <= internal_coord <= interval[1]:
@@ -172,13 +172,13 @@ class ElementDrawing(Drawing):
             else:
                 raise ValueError('Cannot determine state of hysteron')
             hysteron_state_bg_graphic = self._ax.plot(*hysteron_state_drawing_position, 'o', zorder=1.0,
-                                                      markersize=AA.hysteron_state_label_size,
-                                                      color=AA.hysteron_state_bg_color, markeredgecolor=color,
-                                                      markeredgewidth=AA.spring_linewidth)[0]
+                                                      markersize=self._aa['hysteron_state_label_size'],
+                                                      color=self._aa['hysteron_state_bg_color'], markeredgecolor=color,
+                                                      markeredgewidth=self._aa['spring_linewidth'])[0]
             hysteron_state_id_graphic = self._ax.annotate(state_id, xy=hysteron_state_drawing_position,
-                                                          color=AA.hysteron_state_txt_color,
+                                                          color=self._aa['hysteron_state_txt_color'],
                                                           fontsize=0.65 / min(2,
-                                                                              len(state_id)) * AA.hysteron_state_label_size,
+                                                                              len(state_id)) * self._aa['hysteron_state_label_size'],
                                                           weight='bold',
                                                           verticalalignment="center",
                                                           horizontalalignment="center",
@@ -192,14 +192,11 @@ class ElementDrawing(Drawing):
         hysteron_state_graphic_position = None
         if isinstance(self._element.get_shape(), shape.Segment):
             x0, y0, x1, y1 = self._element.get_shape().get_nodal_coordinates()
-            x_coords, y_coords = compute_zigzag_line((x0, y0), (x1, y1), 8 + 2 * AA.nb_spring_coils,
-                                                     self._width * AA.spring_width_scaling)
-            node0, node1 = self._element.get_shape().get_nodes()
-            # if abs(node0.get_node_nb() - node1.get_node_nb()) > 1.5:
-            #     y_coords += .3 if node0.get_node_nb() % 3 == 0 else -.3
+            x_coords, y_coords = compute_zigzag_line((x0, y0), (x1, y1), 8 + 2 * self._aa['nb_spring_coils'],
+                                                     self._width * self._aa['spring_width_scaling'])
             self._element_graphic.set_xdata(x_coords)
             self._element_graphic.set_ydata(y_coords)
-            if self._hysteron_info and AA.show_state_of_hysterons:
+            if self._hysteron_info and self._aa['show_state_of_hysterons']:
                 hysteron_state_graphic_position = ((x0 + x1) / 2, (y0 + y1) / 2)
 
         elif isinstance(self._element.get_shape(), shape.Angle):
@@ -208,19 +205,19 @@ class ElementDrawing(Drawing):
             angle = shape.Angle.calculate_angle(x0, y0, x1, y1, x2, y2)
             end_angle = shape.Angle.calculate_angle(x1 + 1, y1, x1, y1, x2, y2)
             start_angle = end_angle - angle
-            x_coords, y_coords = compute_arc_line(center, self._width * AA.rotation_spring_radius_scaling, start_angle,
+            x_coords, y_coords = compute_arc_line(center, self._width * self._aa['rotation_spring_radius_scaling'], start_angle,
                                                   end_angle)
             self._element_graphic.set_xdata(x_coords)
             self._element_graphic.set_ydata(y_coords)
-            if self._hysteron_info and AA.show_state_of_hysterons:
+            if self._hysteron_info and self._aa['show_state_of_hysterons']:
                 mid_angle = (start_angle + end_angle) / 2
                 hysteron_state_graphic_position = (
-                    center[0] + self._width * AA.rotation_spring_radius_scaling * np.cos(mid_angle),
-                    center[1] + self._width * AA.rotation_spring_radius_scaling * np.sin(mid_angle))
+                    center[0] + self._width * self._aa['rotation_spring_radius_scaling'] * np.cos(mid_angle),
+                    center[1] + self._width * self._aa['rotation_spring_radius_scaling'] * np.sin(mid_angle))
         elif isinstance(self._element.get_shape(), shape.Area):
             coordinates = self._element.get_shape().get_nodal_coordinates()
             self._element_graphic.set_xy(np.array(coordinates).reshape(-1, 2))
-            if self._hysteron_info and AA.show_state_of_hysterons:
+            if self._hysteron_info and self._aa['show_state_of_hysterons']:
                 hysteron_state_graphic_position = (np.mean(coordinates[::2]), np.mean(coordinates[1::2]))
         elif isinstance(self._element.get_shape(), shape.Path):
             element_graphic0, element_graphic1 = self._element_graphic
@@ -241,7 +238,7 @@ class ElementDrawing(Drawing):
             element_graphic0.set_ydata(y)
             element_graphic1.set_xdata(xx)
             element_graphic1.set_ydata(yy)
-            if self._hysteron_info and AA.show_state_of_hysterons:
+            if self._hysteron_info and self._aa['show_state_of_hysterons']:
                 hysteron_state_graphic_position = (np.mean(coordinates[::2]), np.mean(coordinates[1::2]))
         elif isinstance(self._element.get_shape(), (shape.DistancePointLine, shape.SquaredDistancePointSegment)):
             element_graphic0, element_graphic1, element_graphic2 = self._element_graphic
@@ -286,7 +283,7 @@ class ElementDrawing(Drawing):
             self._hysteron_state_id_graphic.set_position(hysteron_state_graphic_position)
             self._hysteron_state_id_graphic.xy = hysteron_state_graphic_position
             self._hysteron_state_id_graphic.set_text(state_id)
-            self._hysteron_state_id_graphic.set_fontsize(0.65 / min(2, len(state_id)) * AA.hysteron_state_label_size)
+            self._hysteron_state_id_graphic.set_fontsize(0.65 / min(2, len(state_id)) * self._aa['hysteron_state_label_size'])
             self._hysteron_state_bg_graphic.set_xdata(hysteron_state_graphic_position[0])
             self._hysteron_state_bg_graphic.set_ydata(hysteron_state_graphic_position[1])
             if color is not None:
@@ -295,9 +292,9 @@ class ElementDrawing(Drawing):
 
 class AssemblyDrawing(Drawing):
 
-    def __init__(self, ax: plt.Axes, _assembly: Assembly, characteristic_length, element_color_handler=None,
-                 element_opacity_handler=None):
-        super().__init__(ax)
+    def __init__(self, ax: plt.Axes, _assembly: Assembly, characteristic_length, assembly_appearance,
+                 element_color_handler=None, element_opacity_handler=None):
+        super().__init__(ax, assembly_appearance)
         self._assembly = _assembly
         self._el_color_handler = element_color_handler
         self._el_opacity_handler = element_opacity_handler
@@ -310,12 +307,14 @@ class AssemblyDrawing(Drawing):
         node_drawings = set()
         element_drawings = set()
         for _node in self._assembly.get_nodes():
-            node_drawings.add(NodeDrawing(self._ax, _node))
+            node_drawings.add(NodeDrawing(self._ax, _node, self._aa))
         for _element in self._assembly.get_elements():
             element_drawings.add(ElementDrawing(self._ax, _element,
                                                 0.15 * self._characteristic_length,
+                                                self._aa,
                                                 self._el_color_handler,
-                                                self._el_opacity_handler))
+                                                self._el_opacity_handler,
+                                                ))
         return node_drawings, element_drawings
 
     def update(self):
@@ -326,8 +325,9 @@ class AssemblyDrawing(Drawing):
 
 
 class ForceDrawing(Drawing):
-    def __init__(self, ax: plt.Axes, _node: Node, force_info: dict[str, float], vector_size, color_handler=None):
-        super().__init__(ax)
+    def __init__(self, ax: plt.Axes, _node: Node, force_info: dict[str, float], vector_size, assembly_appearance,
+                 color_handler=None):
+        super().__init__(ax, assembly_appearance)
         self._node = _node
         self._force_info = force_info
         self._vector_size = vector_size
@@ -341,13 +341,13 @@ class ForceDrawing(Drawing):
         direction = self._force_info['direction']
         destination = origin + self._vector_size * direction
         color = self._color_handler.determine_property_value(self._force_info['magnitude']) \
-            if self._color_handler is not None else AA.force_default_outer_color
+            if self._color_handler is not None else self._aa['force_default_outer_color']
         force_graphic = self._ax.annotate('',
                                           xytext=(origin[0], origin[1]),
                                           xy=(destination[0], destination[1]),
                                           verticalalignment="center",
                                           arrowprops=dict(width=4, headwidth=10, shrink=0.1, lw=1.5,
-                                                          facecolor=AA.force_inner_color, edgecolor=color),
+                                                          facecolor=self._aa['force_inner_color'], edgecolor=color),
                                           zorder=2)
 
         return force_graphic
@@ -364,10 +364,11 @@ class ForceDrawing(Drawing):
 
 
 class ModelDrawing(Drawing):
-    def __init__(self, ax: plt.Axes, _model: Model,
+    def __init__(self, ax: plt.Axes, _model: Model, assembly_appearance: dict,
                  external_force_vector=None, characteristic_length=None, assembly_span=None,
-                 element_color_handler=None, element_opacity_handler=None, force_color_handler=None):
-        super().__init__(ax)
+                 element_color_handler=None, element_opacity_handler=None, force_color_handler=None,
+                 ):
+        super().__init__(ax, assembly_appearance)
         if characteristic_length is None:
             characteristic_length = _model.get_assembly().compute_characteristic_length()
         if assembly_span is None:
@@ -400,13 +401,13 @@ class ModelDrawing(Drawing):
         self._assembly_drawing, self._force_drawings = self._make()
 
     def _make(self):
-        assembly_drawing = AssemblyDrawing(self._ax, self._assembly, self._characteristic_length,
+        assembly_drawing = AssemblyDrawing(self._ax, self._assembly, self._characteristic_length, self._aa,
                                            self._element_color_handler, self._element_opacity_handler)
         force_drawings = set()
-        if AA.show_forces:
+        if self._aa['show_forces']:
             for _node, force_info in self._all_loaded_node_info.items():
                 force_drawings.add(
-                    ForceDrawing(self._ax, _node, force_info, 0.1 * self._assembly_span,
+                    ForceDrawing(self._ax, _node, force_info, 0.1 * self._assembly_span, self._aa,
                                  self._force_color_handler))
 
         return assembly_drawing, force_drawings

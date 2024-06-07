@@ -1,10 +1,10 @@
-from ..simulation.element import *
-from ..simulation.mechanical_behavior import *
-from ..simulation.shape import *
-from ..simulation.node import Node
-from ..simulation.assembly import Assembly
-from ..simulation.load import NodalLoad, LoadStep
-from ..simulation.model import Model
+from ..mechanics.element import *
+from ..mechanics.mechanical_behavior import *
+from ..mechanics.shape import *
+from ..mechanics.node import Node
+from ..mechanics.assembly import Assembly
+from ..mechanics.load import NodalLoad, LoadStep
+from ..mechanics.model import Model
 from . import simpleeval as se
 from .keywords import usable_shapes, usable_behaviors, usable_shape_operations
 import os

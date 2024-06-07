@@ -1,5 +1,5 @@
-from ..simulation import shape
-from ..simulation import mechanical_behavior
+from ..mechanics import shape
+from ..mechanics import mechanical_behavior
 from .keywordmapping import KeywordMapping
 
 usable_shapes = KeywordMapping({shape.Segment: '',

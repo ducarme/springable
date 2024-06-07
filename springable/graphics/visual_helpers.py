@@ -1,7 +1,6 @@
-from .graphic_settings import AssemblyAppearance as AA
-from ..simulation.static_solver import Result
-from ..simulation.element import Element
-from ..simulation import shape
+from ..mechanics.static_solver import Result
+from ..mechanics.element import Element
+from ..mechanics import shape
 from scipy.interpolate import interp1d
 import numpy as np
 import matplotlib.pyplot as plt
@@ -108,7 +107,7 @@ def compute_arc_line(center, radius, start_angle, end_angle, nb_points=30) -> tu
     return points[:, 0], points[:, 1]
 
 
-def compute_requirements_for_animation(_result: Result):
+def compute_requirements_for_animation(_result: Result, assembly_appearance):
     _assembly = _result.get_model().get_assembly()
     existing_shape_unit_dimensions = set()
     for _el in _assembly.get_elements():
@@ -125,7 +124,7 @@ def compute_requirements_for_animation(_result: Result):
     characteristic_lengths = []
     for i in range(u.shape[0]):
         _assembly.set_general_coordinates(_initial_coordinates + u[i, :])
-        match AA.element_coloring_mode:
+        match assembly_appearance['element_coloring_mode']:
             case 1:
                 energy_means.append(np.mean(list(_assembly.compute_elemental_energies().values())))
             case 2:
@@ -149,7 +148,7 @@ def compute_requirements_for_animation(_result: Result):
         ymax = max(ymax, bounds[3])
         characteristic_lengths.append(_assembly.compute_characteristic_length())
 
-    match AA.element_coloring_mode:
+    match assembly_appearance['element_coloring_mode']:
         case 1:
             high_value = np.max(np.abs(np.percentile(energy_means, [10, 90])))
         case 2:
@@ -161,9 +160,9 @@ def compute_requirements_for_animation(_result: Result):
         case _:
             high_value = None
 
-    color_handler = ColorHandler(high_value, mode=AA.element_coloring_mode) if AA.element_coloring_mode >= 1 else None
+    color_handler = ColorHandler(high_value, mode=assembly_appearance['element_coloring_mode']) if assembly_appearance['element_coloring_mode'] >= 1 else None
     opacity_handler = OpacityHandler(high_value,
-                                     mode=AA.element_coloring_mode) if AA.element_coloring_mode >= 1 else None
+                                     mode=assembly_appearance['element_coloring_mode']) if assembly_appearance['element_coloring_mode'] >= 1 else None
     characteristic_length = np.mean(characteristic_lengths)
     _assembly.set_general_coordinates(_initial_coordinates)
 
