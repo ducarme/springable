@@ -2,7 +2,9 @@ from ..mechanics.static_solver import Result
 from ..mechanics import model
 from .drawing import ModelDrawing
 from . import plot, visual_helpers
-from .default_graphics_settings import DEFAULT_ANIMATION_OPTIONS, DEFAULT_ASSEMBLY_APPEARANCE
+from .default_graphics_settings import (DEFAULT_ANIMATION_OPTIONS,
+                                        DEFAULT_ASSEMBLY_APPEARANCE,
+                                        DEFAULT_PLOT_OPTIONS)
 import os
 import numpy as np
 from scipy.interpolate import interp1d
@@ -24,13 +26,19 @@ def draw_model(mdl: model.Model, save_dir=None, save_name='model', show=True, **
     plt.close()
 
 
-def animate(_result: Result, save_dir, save_name: str = None, show=True, assembly_appearance: dict = None, **animation_options):
+def animate(_result: Result, save_dir, save_name: str = None, show=True,
+            extra_init=None, extra_update=None,
+            plot_options: dict = None, assembly_appearance: dict = None, **animation_options):
     ao = DEFAULT_ANIMATION_OPTIONS.copy()
     ao.update(animation_options)
 
     aa = DEFAULT_ASSEMBLY_APPEARANCE.copy()
     if assembly_appearance is not None:
         aa.update(assembly_appearance)
+
+    po = DEFAULT_PLOT_OPTIONS.copy()
+    if plot_options is not None:
+        po.update(plot_options)
 
     if ao['side_plot_mode'] != 0:
         fig = plt.figure(figsize=(8, 4.5))
@@ -44,8 +52,13 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True, assembl
     else:
         fig, ax1 = plt.subplots()
         ax2 = None
+
+    if extra_init is not None:
+        extra = extra_init(fig, ax1, ax2)
+
     ax1.axis('off')
-    bounds, characteristic_length, color_handler, opacity_handler = visual_helpers.compute_requirements_for_animation(_result, aa)
+    bounds, characteristic_length, color_handler, opacity_handler = visual_helpers.compute_requirements_for_animation(
+        _result, aa)
     xmin, ymin, xmax, ymax = bounds
     assembly_span = max(xmax - xmin, ymax - ymin)
     canvas_span = 1.25 * assembly_span
@@ -68,12 +81,12 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True, assembl
     _model_drawing = ModelDrawing(ax1, _model, fext_i, characteristic_length, assembly_span, color_handler,
                                   opacity_handler, None, aa)
 
-    # projection of the displacement vector (relative to preloading)
+    # projection of the displacement vector (relative to preload)
     # on the force direction final loading step
     deformation = np.sum((u[:, loaded_dof_indices] - u[0, loaded_dof_indices]) * force_direction[loaded_dof_indices],
                          axis=1)
 
-    # projection of the applied vector force (relative to preloading)
+    # projection of the applied vector force (relative to preload)
     # on the force direction prescribed in final loading step
     force = np.sum((fext[:, loaded_dof_indices] - fext[0, loaded_dof_indices]) * force_direction[loaded_dof_indices],
                    axis=1)
@@ -135,17 +148,20 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True, assembl
 
     dot = None
     if ao['side_plot_mode'] != 0:
-        plot.force_displacement_curve_in_ax(_result, ax2, marker='o', driven_path_only=False,
-                                            drive_mode=ao['drive_mode'],
-                                            cycle=ao['cycle'], show_snapping_arrows=True)
+        plot.force_displacement_curve_in_ax(_result, ax2, plot_options)
         dot = ax2.plot([deformation[0]], [force[0]], 'o', color='tab:red', markersize=10)[0]
         ax2.set_xlabel('displacement')
         ax2.set_ylabel('force')
+        if ((po['show_stability_legend'] and po['color_mode'] == 0)
+                or po['show_driven_path_legend'] and po['drive_mode'] in (0, 1)):
+            ax2.legend(numpoints=5, markerscale=1.5)
 
     def update(i):
         _model.get_assembly().set_general_coordinates(_natural_coordinates + u[i, :])
         fext_i[:] = fext[i, :]
         _model_drawing.update()
+        if extra_update is not None:
+            extra_update(fig, ax1, ax2, extra)
         if ao['side_plot_mode'] != 0:
             dot.set_xdata([deformation[i]])
             dot.set_ydata([force[i]])

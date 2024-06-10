@@ -131,7 +131,7 @@ def write_results(result: static_solver.Result, save_dir: str):
     np.savetxt(os.path.join(save_dir, 'forces.csv'), result.get_forces(include_preloading=True), delimiter=',')
     np.savetxt(os.path.join(save_dir, 'stability.csv'), result.get_stability(include_preloading=True), delimiter=',',
                fmt="%s")
-    np.savetxt(os.path.join(save_dir, 'eigval_stats.csv'), result.get_eigenval_stats(include_preloading=True),
+    np.savetxt(os.path.join(save_dir, 'eigval_stats.csv'), result.get_eigval_stats(include_preloading=True),
                delimiter=',')
     np.savetxt(os.path.join(save_dir, 'step_indices.csv'), result.get_step_indices(), delimiter=',', fmt='%d')
     write_model(result.get_model(), save_dir)

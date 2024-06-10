@@ -12,18 +12,42 @@ DEFAULT_PLOT_OPTIONS = {
     "cycle": False,
     "driven_path_only": False,
     "show_snapping_arrows": False,
-    "show_stability_with_color": True,
-    "show_stability_with_marker": False,
+    "color_mode": 0,  # is *not* used when showing multiple equilibrium paths after a parameter scan
+    # None (default color), 0 (by stability), 1 (by lowest force-driven eig. val.), 2 (by lowest displacement-driven
+    # eig. val.), 3 (by nb force-driven eig. vals < 0), 4 (by nb displacement-driven eig. val < 0)
+    "show_stability_legend": True,  # only has an effect if 'color_mode' = 0
+    "show_driven_path_legend": True,  # only has an effect if 'drive_mode' is 0 or 1 and 'drive_mode_only' is False
+    "stylesheet_path": "springable//graphics//figure_utils//default.mplstyle",
+    "figure_width": 4,
+    "figure_height": 4,
+
+    # herein below, colormaps. Must be named colormaps from matplotlib
+    # (visit https://matplotlib.org/stable/users/explain/colors/colormaps.html for more info)
+    "parameter_scan_colormap": 'viridis',
+    "lowest_eigval_colormap": 'seismic',  # used when 'color_mode' 1 or 2 is used, diverging colormap recommended
+    "nb_negative_eigval_colormap": 'plasma',  # used when 'color_mode' 3 or 4 is used
+
+    "default_color": "#a0a0a0",
+    "default_marker": 'o',
+    "default_markersize": 5,
+
+    # herein below colors to indicate the stability of an equilibrium point,
+    # only used when 'color_mode' 0 is used.
     "color_for_stable_points": "#86A7FC",
     "color_for_stabilizable_points": "#FFDD95",
     "color_for_unstable_points": "#FF9843",
-    "marker_for_stable_points": "o",
-    "marker_for_stabilizable_points": "_",
-    "marker_for_unstable_points": "|",
 
-    "stylesheet_path": "springable//graphics//figure_utils//default.mplstyle",
-    "figure_width": 4,
-    "figure_height": 4
+    "driven_path_color": "#444444",
+    "snapping_arrow_color": "#aaaaaa",  # only has an effect if 'show_snapping_arrow' is True
+    "snapping_arrow_opacity": 0.35,  # only has an effect if 'show_snapping_arrow' is True
+
+    # herein below scaling of the markersize to indicate stability,
+    # has no effect in case the 'color_mode' 1, 2, 3 or 4 is used
+    "size_stable_points": 1,
+    "size_for_stabilizable_points": .75,
+    "size_for_unstable_points": .5,
+
+
 }
 
 DEFAULT_ANIMATION_OPTIONS = {

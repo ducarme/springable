@@ -2,6 +2,7 @@ from ..simulation import static_solver
 from .default_graphics_settings import DEFAULT_PLOT_OPTIONS
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.cm as mcm
 import matplotlib.patches as mpatches
 import pathlib
 import os
@@ -145,7 +146,7 @@ def extract_unloading_path(result: static_solver.Result, drive_mode: int, starti
 
 
 def force_displacement_curve_in_ax(result: static_solver.Result, ax: plt.Axes, plot_options,
-                                   color=None, marker=None, label=None):
+                                   color=None, label=None):
     po = plot_options
     mdl = result.get_model()
     u = result.get_displacements()
@@ -156,27 +157,76 @@ def force_displacement_curve_in_ax(result: static_solver.Result, ax: plt.Axes, p
     f_goal_normalized = f_goal[loaded_dof_indices] / np.linalg.norm(f_goal[loaded_dof_indices])
     f_load = np.sum((f[:, loaded_dof_indices] - f[0, loaded_dof_indices]) * f_goal_normalized, axis=1)
     u_load = np.sum((u[:, loaded_dof_indices] - u[0, loaded_dof_indices]) * f_goal_normalized, axis=1)
-    stability_colors = [po['color_for_stable_points'], po['color_for_stabilizable_points'], po['color_for_unstable_points']]
-    stability_markers = [po['marker_for_stable_points'], po['marker_for_stabilizable_points'], po['marker_for_unstable_points']]
+    stability_markersizes = [po['size_stable_points'],
+                             po['size_stabilizable_points'],
+                             po['size__unstable_points']]
     if not po['driven_path_only']:
         stability = result.get_stability()
         ax.plot(u_load, f_load, 'k-', linewidth=0.5, zorder=1.1)
-        zorder = 2.5
-        for i, stability_state in enumerate([static_solver.StaticSolver.STABLE,
-                                          static_solver.StaticSolver.STABILIZABLE,
-                                          static_solver.StaticSolver.UNSTABLE]):
-            current_stability = stability == stability_state
-            ax.plot(u_load[current_stability], f_load[current_stability], ls='',
-                     color=stability_colors[i] if color is None else color,
-                     marker=stability_markers[i] if marker is None else marker,
-                     markersize=2.0,
-                     zorder=zorder,
-                     label=label if label is not None else '')
-            zorder -= 0.1
+        if color is None:  # then color is determined by 'color_mode' set in the plot options
+
+            if po['marker_mode'] == 0:
+                # then each point is colored by its stability
+                stability_colors = [po['color_for_stable_points'],
+                                    po['color_for_stabilizable_points'],
+                                    po['color_for_unstable_points']]
+                zorder = 2.5
+                for i, stability_state in enumerate([static_solver.StaticSolver.STABLE,
+                                                     static_solver.StaticSolver.STABILIZABLE,
+                                                     static_solver.StaticSolver.UNSTABLE]):
+                    current_stability = stability == stability_state
+                    if po['show_stability_legend'] and label is None:
+                        lbl_i = stability_state
+                    elif label is not None and i == 0:
+                        lbl_i = label
+                    else:
+                        lbl_i = ''
+                    ax.plot(u_load[current_stability], f_load[current_stability], ls='',
+                            color=stability_colors[i],
+                            marker=po['default_marker'],
+                            markersize=po['default_markersize'] * stability_markersizes[i],
+                            zorder=zorder,
+                            label=lbl_i)
+                    zorder -= 0.1
+
+            elif po['color_mode'] in (1, 2):
+                # then each point is colored by the lowest eigenvalue in the stiffness matrix
+                cm = po['lowest_eigval_colormap']
+                lowest_eigval = (result.get_lowest_eigval_in_force_control()
+                                 if po['color_mode'] == 1 else
+                                 result.get_lowest_eigval_in_displacement_control())
+                max_eigval_magnitude = np.max(np.abs(lowest_eigval))
+                cn = plt.Normalize(vmin=-max_eigval_magnitude, vmax=max_eigval_magnitude, clip=True)
+                sm = mcm.ScalarMappable(norm=cn, cmap=cm)
+                ax.scatter(u_load, f_load, c=sm.to_rgba(lowest_eigval), s=po['default_markersize'],
+                           marker=po['default_marker'], label=label if label is not None else '')
+            elif po['color_mode'] in (3, 4):
+                # then each point is colored by the nb of negative eigenvalues in the stiffness matrix
+                nb_negative_eigval = (result.get_nb_of_negative_eigval_in_force_control()
+                                      if po['color_mode'] == 3 else
+                                      result.get_nb_of_negative_eigval_in_displacement_control())
+                cm = 'plasma'
+                cn = plt.Normalize(vmin=0, vmax=np.max(nb_negative_eigval), clip=True)
+                sm = mcm.ScalarMappable(norm=cn, cmap=cm)
+                ax.scatter(u_load, f_load, c=sm.to_rgba(nb_negative_eigval), s=po['default_markersize'],
+                           marker=po['default_marker'], label=label if label is not None else '')
+
+            else:  # 'color_mode' is None
+                # then the default color is used
+                ax.plot(u_load, f_load, po['default_marker'], color=po['default_color'],
+                        label=label if label is not None else '')
+        else:  # a color has been specified as input
+            ax.plot(u_load, f_load, po['default_marker'], color=color,
+                    label=label if label is not None else '')
+
     if po['drive_mode'] is not None:
-        loading_path_indices, loading_critical_indices, loading_restabilization_indices = extract_loading_path(result, po['drive_mode'])
+        (loading_path_indices,
+         loading_critical_indices,
+         loading_restabilization_indices) = extract_loading_path(result, po['drive_mode'])
         if po['cycle']:
-            unloading_path_indices, unloading_critical_indices, unloading_restabilization_indices = extract_unloading_path(result, po['drive_mode'])
+            (unloading_path_indices,
+             unloading_critical_indices,
+             unloading_restabilization_indices) = extract_unloading_path(result, po['drive_mode'])
             path_indices = loading_path_indices + unloading_path_indices
             critical_indices = loading_critical_indices + unloading_critical_indices
             restabilization_indices = loading_restabilization_indices + unloading_restabilization_indices
@@ -184,9 +234,20 @@ def force_displacement_curve_in_ax(result: static_solver.Result, ax: plt.Axes, p
             path_indices = loading_path_indices
             critical_indices = loading_critical_indices
             restabilization_indices = loading_restabilization_indices
-        ax.plot(u_load[path_indices], f_load[path_indices], ls='', markersize=4.0 if po['driven_path_only'] else 1.0,
-                 marker=marker if marker is not None else 'o',
-                 color=color if color is not None else '#444444', zorder=1.1, alpha=0.75)
+
+        if po['show_driven_path_legend'] and label is None:
+            lbl = f'{"force" if po["drive_mode"] == 0 else "displacement"}-driven path'
+        elif label is None:
+            lbl = ''
+        else:
+            lbl = label
+
+        ax.plot(u_load[path_indices], f_load[path_indices], ls='',
+                markersize=po['default_markersize'] if po['driven_path_only'] else po['default_markersize'] / 2,
+                marker=po['default_marker'],
+                color=color if color is not None else po['driven_path_color'],
+                label=lbl,
+                zorder=1.1, alpha=0.75)
         nb_transitions = min(len(critical_indices), len(restabilization_indices))
         if po['show_snapping_arrows']:
             match po['drive_mode']:
@@ -197,9 +258,10 @@ def force_displacement_curve_in_ax(result: static_solver.Result, ax: plt.Axes, p
                                                          (u_load[restabilization_indices[i]],
                                                           f_load[critical_indices[i]]),
                                                          edgecolor='none',
-                                                         facecolor='#AAAAAA' if color is None else color,
+                                                         facecolor=po[
+                                                             'snapping_arrow_color'] if color is None else color,
                                                          mutation_scale=15,
-                                                         alpha=0.35 if color is not None else 1.0,
+                                                         alpha=po['snapping_arrow_opacity'],
                                                          zorder=1.2)
                         ax.add_patch(arrow)
                 case DriveModes.DISPLACEMENT:
@@ -209,18 +271,20 @@ def force_displacement_curve_in_ax(result: static_solver.Result, ax: plt.Axes, p
                                                          (u_load[critical_indices[i]],
                                                           f_load[restabilization_indices[i]]),
                                                          edgecolor='none',
-                                                         facecolor='#AAAAAA' if color is None else color,
+                                                         facecolor=po[
+                                                             'snapping_arrow_color'] if color is None else color,
                                                          mutation_scale=15,
-                                                         alpha=0.35 if color is not None else 1.0,
+                                                         alpha=po['snapping_arrow_opacity'],
                                                          zorder=1.2)
                         ax.add_patch(arrow)
     elif po['driven_path_only']:
-        raise ValueError('Inconsistent plot options: "driven path only = True", and "drive_mode = None"')
+        raise ValueError('Inconsistent plot options: "driven_path_only = True", and "drive_mode = None"')
 
 
 def force_displacement_curve(
         result: static_solver.Result | list[static_solver.Result] | typing.Iterator[static_solver.Result],
-        save_dir, save_name, color=None, marker=None, label=None, show=True, xlim=None, ylim=None, **plot_options):
+        save_dir, save_name, color=None, label=None, show=True, xlim=None, ylim=None,
+        **plot_options):
     po = DEFAULT_PLOT_OPTIONS.copy()
     po.update(plot_options)
 
@@ -230,16 +294,19 @@ def force_displacement_curve(
             for i, r in enumerate(result):
                 force_displacement_curve_in_ax(r, ax, po,
                                                color=color[i] if color is not None else None,
-                                               marker=marker[i] if marker is not None else None)
+                                               label=label[i] if label is not None else None)
         elif isinstance(result, types.GeneratorType):
             for r in result:
                 force_displacement_curve_in_ax(r, ax, po,
                                                color=next(color) if color is not None else None,
-                                               marker=next(marker) if marker is not None else None)
+                                               label=next(label) if label is not None else None)
         else:
-            force_displacement_curve_in_ax(result, ax, plot_options,
-                                           color=color, marker='o', label='')
-        ax.legend(numpoints=5, markerscale=1.5)
+            force_displacement_curve_in_ax(result, ax, plot_options, color=color, label=label)
+
+        if (label is not None
+                or (color is None and po['show_stability_legend'] and po['color_mode'] == 0)
+                or (color is None and po['show_driven_path_legend'] and po['drive_mode'] in (0, 1))):
+            ax.legend(numpoints=5, markerscale=1.5)
 
         ax.set_xlabel('displacement (mm)')
         ax.set_ylabel('force (N)')
