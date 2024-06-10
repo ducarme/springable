@@ -87,25 +87,33 @@ class Result:
                 raise UnusableLoadingSolution
             return self._stability[self._starting_index:]
 
-    def _get_eigval_info(self, info_column_index: int, include_preloading=False):
+    def _get_eigval_stat(self, stat_column_index: int, include_preloading=False):
         if include_preloading:
-            return self._eigval_stats[:, info_column_index]
+            return self._eigval_stats[:, stat_column_index]
         else:
             if self._is_loading_solution_unusable:
                 raise UnusableLoadingSolution
-            return self._eigval_stats[self._starting_index:, info_column_index]
+            return self._eigval_stats[self._starting_index:, stat_column_index]
+
+    def get_eigval_stats(self, include_preloading=False):
+        if include_preloading:
+            return self._eigval_stats
+        else:
+            if self._is_loading_solution_unusable:
+                raise UnusableLoadingSolution
+            return self._eigval_stats[self._starting_index:, :]
 
     def get_lowest_eigval_in_force_control(self, include_preloading=False):
-        return self._get_eigval_info(0, include_preloading)
+        return self._get_eigval_stat(0, include_preloading)
 
     def get_lowest_eigval_in_displacement_control(self, include_preloading=False):
-        return self._get_eigval_info(1, include_preloading)
+        return self._get_eigval_stat(1, include_preloading)
 
     def get_nb_of_negative_eigval_in_force_control(self, include_preloading=False):
-        return self._get_eigval_info(2, include_preloading)
+        return self._get_eigval_stat(2, include_preloading)
 
     def get_nb_of_negative_eigval_in_displacement_control(self, include_preloading=False):
-        return self._get_eigval_info(3, include_preloading)
+        return self._get_eigval_stat(3, include_preloading)
 
 
     def get_step_indices(self):
