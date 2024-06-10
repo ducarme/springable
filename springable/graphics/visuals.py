@@ -19,6 +19,12 @@ def draw_model(mdl: model.Model, save_dir=None, save_name='model', show=True, **
     fig, ax = plt.subplots()
     ax.set_aspect('equal')
     ModelDrawing(ax, mdl, aa)
+    xmin, ymin, xmax, ymax = mdl.get_assembly().get_dimensional_bounds()
+    assembly_span = max(xmax - xmin, ymax - ymin)
+    canvas_span = 1.25 * assembly_span
+    midx, midy = (xmin + xmax) / 2, (ymin + ymax) / 2
+    ax.set_xlim(midx - canvas_span / 2, midx + canvas_span / 2)
+    ax.set_ylim(midy - canvas_span / 2, midy + canvas_span / 2)
     if save_dir is not None:
         plot.save_fig(fig, save_dir, save_name, ['png', 'pdf'])
     if show:
@@ -78,8 +84,8 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
     _natural_coordinates = _model.get_assembly().get_general_coordinates()
     _model.get_assembly().set_general_coordinates(_natural_coordinates + u[0, :])
 
-    _model_drawing = ModelDrawing(ax1, _model, fext_i, characteristic_length, assembly_span, color_handler,
-                                  opacity_handler, None, aa)
+    _model_drawing = ModelDrawing(ax1, _model, aa, fext_i, characteristic_length, assembly_span, color_handler,
+                                  opacity_handler, None)
 
     # projection of the displacement vector (relative to preload)
     # on the force direction final loading step
@@ -148,7 +154,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
 
     dot = None
     if ao['side_plot_mode'] != 0:
-        plot.force_displacement_curve_in_ax(_result, ax2, plot_options)
+        plot.force_displacement_curve_in_ax(_result, ax2, po)
         dot = ax2.plot([deformation[0]], [force[0]], 'o', color='tab:red', markersize=10)[0]
         ax2.set_xlabel('displacement')
         ax2.set_ylabel('force')

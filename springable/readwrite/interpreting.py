@@ -264,7 +264,7 @@ def loading_to_text(loading: list[LoadStep]) -> str:
         load_str = ''
         for nodal_load in _load_step.get_nodal_loads():
             load_str += '\n' + nodal_load_to_text(nodal_load)
-        load_strs.append(load_str)
+        load_strs.append(load_str.lstrip())
     return 'LOADING\n' + '\nthen'.join(load_strs)
 
 

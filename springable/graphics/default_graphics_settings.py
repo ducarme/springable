@@ -4,7 +4,14 @@ DEFAULT_GENERAL_OPTIONS = {
     "generate_fd_plot": True,
     "show_fd_plot": True,
     "generate_animation": True,
-    "show_animation": True
+    "show_animation": True,
+    # herein below the desired outputs when scanning parameters
+    "generate_parametric_fd_plots": True,
+    "show_parametric_fd_plots": True,
+    "generate_all_model_drawings": False,
+    "show_all_model_drawings": False,
+    "generate_all_fd_plots": False,
+    "generate_all_animations": False,
 }
 
 DEFAULT_PLOT_OPTIONS = {
@@ -23,10 +30,14 @@ DEFAULT_PLOT_OPTIONS = {
 
     # herein below, colormaps. Must be named colormaps from matplotlib
     # (visit https://matplotlib.org/stable/users/explain/colors/colormaps.html for more info)
-    "parameter_scan_colormap": 'viridis',
+    "range_parameter_scan_colormap": 'viridis',
+    "discrete_parameter_scan_colormap": 'tab10',
     "lowest_eigval_colormap": 'seismic',  # used when 'color_mode' 1 or 2 is used, diverging colormap recommended
     "nb_negative_eigval_colormap": 'plasma',  # used when 'color_mode' 3 or 4 is used
 
+    "max_nb_legend_entries_for_discrete_parameter": 4,
+
+    "default_plot_name": 'fd_curve',
     "default_color": "#a0a0a0",
     "default_marker": 'o',
     "default_markersize": 5,
@@ -43,9 +54,9 @@ DEFAULT_PLOT_OPTIONS = {
 
     # herein below scaling of the markersize to indicate stability,
     # has no effect in case the 'color_mode' 1, 2, 3 or 4 is used
-    "size_stable_points": 1,
-    "size_for_stabilizable_points": .75,
-    "size_for_unstable_points": .5,
+    "size_for_stable_points": 1,
+    "size_for_stabilizable_points": .66,
+    "size_for_unstable_points": .33,
 
 
 }
@@ -69,10 +80,11 @@ DEFAULT_ASSEMBLY_APPEARANCE = {
     "element_coloring_mode": 2,
     "force_coloring_mode": 1,
     "show_state_of_hysterons": True,
-    "show_forces": True,
     "hysteron_state_label_size": 20,
     "hysteron_state_bg_color": "#E0E0E0",
     "hysteron_state_txt_color": "#101010",
+    "show_forces": True,
+    "force_vector_scaling": 1.0,
     "nb_spring_coils": 4,
     "spring_linewidth": 3,
     "spring_width_scaling": 1.0,

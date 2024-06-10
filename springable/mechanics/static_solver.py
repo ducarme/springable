@@ -115,7 +115,6 @@ class Result:
     def get_nb_of_negative_eigval_in_displacement_control(self, include_preloading=False):
         return self._get_eigval_stat(3, include_preloading)
 
-
     def get_step_indices(self):
         return self._step_indices
 
@@ -131,15 +130,15 @@ class StaticSolver:
     STABLE = 'stable'  # stable under force and displacement control
     STABILIZABLE = 'stabilizable'  # stable under displacement-control only
     UNSTABLE = 'unstable'  # unstable under both force control and displacement control
-    _DEFAULT_SOLVER_SETTINGS = {'reference_load_parameter': 0.001,
-                                  'radius': 0.001,
-                                  'verbose': True,
-                                  'i_max': 10e3,
-                                  'j_max': 20,
-                                  'convergence_value': 1e-6,
-                                  'alpha': 0.0,
-                                  'psi_p': 0.0,
-                                  'psi_c': 0.0
+    _DEFAULT_SOLVER_SETTINGS = {'reference_load_parameter': 0.05,
+                                'radius': 0.05,
+                                'verbose': True,
+                                'i_max': 10e3,
+                                'j_max': 20,
+                                'convergence_value': 1e-6,
+                                'alpha': 0.0,
+                                'psi_p': 0.0,
+                                'psi_c': 0.0
                                 }
 
     def __init__(self, model: Model, **solver_settings):

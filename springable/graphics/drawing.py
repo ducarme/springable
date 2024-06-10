@@ -330,7 +330,7 @@ class ForceDrawing(Drawing):
         super().__init__(ax, assembly_appearance)
         self._node = _node
         self._force_info = force_info
-        self._vector_size = vector_size
+        self._vector_size = vector_size * self._aa['force_vector_scaling']
         self._color_handler = color_handler
 
         # CREATE GRAPHICS FOR FORCE DRAWING
@@ -347,7 +347,7 @@ class ForceDrawing(Drawing):
                                           xy=(destination[0], destination[1]),
                                           verticalalignment="center",
                                           arrowprops=dict(width=4, headwidth=10, shrink=0.1, lw=1.5,
-                                                          facecolor=self._aa['force_inner_color'], edgecolor=color),
+                                                          facecolor=self._aa['force_default_inner_color'], edgecolor=color),
                                           zorder=2)
 
         return force_graphic
