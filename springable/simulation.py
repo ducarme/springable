@@ -208,7 +208,7 @@ def scan_parameter_space(model_path, save_dir, scan_parameters_one_by_one=True,
         if general_options['generate_parametric_fd_plots']:
             _, design_parameter_data = io.read_parameters_from_model_file(model_path)
 
-            def make_color_converter(design_par_name: str, dir_map: dict) -> mcm.ScalarMappable:
+            def make_color_converter(design_par_name: str) -> mcm.ScalarMappable:
                 par_data = design_parameter_data[design_par_name]
                 if par_data['is range parameter']:
                     cmap = plt.get_cmap(custom_plot_options.get('range_parameter_scan_colormap',
@@ -250,7 +250,7 @@ def scan_parameter_space(model_path, save_dir, scan_parameters_one_by_one=True,
                     yield io.read_results(_dir)
 
             for design_parameter_name in design_parameter_names:
-                color_converter = make_color_converter(design_parameter_name, dir_map)
+                color_converter = make_color_converter(design_parameter_name)
                 par_data = design_parameter_data[design_parameter_name]
                 if par_data['is range parameter']:
                     cbar_info = {'title': design_parameter_name, 'scalar_mappable': color_converter}
@@ -260,5 +260,6 @@ def scan_parameter_space(model_path, save_dir, scan_parameters_one_by_one=True,
                                               f'fd_curve_{design_parameter_name}',
                                               colors(color_converter, design_parameter_name),
                                               labels(design_parameter_name) if need_labels(design_parameter_name) else None,
+                                              show=general_options['show_parametric_fd_plots'],
                                               cbar_info=cbar_info
                                               )

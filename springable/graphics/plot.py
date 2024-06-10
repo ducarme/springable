@@ -1,63 +1,12 @@
 from ..simulation import static_solver
 from .default_graphics_settings import DEFAULT_PLOT_OPTIONS
+from .figure_utils import figure_formatting as ff
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as mcm
 import matplotlib.patches as mpatches
-import pathlib
-import os
 import types
 import typing
-
-
-def save_fig(fig, save_dir, save_name, formats):
-    if save_dir:
-        pathlib.Path(save_dir).mkdir(parents=True, exist_ok=True)
-    if not isinstance(formats, list):
-        formats = [formats]
-    for format in formats:
-        fig.savefig(os.path.join(save_dir, save_name + '.' + format))
-
-
-def adjust_figure_layout(fig, fig_width=None, fig_height=None, pad=0.0):
-    if fig_width is not None:
-        fig.set_figwidth(fig_width)
-    if fig_height is not None:
-        fig.set_figheight(fig_height)
-    fig.tight_layout(pad=pad)
-
-
-def _adjust_spines(ax, spines=("left", "bottom"), outward=True):
-    for loc, spine in ax.spines.items():
-        if loc in spines:
-            ax.spines[loc].set_visible(True)
-            if outward:
-                spine.set_position(("outward", 12))  # outward by 18 points
-        else:
-            ax.spines[loc].set_visible(False)  # don't draw spine
-    if "left" in spines:
-        ax.yaxis.set_ticks_position("left")
-    elif "right" in spines:
-        ax.yaxis.set_ticks_position("right")
-    else:
-        # no yaxis ticks
-        ax.yaxis.set_visible(False)
-
-    if "bottom" in spines:
-        ax.xaxis.set_ticks_position("bottom")
-    elif "top" in spines:
-        ax.xaxis.set_ticks_position("top")
-    else:
-        # no xaxis ticks
-        ax.xaxis.set_visible(False)
-
-
-def adjust_spines(axs):
-    only_one_axis = not isinstance(axs, list)
-    if only_one_axis:
-        axs = [axs]
-    for ax in axs:
-        _adjust_spines(ax)
 
 
 class DriveModes:
@@ -307,14 +256,20 @@ def force_displacement_curve(
         fig, ax = plt.subplots(figsize=(po['figure_width'], po['figure_height']))
         if isinstance(result, list):
             for i, r in enumerate(result):
-                force_displacement_curve_in_ax(r, ax, po,
-                                               color=color[i] if color is not None else None,
-                                               label=label[i] if label is not None else None)
+                try:
+                    force_displacement_curve_in_ax(r, ax, po,
+                                                   color=color[i] if color is not None else None,
+                                                   label=label[i] if label is not None else None)
+                except static_solver.UnusableLoadingSolution:
+                    pass
         elif isinstance(result, types.GeneratorType):
             for r in result:
-                force_displacement_curve_in_ax(r, ax, po,
-                                               color=next(color) if color is not None else None,
-                                               label=next(label) if label is not None else None)
+                try:
+                    force_displacement_curve_in_ax(r, ax, po,
+                                                   color=next(color) if color is not None else None,
+                                                   label=next(label) if label is not None else None)
+                except static_solver.UnusableLoadingSolution:
+                    pass
         else:
             force_displacement_curve_in_ax(result, ax, po, color=color, label=label)
 
@@ -333,11 +288,11 @@ def force_displacement_curve(
             ax.set_xlim(xlim)
         if ylim is not None:
             ax.set_ylim(ylim)
-        adjust_spines(ax)
-        adjust_figure_layout(fig)
+        ff.adjust_spines(ax)
+        ff.adjust_figure_layout(fig)
         if save_name is None:
             save_name = po['default_plot_name']
-        save_fig(fig, save_dir, save_name, ["png", "pdf"])
+        ff.save_fig(fig, save_dir, save_name, ["png", "pdf"])
         if show:
             plt.show()
         else:

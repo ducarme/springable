@@ -2,6 +2,7 @@ from ..mechanics.static_solver import Result
 from ..mechanics import model
 from .drawing import ModelDrawing
 from . import plot, visual_helpers
+from .figure_utils import figure_formatting as ff
 from .default_graphics_settings import (DEFAULT_ANIMATION_OPTIONS,
                                         DEFAULT_ASSEMBLY_APPEARANCE,
                                         DEFAULT_PLOT_OPTIONS)
@@ -26,7 +27,7 @@ def draw_model(mdl: model.Model, save_dir=None, save_name='model', show=True, **
     ax.set_xlim(midx - canvas_span / 2, midx + canvas_span / 2)
     ax.set_ylim(midy - canvas_span / 2, midy + canvas_span / 2)
     if save_dir is not None:
-        plot.save_fig(fig, save_dir, save_name, ['png', 'pdf'])
+        ff.save_fig(fig, save_dir, save_name, ['png', 'pdf'])
     if show:
         plt.show()
     plt.close()
@@ -54,7 +55,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             ax2 = fig.add_subplot(grid[0, 1])
             ax2.xaxis.set_major_locator(plt.MaxNLocator(4))
             ax2.yaxis.set_major_locator(plt.MaxNLocator(4))
-            plot.adjust_spines(ax2)
+            ff.adjust_spines(ax2)
     else:
         fig, ax1 = plt.subplots()
         ax2 = None

@@ -46,6 +46,6 @@ def adjust_spines(axs):
 def adjust_figure_layout(fig, fig_width=None, fig_height=None, pad=0.0):
     if fig_width is not None:
         fig.set_figwidth(fig_width)
-    if fig.set_figheight is not None:
+    if fig_height is not None:
         fig.set_figheight(fig_height)
     fig.tight_layout(pad=pad)

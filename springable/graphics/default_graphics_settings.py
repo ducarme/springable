@@ -40,7 +40,7 @@ DEFAULT_PLOT_OPTIONS = {
     "default_plot_name": 'fd_curve',
     "default_color": "#a0a0a0",
     "default_marker": 'o',
-    "default_markersize": 5,
+    "default_markersize": 3,
 
     # herein below colors to indicate the stability of an equilibrium point,
     # only used when 'color_mode' 0 is used.

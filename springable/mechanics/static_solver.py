@@ -29,7 +29,7 @@ class Result:
         nb_steps = len(self._model.get_loading())
         self._starting_index = None
         if nb_steps == 1:
-            if self._u.shape[0] in (0, 1, 2):
+            if self._u.ndim < 2 or self._u.shape[0] in (0, 1, 2):
                 self._is_loading_solution_unusable = True
             else:
                 self._is_loading_solution_unusable = False
@@ -38,7 +38,7 @@ class Result:
             index = np.argmax(step_indices == nb_steps - 1)
             if index == 0:
                 self._is_loading_solution_unusable = True
-            elif self._u[index:].shape[0] in (0, 1, 2):
+            elif self._u[index:, :].shape[0] in (0, 1, 2):
                 self._is_loading_solution_unusable = True
             else:
                 self._starting_index = index
@@ -130,8 +130,9 @@ class StaticSolver:
     STABLE = 'stable'  # stable under force and displacement control
     STABILIZABLE = 'stabilizable'  # stable under displacement-control only
     UNSTABLE = 'unstable'  # unstable under both force control and displacement control
-    _DEFAULT_SOLVER_SETTINGS = {'reference_load_parameter': 0.05,
-                                'radius': 0.05,
+    _DEFAULT_SOLVER_SETTINGS = {'reference_load_parameter': 0.01,
+                                'radius': 0.01,
+                                'show_warnings': False,
                                 'verbose': True,
                                 'i_max': 10e3,
                                 'j_max': 20,
@@ -159,7 +160,8 @@ class StaticSolver:
         u, f, stability, eigval_stats, step_indices = self._solve_with_arclength(step_force_vectors,
                                                                                  max_displacement_map_step_list,
                                                                                  **self._solver_settings)
-        self._assembly.increment_general_coordinates(-u[-1, :])
+        if u.ndim == 2:
+            self._assembly.increment_general_coordinates(-u[-1, :])
         return Result(self._model, u, f, stability, eigval_stats, step_indices)
 
     def guide_truss_to_natural_configuration(self):
@@ -184,15 +186,18 @@ class StaticSolver:
             return self._assembly.compute_structural_stiffness_matrix()[
                 np.ix_(self._free_dof_indices, self._free_dof_indices)]
 
-        result = minimize(elastic_energy, initial_coordinates[self._free_dof_indices],
-                          jac=gradient_elastic_energy,
-                          method='BFGS', tol=1e-6, options={'disp': False})
-        natural_coordinates = np.empty(self._nb_dofs)
-        natural_coordinates[self._free_dof_indices] = result.x
-        natural_coordinates[self._fixed_dof_indices] = initial_coordinates[self._fixed_dof_indices]
-        self._assembly.set_general_coordinates(natural_coordinates)
+        try:
+            result = minimize(elastic_energy, initial_coordinates[self._free_dof_indices],
+                              jac=gradient_elastic_energy,
+                              method='BFGS', tol=1e-6, options={'disp': False})
+            natural_coordinates = np.empty(self._nb_dofs)
+            natural_coordinates[self._free_dof_indices] = result.x
+            natural_coordinates[self._fixed_dof_indices] = initial_coordinates[self._fixed_dof_indices]
+            self._assembly.set_general_coordinates(natural_coordinates)
+        except IllDefinedShape:
+            self._assembly.set_general_coordinates(initial_coordinates)
 
-    def _solve_with_arclength(self, force_vector_step_list, max_displacement_map_step_list,
+    def _solve_with_arclength(self, force_vector_step_list, max_displacement_map_step_list, show_warnings,
                               reference_load_parameter, radius, i_max, j_max, convergence_value, verbose,
                               alpha, psi_p, psi_c):
         """
@@ -200,16 +205,23 @@ class StaticSolver:
         """
         # warnings.filterwarnings('ignore', category=LinAlgWarning)
         start = time.time()
+        nb_steps = len(force_vector_step_list)
+        if verbose:
+            update_progress(f'Solving progress (step {0}/{nb_steps})', 0.0, 0, i_max, status='...')
 
         equilibrium_forces = [np.zeros(self._nb_dofs)]
         equilibrium_displacements = [np.zeros(self._nb_dofs)]
         step_indices: list[int] = [0]
-        initial_ks = self._assembly.compute_structural_stiffness_matrix()
-        initial_loaded_dof_indices = self._loaded_dof_indices_step_list[0]
-        equilibrium_eigval_stats = [self._compute_lowest_eigenvalues_and_count_negative_ones(initial_ks,
-                                                                                             initial_loaded_dof_indices)]
+        try:
+            initial_ks = self._assembly.compute_structural_stiffness_matrix()
+            initial_loaded_dof_indices = self._loaded_dof_indices_step_list[0]
+            equilibrium_eigval_stats = [self._compute_lowest_eigenvalues_and_count_negative_ones(initial_ks,
+                                                                                                 initial_loaded_dof_indices)]
+        except IllDefinedShape:
+            return (np.array([np.nan]), np.array([np.nan]), np.array(['nan'], dtype=str),
+                    np.array([np.nan]), np.array([0], dtype=int))
+
         equilibrium_stability = [self._assess_stability(initial_ks, initial_loaded_dof_indices)]
-        initial_coordinates = self._assembly.get_general_coordinates()
         stiffness_matrix_eval_counter = 1
         linear_system_solving_counter = 0
         initial_radius_p = radius
@@ -219,7 +231,6 @@ class StaticSolver:
         u = np.zeros(self._nb_dofs)
         i = 0
         force_progress = 0.0
-        nb_steps = len(force_vector_step_list)
         current_step = None
         try:
             for step, step_force_vector in enumerate(force_vector_step_list):
@@ -341,10 +352,10 @@ class StaticSolver:
                     else:
                         increment_retries += 1
                         if increment_retries <= 5:
-                            if verbose:
-                                warnings.warn(f"\nCorrection iterations did not converge for the increment {i + 1}"
-                                              f"\t-> retry increment with smaller radius ({radius_p / 2.0:.3})"
-                                              f"\t-> attempt {increment_retries}/{5}")
+                            if show_warnings:
+                                print(f"\nCorrection iterations did not converge for the increment {i + 1}"
+                                      f"\t-> retry increment with smaller radius ({radius_p / 2.0:.3})"
+                                      f"\t-> attempt {increment_retries}/{5}")
                             # Resetting structure to its previous incremental state with a smaller radius
                             self._assembly.increment_general_coordinates(-delta_u_inc)
                             f_ext -= delta_lambda_inc * delta_f
@@ -514,7 +525,7 @@ class MaxDisplacementReached(Exception):
     """ raise this when the max displacement is reached """
 
 
-def update_progress(title, progress, i, i_max, status, stability=None):
+def update_progress(title, progress, i, i_max, status, stability: str = None):
     if stability == StaticSolver.STABLE:
         symbol = '#'
     elif stability == StaticSolver.STABILIZABLE:
