@@ -1,6 +1,6 @@
 DEFAULT_GENERAL_OPTIONS = {
     "generate_model_drawing": True,
-    "show_model_drawing": True,
+    "show_model_drawing": False,
     "generate_fd_plot": True,
     "show_fd_plot": True,
     "generate_animation": True,
@@ -8,17 +8,19 @@ DEFAULT_GENERAL_OPTIONS = {
     # herein below the desired outputs when scanning parameters
     "generate_parametric_fd_plots": True,
     "show_parametric_fd_plots": True,
-    "generate_all_model_drawings": False,
+    "generate_all_model_drawings": True,
     "show_all_model_drawings": False,
-    "generate_all_fd_plots": False,
+    "generate_all_fd_plots": True,
     "generate_all_animations": False,
 }
 
 DEFAULT_PLOT_OPTIONS = {
-    "drive_mode": 0,
-    "cycle": False,
+    "show_driven_path": False,
     "driven_path_only": False,
-    "show_snapping_arrows": False,
+    "show_snapping_arrows": True,
+    "drive_mode": None,
+    "loading_sequence": 'cycle',  # loading, cycle, loading_unloading
+
     "color_mode": 0,  # is *not* used when showing multiple equilibrium paths after a parameter scan
     # None (default color), 0 (by stability), 1 (by lowest force-driven eig. val.), 2 (by lowest displacement-driven
     # eig. val.), 3 (by nb force-driven eig. vals < 0), 4 (by nb displacement-driven eig. val < 0)
@@ -32,7 +34,7 @@ DEFAULT_PLOT_OPTIONS = {
     # (visit https://matplotlib.org/stable/users/explain/colors/colormaps.html for more info)
     "range_parameter_scan_colormap": 'viridis',
     "discrete_parameter_scan_colormap": 'tab10',
-    "lowest_eigval_colormap": 'seismic',  # used when 'color_mode' 1 or 2 is used, diverging colormap recommended
+    "lowest_eigval_colormap": 'PuOr',  # used when 'color_mode' 1 or 2 is used, diverging colormap recommended
     "nb_negative_eigval_colormap": 'plasma',  # used when 'color_mode' 3 or 4 is used
 
     "max_nb_legend_entries_for_discrete_parameter": 4,
@@ -40,7 +42,7 @@ DEFAULT_PLOT_OPTIONS = {
     "default_plot_name": 'fd_curve',
     "default_color": "#a0a0a0",
     "default_marker": 'o',
-    "default_markersize": 3,
+    "default_markersize": 2.5,
 
     # herein below colors to indicate the stability of an equilibrium point,
     # only used when 'color_mode' 0 is used.
@@ -49,6 +51,7 @@ DEFAULT_PLOT_OPTIONS = {
     "color_for_unstable_points": "#FF9843",
 
     "driven_path_color": "#444444",
+    "size_for_driven_path": 0.4,  # scaling of the default markersize for driven path
     "snapping_arrow_color": "#aaaaaa",  # only has an effect if 'show_snapping_arrow' is True
     "snapping_arrow_opacity": 0.35,  # only has an effect if 'show_snapping_arrow' is True
 
@@ -62,22 +65,22 @@ DEFAULT_PLOT_OPTIONS = {
 }
 
 DEFAULT_ANIMATION_OPTIONS = {
-    "fps": 30,
-    "nb_frames": 120,
+    "fps": 25,
+    "nb_frames": 100,
     "dpi": 200,
-    "drive_mode": 1,
-    "cycle": False,
+    "drive_mode": 0,
+    "cycling": True,
     "default_animation_name": "animation",
-    "save_as_mp4": False,
+    "save_as_mp4": True,
     "save_as_transparent_mov": False,
-    "save_as_gif": True,
+    "save_as_gif": False,
     "save_frames_as_png": False,
-    "side_plot_mode": 1,
+    "side_plot_mode": 0,
     "plot_stylesheet_path": "springable//graphics//figure_utils//default.mplstyle"
 }
 
 DEFAULT_ASSEMBLY_APPEARANCE = {
-    "element_coloring_mode": 2,
+    "element_coloring_mode": 1,
     "force_coloring_mode": 1,
     "show_state_of_hysterons": True,
     "hysteron_state_label_size": 20,
@@ -91,7 +94,7 @@ DEFAULT_ASSEMBLY_APPEARANCE = {
     "spring_default_opacity": 1.0,
     "spring_default_color": "#CECECE",
     "rotation_spring_linewidth": 3,
-    "rotation_spring_radius_scaling": 1.0,
+    "rotation_spring_radius_scaling": 0.05,
     "rotation_spring_default_opacity": 1.0,
     "rotation_spring_default_color": "#CECECE",
     "area_spring_default_opacity": 0.3,

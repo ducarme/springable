@@ -5,6 +5,7 @@ import numpy as np
 import csv
 import tomllib
 import shutil
+import json
 
 
 def read_model(model_path, parameters: dict[str, float | str] = None) -> Model:
@@ -127,13 +128,13 @@ def read_design_parameters(save_dir, save_name='design_parameters.csv'):
 
 def write_results(result: static_solver.Result, save_dir: str):
     np.savetxt(os.path.join(save_dir, 'displacements.csv'),
-               result.get_displacements(include_preloading=True), delimiter=',')
+               result.get_displacements(include_preloading=True, check_usability=False), delimiter=',')
     np.savetxt(os.path.join(save_dir, 'forces.csv'),
-               result.get_forces(include_preloading=True), delimiter=',')
+               result.get_forces(include_preloading=True, check_usability=False), delimiter=',')
     np.savetxt(os.path.join(save_dir, 'stability.csv'),
-               result.get_stability(include_preloading=True), delimiter=',', fmt="%s")
+               result.get_stability(include_preloading=True, check_usability=False), delimiter=',', fmt="%s")
     np.savetxt(os.path.join(save_dir, 'eigval_stats.csv'),
-               result.get_eigval_stats(include_preloading=True), delimiter=',')
+               result.get_eigval_stats(include_preloading=True, check_usability=False), delimiter=',')
     np.savetxt(os.path.join(save_dir, 'step_indices.csv'),
                result.get_step_indices(), delimiter=',', fmt='%d')
     write_model(result.get_model(), save_dir)
@@ -147,6 +148,16 @@ def read_results(save_dir):
     eigval_stats = np.loadtxt(os.path.join(save_dir, "eigval_stats.csv"), delimiter=',')
     step_indices = np.loadtxt(os.path.join(save_dir, "step_indices.csv"), delimiter=',', dtype=int)
     return static_solver.Result(_model, displacements, forces, stability, eigval_stats, step_indices)
+
+
+def write_scanning_general_info(scanning_general_info: dict, save_dir, save_name='general_info.json'):
+    with open(os.path.join(save_dir, save_name), 'w') as fp:
+        json.dump(scanning_general_info, fp)
+
+
+def read_scanning_general_info(scan_results_dir, name='general_info.json'):
+    with open(os.path.join(scan_results_dir, name), 'r') as fp:
+        return json.load(fp)
 
 
 def copy_model_file(save_dir, model_path):

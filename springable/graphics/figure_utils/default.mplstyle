@@ -17,6 +17,6 @@ ytick.minor.width: 1
 xtick.direction: in
 ytick.direction: in
 pdf.fonttype: 42
-savefig.transparent: True
-savefig.dpi: 300
+savefig.transparent: False
+savefig.dpi: 250
 legend.frameon: False

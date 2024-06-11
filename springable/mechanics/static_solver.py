@@ -28,101 +28,125 @@ class Result:
 
         nb_steps = len(self._model.get_loading())
         self._starting_index = None
-        if nb_steps == 1:
-            if self._u.ndim < 2 or self._u.shape[0] in (0, 1, 2):
-                self._is_loading_solution_unusable = True
-            else:
+        if self._u.ndim < 2 or self._u.shape[0] in (0, 1, 2):
+            self._is_solution_unusable = True
+            self._is_loading_solution_unusable = True
+        else:
+            self._is_solution_unusable = False
+            if nb_steps == 1:
                 self._is_loading_solution_unusable = False
                 self._starting_index = 0
-        else:
-            index = np.argmax(step_indices == nb_steps - 1)
-            if index == 0:
-                self._is_loading_solution_unusable = True
-            elif self._u[index:, :].shape[0] in (0, 1, 2):
-                self._is_loading_solution_unusable = True
             else:
-                self._starting_index = index
-                self._is_loading_solution_unusable = False
+                index = np.argmax(step_indices == nb_steps - 1)
+                if index == 0:
+                    self._is_loading_solution_unusable = True
+                elif self._u[index:, :].shape[0] in (0, 1, 2):
+                    self._is_loading_solution_unusable = True
+                else:
+                    self._starting_index = index
+                    self._is_loading_solution_unusable = False
 
     def get_model(self):
         return self._model
 
-    def get_forces(self, include_preloading=False):
+    def get_forces(self, include_preloading=False, check_usability=True):
         if include_preloading:
+            if self._is_solution_unusable and check_usability:
+                raise UnusableSolution
             return self._f
         else:
-            if self._is_loading_solution_unusable:
-                raise UnusableLoadingSolution
+            if self._is_loading_solution_unusable and check_usability:
+                raise UnusableSolution
             return self._f[self._starting_index:]
 
-    def get_node_forces(self, _node: Node, direction: str, include_preloading=False):
+    def get_node_forces(self, _node: Node, direction: str, include_preloading=False, check_usability=True):
         if include_preloading:
+            if self._is_solution_unusable and check_usability:
+                raise UnusableSolution
             return self._f[:, self._model.get_assembly().get_dof_index(_node, direction)]
         else:
-            if self._is_loading_solution_unusable:
-                raise UnusableLoadingSolution
+            if self._is_loading_solution_unusable and check_usability:
+                raise UnusableSolution
             return self._f[self._starting_index:, self._model.get_assembly().get_dof_index(_node, direction)]
 
-    def get_displacements(self, include_preloading=False):
+    def get_displacements(self, include_preloading=False, check_usability=True):
         if include_preloading:
+            if self._is_solution_unusable and check_usability:
+                raise UnusableSolution
             return self._u
         else:
-            if self._is_loading_solution_unusable:
-                raise UnusableLoadingSolution
+            if self._is_loading_solution_unusable and check_usability:
+                raise UnusableSolution
             return self._u[self._starting_index:]
 
-    def get_node_displacements(self, _node: Node, direction: str, include_preloading=False):
+    def get_node_displacements(self, _node: Node, direction: str, include_preloading=False, check_usability=True):
         if include_preloading:
+            if self._is_solution_unusable and check_usability:
+                raise UnusableSolution
             return self._u[:, self._model.get_assembly().get_dof_index(_node, direction)]
         else:
-            if self._is_loading_solution_unusable:
-                raise UnusableLoadingSolution
+            if self._is_loading_solution_unusable and check_usability:
+                raise UnusableSolution
             return self._u[self._starting_index:, self._model.get_assembly().get_dof_index(_node, direction)]
 
-    def get_stability(self, include_preloading=False):
+    def get_stability(self, include_preloading=False, check_usability=True):
         if include_preloading:
+            if self._is_solution_unusable and check_usability:
+                raise UnusableSolution
             return self._stability
         else:
-            if self._is_loading_solution_unusable:
-                raise UnusableLoadingSolution
+            if self._is_loading_solution_unusable and check_usability:
+                raise UnusableSolution
             return self._stability[self._starting_index:]
 
-    def _get_eigval_stat(self, stat_column_index: int, include_preloading=False):
+    def _get_eigval_stat(self, stat_column_index: int, include_preloading=False, check_usability=True):
         if include_preloading:
+            if self._is_solution_unusable and check_usability:
+                raise UnusableSolution
             return self._eigval_stats[:, stat_column_index]
         else:
-            if self._is_loading_solution_unusable:
-                raise UnusableLoadingSolution
+            if self._is_loading_solution_unusable and check_usability:
+                raise UnusableSolution
             return self._eigval_stats[self._starting_index:, stat_column_index]
 
-    def get_eigval_stats(self, include_preloading=False):
+    def get_eigval_stats(self, include_preloading=False, check_usability=True):
         if include_preloading:
+            if self._is_solution_unusable and check_usability:
+                raise UnusableSolution
             return self._eigval_stats
         else:
-            if self._is_loading_solution_unusable:
-                raise UnusableLoadingSolution
+            if self._is_loading_solution_unusable and check_usability:
+                raise UnusableSolution
             return self._eigval_stats[self._starting_index:, :]
 
-    def get_lowest_eigval_in_force_control(self, include_preloading=False):
-        return self._get_eigval_stat(0, include_preloading)
+    def get_lowest_eigval_in_force_control(self, include_preloading=False, check_usability=True):
+        return self._get_eigval_stat(0, include_preloading, check_usability)
 
-    def get_lowest_eigval_in_displacement_control(self, include_preloading=False):
-        return self._get_eigval_stat(1, include_preloading)
+    def get_lowest_eigval_in_displacement_control(self, include_preloading=False, check_usability=True):
+        return self._get_eigval_stat(1, include_preloading, check_usability)
 
-    def get_nb_of_negative_eigval_in_force_control(self, include_preloading=False):
-        return self._get_eigval_stat(2, include_preloading)
+    def get_nb_of_negative_eigval_in_force_control(self, include_preloading=False, check_usability=True):
+        return np.round(self._get_eigval_stat(2, include_preloading, check_usability)).astype(int)
 
-    def get_nb_of_negative_eigval_in_displacement_control(self, include_preloading=False):
-        return self._get_eigval_stat(3, include_preloading)
+    def get_nb_of_negative_eigval_in_displacement_control(self, include_preloading=False, check_usability=True):
+        return np.round(self._get_eigval_stat(3, include_preloading, check_usability)).astype(int)
 
     def get_step_indices(self):
         return self._step_indices
 
+    def get_min_and_max_loading_displacement_and_force(self):
+        u = self.get_displacements()
+        f = self.get_forces()
+        loaded_dof_indices = self._model.get_loaded_dof_indices()
+        f_goal = self._model.get_force_vector()
+        f_goal_normalized = f_goal[loaded_dof_indices] / np.linalg.norm(f_goal[loaded_dof_indices])
+        f_load = np.sum((f[:, loaded_dof_indices] - f[0, loaded_dof_indices]) * f_goal_normalized, axis=1)
+        u_load = np.sum((u[:, loaded_dof_indices] - u[0, loaded_dof_indices]) * f_goal_normalized, axis=1)
+        return np.min(u_load), np.max(u_load), np.min(f_load), np.max(f_load)
 
-class UnusableLoadingSolution(Exception):
-    """ raise this when one attempts to get a solution for the loading phase from a Result instance, but it is not usable
-    (in case the preloading could not be completed,
-    or that the first iteration or the loading phase failed) """
+
+class UnusableSolution(Exception):
+    """ raise this when one attempts to get a solution from a Result instance, but it is not usable """
 
 
 class StaticSolver:
@@ -130,11 +154,11 @@ class StaticSolver:
     STABLE = 'stable'  # stable under force and displacement control
     STABILIZABLE = 'stabilizable'  # stable under displacement-control only
     UNSTABLE = 'unstable'  # unstable under both force control and displacement control
-    _DEFAULT_SOLVER_SETTINGS = {'reference_load_parameter': 0.01,
-                                'radius': 0.01,
+    _DEFAULT_SOLVER_SETTINGS = {'reference_load_parameter': 0.1,
+                                'radius': 0.1,
                                 'show_warnings': False,
                                 'verbose': True,
-                                'i_max': 10e3,
+                                'i_max': 30e3,
                                 'j_max': 20,
                                 'convergence_value': 1e-6,
                                 'alpha': 0.0,

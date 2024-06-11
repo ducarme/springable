@@ -271,8 +271,8 @@ class ElementDrawing(Drawing):
             graphic1.set_alpha(opacity)
 
         if self._hysteron_state_bg_graphic is not None and self._hysteron_state_id_graphic is not None:
-            self._hysteron_state_bg_graphic.set_xdata(hysteron_state_graphic_position[0])
-            self._hysteron_state_bg_graphic.set_ydata(hysteron_state_graphic_position[1])
+            self._hysteron_state_bg_graphic.set_xdata([hysteron_state_graphic_position[0]])
+            self._hysteron_state_bg_graphic.set_ydata([hysteron_state_graphic_position[1]])
             internal_coord = self._element.get_internal_coordinates()
             for i, interval in enumerate(self._hysteron_info['branch_intervals']):
                 if interval[0] <= internal_coord <= interval[1]:
@@ -284,8 +284,8 @@ class ElementDrawing(Drawing):
             self._hysteron_state_id_graphic.xy = hysteron_state_graphic_position
             self._hysteron_state_id_graphic.set_text(state_id)
             self._hysteron_state_id_graphic.set_fontsize(0.65 / min(2, len(state_id)) * self._aa['hysteron_state_label_size'])
-            self._hysteron_state_bg_graphic.set_xdata(hysteron_state_graphic_position[0])
-            self._hysteron_state_bg_graphic.set_ydata(hysteron_state_graphic_position[1])
+            self._hysteron_state_bg_graphic.set_xdata([hysteron_state_graphic_position[0]])
+            self._hysteron_state_bg_graphic.set_ydata([hysteron_state_graphic_position[1]])
             if color is not None:
                 self._hysteron_state_bg_graphic.set_markeredgecolor(color)
 
