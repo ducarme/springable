@@ -154,8 +154,8 @@ class StaticSolver:
     STABLE = 'stable'  # stable under force and displacement control
     STABILIZABLE = 'stabilizable'  # stable under displacement-control only
     UNSTABLE = 'unstable'  # unstable under both force control and displacement control
-    _DEFAULT_SOLVER_SETTINGS = {'reference_load_parameter': 0.1,
-                                'radius': 0.1,
+    _DEFAULT_SOLVER_SETTINGS = {'reference_load_parameter': 0.05,
+                                'radius': 0.05,
                                 'show_warnings': False,
                                 'verbose': True,
                                 'i_max': 30e3,
@@ -188,7 +188,7 @@ class StaticSolver:
             self._assembly.increment_general_coordinates(-u[-1, :])
         return Result(self._model, u, f, stability, eigval_stats, step_indices)
 
-    def guide_truss_to_natural_configuration(self):
+    def guide_spring_assembly_to_natural_configuration(self):
         initial_coordinates = self._assembly.get_general_coordinates()
 
         def elastic_energy(free_coordinates):

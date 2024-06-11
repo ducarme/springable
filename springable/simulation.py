@@ -22,7 +22,7 @@ def solve_model(_model: model.Model | str, solver_settings: dict | str = None) -
     else:
         solver_settings = {}
     slv = static_solver.StaticSolver(_model, **solver_settings)
-    slv.guide_truss_to_natural_configuration()
+    slv.guide_spring_assembly_to_natural_configuration()
     return slv.solve()
 
 

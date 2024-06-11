@@ -53,7 +53,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
         fig = plt.figure(figsize=(8, 4.5))
         grid = plt.GridSpec(1, 2, wspace=0.20, hspace=0.01, bottom=0.15, left=0.01)
         ax1 = fig.add_subplot(grid[0, 0])
-        with plt.style.context(ao['plot_stylesheet_path']):
+        with plt.style.context(ao['plot_stylesheet']):
             ax2 = fig.add_subplot(grid[0, 1])
             ax2.xaxis.set_major_locator(plt.MaxNLocator(4))
             ax2.yaxis.set_major_locator(plt.MaxNLocator(4))
@@ -63,7 +63,8 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
         ax2 = None
 
     if extra_init is not None:
-        extra = extra_init(fig, ax1, ax2)
+        with plt.style.context(ao['plot_stylesheet']):
+            extra = extra_init(fig, ax1, ax2)
 
     ax1.axis('off')
     bounds, characteristic_length, color_handler, opacity_handler = visual_helpers.compute_requirements_for_animation(_result, aa)

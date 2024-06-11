@@ -292,7 +292,7 @@ def parametric_force_displacement_curve(results: list[static_solver.Result] | ty
         else:
             labels = None
 
-    with plt.style.context(po['stylesheet_path']):
+    with plt.style.context(po['stylesheet']):
         fig, ax = plt.subplots(figsize=(po['figure_width'], po['figure_height']))
         i = 0
         for res in results:
@@ -333,7 +333,7 @@ def force_displacement_curve(result: static_solver.Result, save_dir, save_name=N
     po = DEFAULT_PLOT_OPTIONS.copy()
     po.update(plot_options)
 
-    with plt.style.context(po['stylesheet_path']):
+    with plt.style.context(po['stylesheet']):
         fig, ax = plt.subplots(figsize=(po['figure_width'], po['figure_height']))
         force_displacement_curve_in_ax(result, ax, po, color=color, label=label)
 

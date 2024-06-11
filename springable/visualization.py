@@ -43,8 +43,8 @@ def visualize_scan_results(scan_results_dir: str, save_dir: str = '',
             raise ValueError("Incorrect graphics settings specification. If specified, the last argument must"
                              "be the path to the graphic-settings file, or an already loaded graphic-settings"
                              "variable, that is a list or tuple of 4 dictionaries")
-        else:
-            graphics_settings = {}, {}, {}, {}
+    else:
+        graphics_settings = {}, {}, {}, {}
     general_options, plot_options, animation_options, assembly_appearance = graphics_settings
     go = DEFAULT_GENERAL_OPTIONS.copy()
     go.update(general_options)
@@ -133,8 +133,8 @@ def visualize_result(result: static_solver.Result | str, save_dir: str = '',
             raise ValueError("Incorrect graphics settings specification. If specified, the last argument must"
                              "be the path to the graphic-settings file, or an already loaded graphic-settings"
                              "variable, that is a list or tuple of 4 dictionaries")
-        else:
-            graphics_settings = {}, {}, {}, {}
+    else:
+        graphics_settings = {}, {}, {}, {}
 
     general_options, plot_options, animation_options, assembly_appearance = graphics_settings
     go = DEFAULT_GENERAL_OPTIONS.copy()
