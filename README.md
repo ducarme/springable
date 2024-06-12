@@ -40,7 +40,6 @@ The function `ss.simulate_model()` takes in two necessary arguments:
 that describes the model you want to simulate.
 How to create such a file is described in the section **Creating a CSV file describing the spring model**.
 * The `save_dir` argument is simply the name of the folder under which the simulation results will be saved.
-If the name already exists, then the results will be stored in a folder named by the string `save_dir` appended with `-1`, or `-2`, etc.
 
 CSV file examples that describe spring assemblies are already available
 [here on GitHub](https://github.com/ducarme/springable/tree/main/examples) for inspiration or to download.
@@ -213,6 +212,7 @@ To define a horizontal or vertical force on a node, a line with the following st
 Beyond this value, the simulation will finish (even if the force has not been reached yet).
 It is an optional parameter; if not provided, there is no maximum displacement at which the simulation can finish
 prematurely (it is the same as setting the maximum displacement to a value close to infinity).
+
 Example:
 ```csv
 LOADING

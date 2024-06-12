@@ -1,0 +1,13 @@
+PARAMETERS
+stiffness0, 1.0
+stiffness1, -0.75
+stiffness2, 1.5
+critical_displacement_loading, 1.0
+critical_displacement_unloading, 2.0
+NODES
+0, 0.0, 0.0, 1, 1
+1, 1.0, 0.0, 0, 1
+SPRINGS
+0-1, ZIGZAG(a=[stiffness0;stiffness1;stiffness2];x=[critical_displacement_loading; critical_displacement_unloading];delta=0.1)
+LOADING
+1, X, 2.50

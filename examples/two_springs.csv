@@ -1,0 +1,18 @@
+PARAMETERS
+width, 2.0
+height, 1.0
+stiffness, 7.3
+
+NODES
+0, -width/2, 0.0, 1, 1
+1, +width/2, 0.0, 1, 1
+2, 0.0, height, 1, 0
+
+SPRINGS
+0-2, stiffness
+1-2, stiffness
+ROTATION SPRINGS
+0-2-1, 1.5, PI/2
+
+LOADING
+2, Y, -10.0, -3.0
