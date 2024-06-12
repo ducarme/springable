@@ -279,7 +279,7 @@ or TextEdit (MacOS) to do that, for example. The file will look similar to this:
 radius = 0.01
 reference_load_parameter = 0.01
 ```
-*Low values for 'radius' and 'reference_load_parameter' can be used to refine the solution,
+*Low values for `radius` and `reference_load_parameters` can be used to refine the solution,
 at the cost of increasing the solving duration. Default values are 0.05 and 0.05, respectively.*
 
 To use these custom solver settings, use the path to `custom_solver_settings.toml`
@@ -307,12 +307,12 @@ fps = 60
 
 [plot_options]
 show_snapping_arrows = true
-drive_mode = 'force'
+drive_mode = "force"
 ```
 *Animation settings `nb_frames` and `fps` determine the number of frames and the frame rate (in frame per second) of the animation showing
-the spring assembly deforming. Plot settings `show_snapping_arrows = true` combined with `drive_mode = force` means that
+the spring assembly deforming. Plot settings `show_snapping_arrows = true` combined with `drive_mode = "force"` means that
 you want to indicate with arrows the (potential) snapping transitions under controlled force in the force-displacement plot.
-To indicate, snapping transitions under controlled displacement use `show_snapping_arrows = true` combined with `drive_mode = displacement`
+To indicate, snapping transitions under controlled displacement use `show_snapping_arrows = true` combined with `drive_mode = "displacement"`
 instead.*
 
 To use these custom graphics settings, use the path to `custom_graphics_settings.toml`
