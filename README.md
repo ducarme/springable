@@ -307,12 +307,12 @@ fps = 60
 
 [plot_options]
 show_snapping_arrows = true
-drive_mode = 0
+drive_mode = 'force'
 ```
 *Animation settings `nb_frames` and `fps` determine the number of frames and the frame rate (in frame per second) of the animation showing
-the spring assembly deforming. Plot settings `show_snapping_arrows = true` combined with `drive_mode = 0` means that
+the spring assembly deforming. Plot settings `show_snapping_arrows = true` combined with `drive_mode = force` means that
 you want to indicate with arrows the (potential) snapping transitions under controlled force in the force-displacement plot.
-To indicate, snapping transitions under controlled displacement use `show_snapping_arrows = true` combined with `drive_mode = 1`
+To indicate, snapping transitions under controlled displacement use `show_snapping_arrows = true` combined with `drive_mode = displacement`
 instead.*
 
 To use these custom graphics settings, use the path to `custom_graphics_settings.toml`
