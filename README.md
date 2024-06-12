@@ -30,7 +30,7 @@ To start a simulation, create a Python file named - let's say - `my_first_simula
 my_first_simulation.py
 Example to learn how to use the package springable
 """
-import src.springable.simulation as ss
+import springable.simulation as ss
 
 ss.simulate_model(model_path='my_spring_model.csv', save_dir='my_simulation_result')
 ```
@@ -290,7 +290,7 @@ as an extra argument of the `ss.simulate_model()` function, as follows:
 my_first_simulation.py
 Example to learn how to use the package springable
 """
-import src.springable.simulation as ss
+import springable.simulation as ss
 
 ss.simulate_model(model_path='my_spring_model.csv',
                   save_dir='my_simulation_result',
@@ -323,7 +323,7 @@ as an extra argument of the `ss.simulate_model()` function, as follows:
 my_first_simulation.py
 Example to learn how to use the package springable
 """
-import src.springable.simulation as ss
+import springable.simulation as ss
 
 ss.simulate_model(model_path='my_spring_model.csv',
                   save_dir='my_simulation_result',
