@@ -30,7 +30,7 @@ To start a simulation, create a Python file named - let's say - `my_first_simula
 my_first_simulation.py
 Example to learn how to use the package springable
 """
-import springable.simulation as ss
+import src.springable.simulation as ss
 
 ss.simulate_model(model_path='my_spring_model.csv', save_dir='my_simulation_result')
 ```
@@ -284,12 +284,13 @@ at the cost of increasing the solving duration. Default values are 0.05 and 0.05
 
 To use these custom solver settings, use the path to `custom_solver_settings.toml`
 as an extra argument of the `ss.simulate_model()` function, as follows:
+
 ```python
 """
 my_first_simulation.py
 Example to learn how to use the package springable
 """
-import springable.simulation as ss
+import src.springable.simulation as ss
 
 ss.simulate_model(model_path='my_spring_model.csv',
                   save_dir='my_simulation_result',
@@ -316,12 +317,13 @@ instead.*
 
 To use these custom graphics settings, use the path to `custom_graphics_settings.toml`
 as an extra argument of the `ss.simulate_model()` function, as follows:
+
 ```python
 """
 my_first_simulation.py
 Example to learn how to use the package springable
 """
-import springable.simulation as ss
+import src.springable.simulation as ss
 
 ss.simulate_model(model_path='my_spring_model.csv',
                   save_dir='my_simulation_result',

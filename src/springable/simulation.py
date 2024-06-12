@@ -1,6 +1,6 @@
 from .mechanics import static_solver
 from .readwrite import fileio as io
-from .graphics.default_graphics_settings import DEFAULT_GENERAL_OPTIONS, DEFAULT_PLOT_OPTIONS
+from .graphics.default_graphics_settings import DEFAULT_GENERAL_OPTIONS
 from .graphics import animation
 from .mechanics import model
 from . import visualization

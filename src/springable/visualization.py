@@ -1,13 +1,10 @@
-from .graphics.default_graphics_settings import DEFAULT_PLOT_OPTIONS, DEFAULT_GENERAL_OPTIONS
+from .graphics.default_graphics_settings import DEFAULT_GENERAL_OPTIONS
 from .graphics import plot, animation
 from .readwrite import fileio as io
 from .mechanics import static_solver
 import sys
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.cm as mcm
 import os.path
-import typing
 
 
 def _results(save_dirs: list[str]):

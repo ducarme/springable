@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "springable"
+name = "springable_TEST2"
 version = "0.0.1"
 authors = [
     {name="Paul Ducarme"},
@@ -18,8 +18,9 @@ dependencies = [
   "matplotlib",
 ]
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU General Public License v3.0",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
 ]
 keywords = ["nonlinear", "spring", "simulation", "animation", "instability", "snap-through"]
