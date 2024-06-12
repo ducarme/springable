@@ -29,25 +29,4 @@ Homepage = "https://github.com/ducarme/springable"
 Issues = "https://github.com/ducarme/springable/issues"
 
 
-[tool.bumpver]
-current_version = "0.0.0"
-version_pattern = "MAJOR.MINOR.PATCH"
-commit_message = "bump version {old_version} -> {new_version}"
-tag_message = "{new_version}"
-tag_scope = "default"
-pre_commit_hook = ""
-post_commit_hook = ""
-commit = true
-tag = true
-push = true
-
-[tool.bumpver.file_patterns]
-"pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
-"README.md" = ["{version}"]
-"springable/__init__.py" = ["{version}"]
-"springable/graphics/__init__.py" = ["{version}"]
-"springable/graphics/figure_utils/__init__.py" = ["{version}"]
-"springable/mechanics/__init__.py" = ["{version}"]
-"springable/mechanics/math_utils/__init__.py" = ["{version}"]
-"springable/readwrite/__init__.py" = ["{version}"]
 

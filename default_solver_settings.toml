@@ -1,0 +1,12 @@
+reference_load_parameter = 0.05
+radius = 0.05
+show_warnings = false
+verbose = true
+i_max = 10_000
+j_max = 20
+convergence_value = 1e-6
+
+# herein below, more advanced settings for the arclength method
+alpha = 0.0
+psi_p = 0.0
+psi_c = 0.0

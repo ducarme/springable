@@ -49,7 +49,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
     po['drive_mode'] = ao['drive_mode']
     po['loading_sequence'] = 'cycle' if ao['cycling'] else 'loading'
 
-    if ao['side_plot_mode'] != 0:
+    if ao['side_plot_mode'] != 'none':
         fig = plt.figure(figsize=(8, 4.5))
         grid = plt.GridSpec(1, 2, wspace=0.20, hspace=0.01, bottom=0.15, left=0.01)
         ax1 = fig.add_subplot(grid[0, 0])
@@ -100,13 +100,13 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
     force = np.sum((fext[:, loaded_dof_indices] - fext[0, loaded_dof_indices]) * force_direction[loaded_dof_indices],
                    axis=1)
 
-    if ao['drive_mode'] is not None:
+    if ao['drive_mode'] != 'none':
         loading_path_indices, _, _ = plot.extract_loading_path(_result, ao['drive_mode'])
         unloading_path_indices = None
         if ao['cycling']:
             unloading_path_indices, _, _ = plot.extract_unloading_path(_result, ao['drive_mode'], starting_index=loading_path_indices[-1])
 
-        if ao['drive_mode'] == plot.DriveModes.FORCE:
+        if ao['drive_mode'] == 'force':
             if ao['cycling']:
                 loading_nb_frames = ao['nb_frames'] // 2
                 unloading_nb_frames = ao['nb_frames'] - loading_nb_frames
@@ -125,7 +125,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                 frame_indices = interp1d(force[loading_path_indices], loading_path_indices, kind='nearest')(
                     driving_force).astype(int)
 
-        elif ao['drive_mode'] == plot.DriveModes.DISPLACEMENT:
+        elif ao['drive_mode'] == 'displacement':
             if ao['cycling']:
                 loading_nb_frames = ao['nb_frames'] // 2
                 unloading_nb_frames = ao['nb_frames'] - loading_nb_frames
@@ -144,18 +144,18 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                 frame_indices = interp1d(deformation[loading_path_indices], loading_path_indices, kind='nearest')(
                     driving_displacement).astype(int)
         else:
-            raise ValueError('unknown drive mode')
+            raise ValueError(f'unknown drive mode {ao["drive_mode"]}')
     else:
         frame_indices = np.round(np.linspace(0, u.shape[0] - 1, ao['nb_frames'])).astype(int)
 
     dot = None
-    if ao['side_plot_mode'] != 0:
+    if ao['side_plot_mode'] != "none":
         plot.force_displacement_curve_in_ax(_result, ax2, po)
         dot = ax2.plot([deformation[0]], [force[0]], 'o', color='tab:red', markersize=10)[0]
         ax2.set_xlabel('displacement')
         ax2.set_ylabel('force')
-        if ((po['show_stability_legend'] and po['color_mode'] == 0)
-                or (po['show_driven_path'] and po['show_driven_path_legend'] and po['drive_mode'] in (0, 1))):
+        if ((po['show_stability_legend'] and po['color_mode'] == 'stability')
+                or (po['show_driven_path'] and po['show_driven_path_legend'] and po['drive_mode'] in ('force', 'displacement'))):
             ax2.legend(numpoints=5, markerscale=1.5)
 
     def update(i):
@@ -164,7 +164,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
         _model_drawing.update()
         if extra_update is not None:
             extra_update(fig, ax1, ax2, extra)
-        if ao['side_plot_mode'] != 0:
+        if ao['side_plot_mode'] != 'none':
             dot.set_xdata([deformation[i]])
             dot.set_ydata([force[i]])
 
@@ -195,7 +195,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
         print('\nGIF animation saved successfully')
     if ao['save_as_transparent_mov']:
         fig.patch.set_visible(False)
-        if ao['side_plot_mode'] != 0:
+        if ao['side_plot_mode'] != 'none':
             ax2.patch.set_visible(False)
         print('Generating transparent MOV animation...')
         filepath = os.path.join(save_dir, f'{save_name}.mov')
@@ -211,7 +211,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
         print('\nMOV transparent animation saved successfully')
     if ao['save_as_mp4']:
         fig.patch.set_visible(True)
-        if ao['side_plot_mode'] != 0:
+        if ao['side_plot_mode'] != 'none':
             ax2.patch.set_visible(True)
         print('Generating MP4 animation...')
         filepath = os.path.join(save_dir, f'{save_name}.mp4')

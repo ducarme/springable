@@ -26,26 +26,26 @@ class PropertyHandler:
 
     def determine_property_value(self, _element: Element):
         match self._mode:
-            case 1:
+            case 'energy':
                 return self._mapper(_element.compute_energy())
-            case 2:
+            case 'generalized_force':
                 return self._mapper[shape_unit_dimensions[type(_element.get_shape())]](
                     _element.compute_energy_derivative())
-            case 3:
+            case 'generalized_stiffness':
                 return self._mapper[shape_unit_dimensions[type(_element.get_shape())]](
                     _element.compute_energy_second_derivative())
             case _:
-                raise ValueError("Mode should be 1, 2, or 3")
+                raise ValueError(f"Unknown mode {self._mode}")
 
 
 class ColorHandler(PropertyHandler):
     cmap = plt.get_cmap('coolwarm')
 
     def _make_mapper(self):
-        if self._mode == 1:
+        if self._mode == 'energy':
             cn = plt.Normalize(vmin=-self._high_value, vmax=self._high_value, clip=True)
             mapper = lambda value, norm=cn: mcm.ScalarMappable(norm=norm, cmap=ColorHandler.cmap).to_rgba(value)
-        elif self._mode >= 2:
+        elif self._mode not in ('none', 'energy'):
             mapper = {}
             for dim, hv in self._high_value.items():
                 cn = plt.Normalize(vmin=-hv, vmax=hv, clip=True)
@@ -59,11 +59,11 @@ class ColorHandler(PropertyHandler):
 class OpacityHandler(PropertyHandler):
 
     def _make_mapper(self):
-        if self._mode == 1:
+        if self._mode == 'energy':
             mapper = lambda value, high_val=self._high_value: (
                 float(interp1d([0.0, high_val], [0.0, 1.0], bounds_error=False,
                                fill_value=(0.0, 1.0))(abs(value))))
-        elif self._mode >= 2:
+        elif self._mode not in ('none', 'energy'):
             mapper = {}
             for dim, hv in self._high_value.items():
                 mapper[dim] = lambda value, high_val=hv: (
@@ -125,16 +125,16 @@ def compute_requirements_for_animation(_result: Result, assembly_appearance):
     for i in range(u.shape[0]):
         _assembly.set_general_coordinates(_initial_coordinates + u[i, :])
         match assembly_appearance['element_coloring_mode']:
-            case 1:
+            case 'energy':
                 energy_means.append(np.mean(list(_assembly.compute_elemental_energies().values())))
-            case 2:
+            case 'generalized_force':
                 energy_derivatives = _assembly.compute_elemental_energy_derivatives()
                 for dim in existing_shape_unit_dimensions:
                     energy_derivative_means[dim].append(np.mean(np.abs([energy_derivatives[el]
                                                                         for el in _assembly.get_elements()
                                                                         if shape_unit_dimensions[
                                                                             type(el.get_shape())] == dim])))
-            case 3:
+            case 'generalized_stiffness':
                 energy_second_derivatives = _assembly.compute_elemental_energy_second_derivatives()
                 for dim in existing_shape_unit_dimensions:
                     energy_second_derivative_means[dim].append(np.mean(np.abs([energy_second_derivatives[el]
@@ -149,20 +149,20 @@ def compute_requirements_for_animation(_result: Result, assembly_appearance):
         characteristic_lengths.append(_assembly.compute_characteristic_length())
 
     match assembly_appearance['element_coloring_mode']:
-        case 1:
+        case 'energy':
             high_value = np.max(np.abs(np.percentile(energy_means, [10, 90])))
-        case 2:
+        case 'generalized_force':
             high_value = {dim: np.max(np.abs(np.percentile(energy_derivative_means[dim], [10, 90])))
                           for dim in existing_shape_unit_dimensions}
-        case 3:
+        case 'generalized_stiffness':
             high_value = {dim: np.max(np.abs(np.percentile(energy_second_derivative_means[dim], [10, 90])))
                           for dim in existing_shape_unit_dimensions}
         case _:
             high_value = None
 
-    color_handler = ColorHandler(high_value, mode=assembly_appearance['element_coloring_mode']) if assembly_appearance['element_coloring_mode'] >= 1 else None
+    color_handler = ColorHandler(high_value, mode=assembly_appearance['element_coloring_mode']) if assembly_appearance['element_coloring_mode'] != 'none' else None
     opacity_handler = OpacityHandler(high_value,
-                                     mode=assembly_appearance['element_coloring_mode']) if assembly_appearance['element_coloring_mode'] >= 1 else None
+                                     mode=assembly_appearance['element_coloring_mode']) if assembly_appearance['element_coloring_mode'] != 'none' else None
     characteristic_length = np.mean(characteristic_lengths)
     _assembly.set_general_coordinates(_initial_coordinates)
 

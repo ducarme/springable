@@ -158,7 +158,7 @@ class StaticSolver:
                                 'radius': 0.05,
                                 'show_warnings': False,
                                 'verbose': True,
-                                'i_max': 30e3,
+                                'i_max': 10e3,
                                 'j_max': 20,
                                 'convergence_value': 1e-6,
                                 'alpha': 0.0,
