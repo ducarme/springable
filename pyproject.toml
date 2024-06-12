@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "springable"
+version = "0.0.1"
+authors = [
+    {name="Paul Ducarme"},
+    {email="paulducarme@hotmail.com" },
+]
+description = "Nonlinear spring assembly solver and visualization"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy",
+  "scipy",
+  "matplotlib",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3.0",
+    "Operating System :: OS Independent",
+]
+keywords = ["nonlinear", "spring", "simulation", "animation", "instability", "snap-through"]
+
+[project.urls]
+Homepage = "https://github.com/ducarme/springable"
+Issues = "https://github.com/ducarme/springable/issues"
