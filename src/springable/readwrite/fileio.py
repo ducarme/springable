@@ -1,6 +1,8 @@
 from .interpreting import *
 from ..simulation import static_solver
 import os
+import platform
+import subprocess
 import numpy as np
 import csv
 import tomllib
@@ -183,3 +185,21 @@ def mkdir(dir_path):
             dir_path = original_dir_path + '-' + str(i)
         i += 1
     return dir_path
+
+
+def open_file(file_path):
+    current_os = platform.system()
+    if current_os == "Windows":
+        os.startfile(file_path)
+    else:
+        if current_os == "Linux":
+            commands = ["xdg-open"]
+        elif current_os.startswith("CYGWIN"):
+            commands = ["cygstart"]
+        elif current_os == "Darwin":
+            commands = ["open"]
+        else:
+            raise OSError("Cannot open file, because unable to identify your operating system")
+        commands.append(file_path)
+        subprocess.run(commands)
+

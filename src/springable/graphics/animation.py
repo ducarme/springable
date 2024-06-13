@@ -1,4 +1,5 @@
 from ..mechanics.static_solver import Result
+from ..readwrite import fileio as io
 from ..mechanics import model
 from .drawing import ModelDrawing
 from . import plot, visual_helpers
@@ -6,11 +7,13 @@ from .figure_utils import figure_formatting as ff
 from .default_graphics_settings import (DEFAULT_ANIMATION_OPTIONS,
                                         DEFAULT_ASSEMBLY_APPEARANCE,
                                         DEFAULT_PLOT_OPTIONS)
+from ..readwrite import fileio as io
 import os
 import numpy as np
 from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+
 
 
 def draw_model(mdl: model.Model, save_dir=None, save_name='model', show=True, **assembly_appearance):
@@ -67,7 +70,8 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             extra = extra_init(fig, ax1, ax2)
 
     ax1.axis('off')
-    bounds, characteristic_length, color_handler, opacity_handler = visual_helpers.compute_requirements_for_animation(_result, aa)
+    bounds, characteristic_length, color_handler, opacity_handler = visual_helpers.compute_requirements_for_animation(
+        _result, aa)
     xmin, ymin, xmax, ymax = bounds
     assembly_span = max(xmax - xmin, ymax - ymin)
     canvas_span = 1.25 * assembly_span
@@ -104,7 +108,8 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
         loading_path_indices, _, _ = plot.extract_loading_path(_result, ao['drive_mode'])
         unloading_path_indices = None
         if ao['cycling']:
-            unloading_path_indices, _, _ = plot.extract_unloading_path(_result, ao['drive_mode'], starting_index=loading_path_indices[-1])
+            unloading_path_indices, _, _ = plot.extract_unloading_path(_result, ao['drive_mode'],
+                                                                       starting_index=loading_path_indices[-1])
 
         if ao['drive_mode'] == 'force':
             if ao['cycling']:
@@ -155,7 +160,8 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
         ax2.set_xlabel('displacement')
         ax2.set_ylabel('force')
         if ((po['show_stability_legend'] and po['color_mode'] == 'stability')
-                or (po['show_driven_path'] and po['show_driven_path_legend'] and po['drive_mode'] in ('force', 'displacement'))):
+                or (po['show_driven_path'] and po['show_driven_path_legend'] and po['drive_mode'] in (
+                'force', 'displacement'))):
             ax2.legend(numpoints=5, markerscale=1.5)
 
     def update(i):
@@ -222,7 +228,10 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
 
     if show:
         if filepath is not None:
-            os.startfile(filepath)
+            try:
+                io.open_file(filepath)
+            except OSError:
+                print('Cannot open animation automatically. Check the result folder instead to check out the animation.')
         else:
             plt.show()
     plt.close()
