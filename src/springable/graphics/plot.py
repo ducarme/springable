@@ -172,7 +172,7 @@ def force_displacement_curve_in_ax(result: static_solver.Result, ax: plt.Axes, p
 
             else:  # 'color_mode' is 'none' or something else
                 # then the default color is used
-                ax.plot(u_load, f_load, po['default_marker'], color=po['default_color'],
+                ax.plot(u_load, f_load, po['default_marker'], color=po['default_color'], markersize=po['default_markersize'],
                         label=label if label is not None else '', zorder=1)
         else:  # a color has been specified as input
             zorder = 1.0

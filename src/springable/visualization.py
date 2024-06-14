@@ -140,10 +140,87 @@ def visualize_result(result: static_solver.Result | str, save_dir: str = '',
             animation.draw_model(result.get_model(), save_dir, 'model', show=go['show_model_drawing'],
                                  **assembly_appearance)
         if go['generate_fd_plot']:
-            plot.force_displacement_curve(result, save_dir, show=go['show_fd_plot'])
+            plot.force_displacement_curve(result, save_dir, show=go['show_fd_plot'], **plot_options)
         if go['generate_animation']:
             animation.animate(result, save_dir, show=go['show_animation'],
                               plot_options=plot_options, assembly_appearance=assembly_appearance,
                               **animation_options)
     except static_solver.UnusableSolution:
         print("Cannot make the graphics, because the calculated equilibrium path is unusable")
+
+
+def make_animation(result, save_dir, show=True, graphics_settings=None):
+    if isinstance(result, str):
+        result = io.read_results(result)
+    if not isinstance(result, static_solver.Result):
+        raise ValueError("Incorrect result specification. The first argument should be the directory where the result "
+                         "files are stored, or an already loaded Result object")
+    if graphics_settings is not None:
+        if isinstance(graphics_settings, str):
+            graphics_settings = io.read_graphics_settings_file(graphics_settings)
+        valid = isinstance(graphics_settings, (tuple, list))
+        if valid:
+            for options in graphics_settings:
+                if not isinstance(options, dict):
+                    valid = False
+                    break
+        if not valid:
+            raise ValueError("Incorrect graphics settings specification. If specified, the last argument must"
+                             "be the path to the graphic-settings file, or an already loaded graphic-settings"
+                             "variable, that is a list or tuple of 4 dictionaries")
+    else:
+        graphics_settings = {}, {}, {}, {}
+    general_options, plot_options, animation_options, assembly_appearance = graphics_settings
+    animation.animate(result, save_dir, show=show,
+                      plot_options=plot_options, assembly_appearance=assembly_appearance,
+                      **animation_options)
+
+
+def make_force_displacement_plot(result, save_dir, show=True, graphics_settings=None):
+    if isinstance(result, str):
+        result = io.read_results(result)
+    if not isinstance(result, static_solver.Result):
+        raise ValueError("Incorrect result specification. The first argument should be the directory where the result "
+                         "files are stored, or an already loaded Result object")
+    if graphics_settings is not None:
+        if isinstance(graphics_settings, str):
+            graphics_settings = io.read_graphics_settings_file(graphics_settings)
+        valid = isinstance(graphics_settings, (tuple, list))
+        if valid:
+            for options in graphics_settings:
+                if not isinstance(options, dict):
+                    valid = False
+                    break
+        if not valid:
+            raise ValueError("Incorrect graphics settings specification. If specified, the last argument must"
+                             "be the path to the graphic-settings file, or an already loaded graphic-settings"
+                             "variable, that is a list or tuple of 4 dictionaries")
+    else:
+        graphics_settings = {}, {}, {}, {}
+    general_options, plot_options, animation_options, assembly_appearance = graphics_settings
+    plot.force_displacement_curve(result, save_dir, show=show, **plot_options)
+
+
+def make_drawing(result, save_dir, show=True, graphics_settings=None):
+    if isinstance(result, str):
+        result = io.read_results(result)
+    if not isinstance(result, static_solver.Result):
+        raise ValueError("Incorrect result specification. The first argument should be the directory where the result "
+                         "files are stored, or an already loaded Result object")
+    if graphics_settings is not None:
+        if isinstance(graphics_settings, str):
+            graphics_settings = io.read_graphics_settings_file(graphics_settings)
+        valid = isinstance(graphics_settings, (tuple, list))
+        if valid:
+            for options in graphics_settings:
+                if not isinstance(options, dict):
+                    valid = False
+                    break
+        if not valid:
+            raise ValueError("Incorrect graphics settings specification. If specified, the last argument must"
+                             "be the path to the graphic-settings file, or an already loaded graphic-settings"
+                             "variable, that is a list or tuple of 4 dictionaries")
+    else:
+        graphics_settings = {}, {}, {}, {}
+    _, _, _, assembly_appearance = graphics_settings
+    animation.draw_model(result.get_model(), save_dir, show=show, **assembly_appearance)
