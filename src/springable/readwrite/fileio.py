@@ -187,7 +187,7 @@ def mkdir(dir_path):
     return dir_path
 
 
-def open_file(file_path):
+def open_file_with_default_os_app(file_path):
     current_os = platform.system()
     if current_os == "Windows":
         os.startfile(file_path)
@@ -203,3 +203,30 @@ def open_file(file_path):
         commands.append(file_path)
         subprocess.run(commands)
 
+
+def is_notebook() -> bool:
+    try:
+        from IPython import get_ipython
+        try:
+            shell = get_ipython().__class__.__name__
+            if shell == 'ZMQInteractiveShell':
+                return True  # Jupyter notebook or qtconsole
+            elif shell == 'TerminalInteractiveShell':
+                return False  # Terminal running IPython
+            else:
+                return False  # Other type (?)
+        except NameError:
+            return False  # Probably standard Python interpreter
+    except ModuleNotFoundError:
+        return False
+
+
+def play_media_in_notebook_if_possible(file_path, format_type):
+    try:
+        from IPython.display import display, Video, Image
+        if format_type == 'video':
+            display(Video(file_path, width=800, html_attributes="muted loop autoplay"))
+        elif format_type == 'image':
+            display(Image(data=open(file_path, 'rb').read(), format='png'))
+    except ModuleNotFoundError:
+        pass

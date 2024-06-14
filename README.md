@@ -279,7 +279,7 @@ or TextEdit (MacOS) to do that, for example. The file will look similar to this:
 radius = 0.01
 reference_load_parameter = 0.01
 ```
-*Low values for `radius` and `reference_load_parameters` can be used to refine the solution,
+*Low values for `radius` and `reference_load_parameter` can be used to refine the solution,
 at the cost of increasing the solving duration. Default values are 0.05 and 0.05, respectively.*
 
 To use these custom solver settings, use the path to `custom_solver_settings.toml`

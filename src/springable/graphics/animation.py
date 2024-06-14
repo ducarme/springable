@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 
-
 def draw_model(mdl: model.Model, save_dir=None, save_name='model', show=True, **assembly_appearance):
     aa = DEFAULT_ASSEMBLY_APPEARANCE.copy()
     aa.update(assembly_appearance)
@@ -161,7 +160,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
         ax2.set_ylabel('force')
         if ((po['show_stability_legend'] and po['color_mode'] == 'stability')
                 or (po['show_driven_path'] and po['show_driven_path_legend'] and po['drive_mode'] in (
-                'force', 'displacement'))):
+                        'force', 'displacement'))):
             ax2.legend(numpoints=5, markerscale=1.5)
 
     def update(i):
@@ -192,46 +191,54 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
         print('\nPNG frames saved successfully')
 
     filepath = None
-    ani = FuncAnimation(fig, update, frames=frame_indices)
-    if ao['save_as_gif']:
-        print('Generating GIF animation...')
-        filepath = os.path.join(save_dir, f'{save_name}.gif')
-        ani.save(filepath, fps=ao['fps'], dpi=ao['dpi'],
-                 progress_callback=visual_helpers.print_progress)
-        print('\nGIF animation saved successfully')
-    if ao['save_as_transparent_mov']:
-        fig.patch.set_visible(False)
-        if ao['side_plot_mode'] != 'none':
-            ax2.patch.set_visible(False)
-        print('Generating transparent MOV animation...')
-        filepath = os.path.join(save_dir, f'{save_name}.mov')
-        ani.save(
-            filepath,
-            codec="png",
-            dpi=ao['dpi'],
-            fps=ao['fps'],
-            bitrate=-1,
-            savefig_kwargs={"transparent": True, "facecolor": "none"},
-            progress_callback=visual_helpers.print_progress
-        )
-        print('\nMOV transparent animation saved successfully')
-    if ao['save_as_mp4']:
-        fig.patch.set_visible(True)
-        if ao['side_plot_mode'] != 'none':
-            ax2.patch.set_visible(True)
-        print('Generating MP4 animation...')
-        filepath = os.path.join(save_dir, f'{save_name}.mp4')
-        ani.save(filepath, codec='h264', fps=ao['fps'], dpi=ao['dpi'],
-                 progress_callback=visual_helpers.print_progress)
-        print('\nMP4 animation saved successfully')
-    _model.get_assembly().set_general_coordinates(_natural_coordinates)
+    format_type = None
+    if ao['save_as_gif'] or ao['save_as_transparent_mov'] or ao['save_as_mp4']:
+        ani = FuncAnimation(fig, update, frames=frame_indices)
+        if ao['save_as_gif']:
+            format_type = 'image'
+            print('Generating GIF animation...')
+            filepath = os.path.join(save_dir, f'{save_name}.gif')
+            ani.save(filepath, fps=ao['fps'], dpi=ao['dpi'],
+                     progress_callback=visual_helpers.print_progress)
+            print('\nGIF animation saved successfully')
+            _model.get_assembly().set_general_coordinates(_natural_coordinates)
 
-    if show:
-        if filepath is not None:
-            try:
-                io.open_file(filepath)
-            except OSError:
-                print('Cannot open animation automatically. Check the result folder instead to check out the animation.')
-        else:
-            plt.show()
-    plt.close()
+        if ao['save_as_transparent_mov']:
+            format_type = 'video'
+            fig.patch.set_visible(False)
+            if ao['side_plot_mode'] != 'none':
+                ax2.patch.set_visible(False)
+            print('Generating transparent MOV animation...')
+            filepath = os.path.join(save_dir, f'{save_name}.mov')
+            ani.save(
+                filepath,
+                codec="png",
+                dpi=ao['dpi'],
+                fps=ao['fps'],
+                bitrate=-1,
+                savefig_kwargs={"transparent": True, "facecolor": "none"},
+                progress_callback=visual_helpers.print_progress
+            )
+            print('\nMOV transparent animation saved successfully')
+            _model.get_assembly().set_general_coordinates(_natural_coordinates)
+        if ao['save_as_mp4']:
+            format_type = 'video'
+            fig.patch.set_visible(True)
+            if ao['side_plot_mode'] != 'none':
+                ax2.patch.set_visible(True)
+            print('Generating MP4 animation...')
+            filepath = os.path.join(save_dir, f'{save_name}.mp4')
+            ani.save(filepath, codec='h264', fps=ao['fps'], dpi=ao['dpi'],
+                     progress_callback=visual_helpers.print_progress)
+            print('\nMP4 animation saved successfully!')
+            _model.get_assembly().set_general_coordinates(_natural_coordinates)
+        plt.close()
+        if show and filepath is not None:
+            if io.is_notebook():
+                io.play_media_in_notebook_if_possible(filepath, format_type=format_type)
+            else:
+                try:
+                    io.open_file_with_default_os_app(filepath)
+                except OSError:
+                    print('Cannot open animation automatically. Open the result folder instead to check out the '
+                          'animation.')

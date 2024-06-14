@@ -68,7 +68,6 @@ def visualize_scan_results(scan_results_dir: str, save_dir: str = '',
                                                          save_dir, save_name=f'fd_curve_{design_parameter_name}',
                                                          show=go['show_parametric_fd_plots'], **plot_options)
 
-
     # first scanning of result folders to obtain axes limits for force-displacement plots
     min_u, max_u, min_f, max_f = [None] * 4
     if go['generate_all_fd_plots']:
@@ -106,7 +105,7 @@ def visualize_scan_results(scan_results_dir: str, save_dir: str = '',
                                       **animation_options)
             except static_solver.UnusableSolution:
                 pass
-            print(f'Postprocessed simulations: {i+1}/{len(all_sim_names)}')
+            print(f'Postprocessed simulations: {i + 1}/{len(all_sim_names)}')
         print('All graphics generated successfully')
 
 
