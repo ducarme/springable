@@ -47,7 +47,7 @@ How to create such a file is described in the section **Creating a CSV file desc
 * The `save_dir` argument is simply the name of the folder under which the simulation results will be saved.
 
 CSV file examples that describe spring assemblies are already available
-[here on GitHub](https://github.com/ducarme/springable/tree/main/examples) for inspiration or to download.
+[here on GitHub](https://github.com/ducarme/springable/tree/main/examples-spring-model-CSV-files) for inspiration or to download.
 
 A simple linear spring under a tensile load can be described as follows.
 ```csv
