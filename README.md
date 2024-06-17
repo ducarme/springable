@@ -26,11 +26,10 @@ and you are good to go!
 
 It is supported on **Python 3.11 and above**.
 
-## Online Notebook
-AlternativelyTry `springable` online, without any installation in an [interactive online notebook](https://mybinder.org/v2/gh/ducarme/springable/HEAD?labpath=docs%2Fexamples%2Fexample01_getting_started%2Fexample01_getting_started.ipynb)
+## Don't want to install it right now? Try the Online Notebook
+Try `springable` online, without any installation in an [interactive online notebook](https://mybinder.org/v2/gh/ducarme/springable/HEAD?labpath=docs%2Fexamples%2Fexample01_getting_started%2Fexample01_getting_started.ipynb)
 
 ## How to use
-
 
 ### Running a simulation
 To start a simulation, we first create the file 
