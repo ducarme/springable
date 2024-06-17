@@ -230,7 +230,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             filepath = os.path.join(save_dir, f'{save_name}.mp4')
             ani.save(filepath, codec='h264', fps=ao['fps'], dpi=ao['dpi'],
                      progress_callback=visual_helpers.print_progress)
-            print('\nMP4 animation saved successfully!')
+            print('\nMP4 animation saved successfully')
             _model.get_assembly().set_general_coordinates(_natural_coordinates)
         plt.close()
         if show and filepath is not None:

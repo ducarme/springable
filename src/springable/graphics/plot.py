@@ -261,7 +261,10 @@ def force_displacement_curve_in_ax(result: static_solver.Result, ax: plt.Axes, p
 
 def parametric_force_displacement_curve(results: list[static_solver.Result] | typing.Iterator[static_solver.Result],
                                         parameter_name: str, parameter_data: dict, parameter_values: list[float | str],
-                                        save_dir, save_name=None, show=True, xlim=None, ylim=None, **plot_options):
+                                        save_dir=None, save_name=None, show=True, xlim=None, ylim=None, **plot_options):
+    if save_dir is None and show is None:
+        print("Plot-making cancelled because no save directory and show = False")
+        return
     po = DEFAULT_PLOT_OPTIONS.copy()
     po.update(plot_options)
 
