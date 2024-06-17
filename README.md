@@ -1,6 +1,11 @@
 # springable
 
+
+[![PyPI version](https://img.shields.io/pypi/v/springable?color=brightgreen
+)](https://pypi.org/project/springable/)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ducarme/springable/HEAD?labpath=docs%2Fexamples%2Fexample01_getting_started%2Fexample01_getting_started.ipynb)
+[![Research Group](https://img.shields.io/badge/Research-AMOLF%20Soft%20Robotic%20Matter%20Group-67CD00)](https://overvelde.com/)
+![Made with love in Amsterdam (Netherlands)](https://img.shields.io/badge/Made%20with%20%E2%9D%A4%EF%B8%8F%20in-Amsterdam%20(Netherlands)-ece4fc)
 
 The Python package `springable` allows you to simulate how assemblies of springs deform under loads.
 By accounting for any geometrical changes (as large as they may be), the simulation allows you to explore the richness
