@@ -213,7 +213,7 @@ def force_displacement_curve_in_ax(result: static_solver.Result, ax: plt.Axes, p
 
         if label is None:
             if po['show_driven_path_legend']:
-                lbl = f'{po['drive_mode']}-driven path'
+                lbl = f'{po["drive_mode"]}-driven path'
             else:
                 lbl = ''
         else:
@@ -316,17 +316,22 @@ def parametric_force_displacement_curve(results: list[static_solver.Result] | ty
             ax.set_ylim(ylim)
         ff.adjust_spines(ax)
         ff.adjust_figure_layout(fig)
-        if save_name is None:
-            save_name = po['default_plot_name']
-        ff.save_fig(fig, save_dir, save_name, ["png", "pdf"])
+
+        if save_dir is not None:
+            if save_name is None:
+                save_name = po['default_plot_name']
+            ff.save_fig(fig, save_dir, save_name, ["png", "pdf"])
         if show:
             plt.show()
         else:
             plt.close()
 
 
-def force_displacement_curve(result: static_solver.Result, save_dir, save_name=None, color=None, label=None, show=True,
+def force_displacement_curve(result: static_solver.Result, save_dir=None, save_name=None, color=None, label=None, show=True,
                              xlim=None, ylim=None, **plot_options):
+    if save_dir is None and show is None:
+        print("Plot-making cancelled because no save directory and show = False")
+        return
     po = DEFAULT_PLOT_OPTIONS.copy()
     po.update(plot_options)
 
@@ -347,9 +352,10 @@ def force_displacement_curve(result: static_solver.Result, save_dir, save_name=N
             ax.set_ylim(ylim)
         ff.adjust_spines(ax)
         ff.adjust_figure_layout(fig)
-        if save_name is None:
-            save_name = po['default_plot_name']
-        ff.save_fig(fig, save_dir, save_name, ["png", "pdf"])
+        if save_dir is not None:
+            if save_name is None:
+                save_name = po['default_plot_name']
+            ff.save_fig(fig, save_dir, save_name, ["png", "pdf"])
         if show:
             plt.show()
         else:

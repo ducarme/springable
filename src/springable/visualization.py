@@ -118,7 +118,7 @@ def visualize_scan_results(scan_results_dir: str, save_dir: str = '',
                                       **animation_options)
             except static_solver.UnusableSolution:
                 pass
-            print(f'Postprocessed simulations: {i + 1}/{len(all_sim_names)}')
+            print(f'Post-processed simulations: {i + 1}/{len(all_sim_names)}')
         print('All graphics generated successfully')
 
 

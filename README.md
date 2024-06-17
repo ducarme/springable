@@ -7,7 +7,7 @@
 [![Research Group](https://img.shields.io/badge/Research-AMOLF%20Soft%20Robotic%20Matter%20Group-67CD00)](https://overvelde.com/)
 [![Made with love in Amsterdam (Netherlands)](https://img.shields.io/badge/Made%20with%20%E2%9D%A4%EF%B8%8F%20in-Amsterdam%20(Netherlands)-ece4fc)](https://amolf.nl/)
 
-The Python package `springable` allows you to simulate how assemblies of springs deform under loads.
+The Python package `springable` allows you to simulate how structures made out of springs deform when subject to forces.
 By accounting for any geometrical changes (as large as they may be), the simulation allows you to explore the richness
 of nonlinear mechanics, beyond the (boring) linear regime.
 
@@ -27,36 +27,18 @@ and you are good to go!
 It is supported on **Python 3.11 and above**.
 
 ## Online Notebook
-Try `springable` online, without any installation in an [interactive online notebook](https://mybinder.org/v2/gh/ducarme/springable/HEAD?labpath=docs%2Fexamples%2Fexample01_getting_started%2Fexample01_getting_started.ipynb)
+AlternativelyTry `springable` online, without any installation in an [interactive online notebook](https://mybinder.org/v2/gh/ducarme/springable/HEAD?labpath=docs%2Fexamples%2Fexample01_getting_started%2Fexample01_getting_started.ipynb)
 
 ## How to use
 
 
 ### Running a simulation
-To start a simulation, create a Python file named - let's say - `my_first_simulation.py`, then run it.
-
-```python
-"""
-my_first_simulation.py
-Example to learn how to use the package springable
-"""
-import springable.simulation as ss
-
-ss.simulate_model(model_path='my_spring_model.csv', save_dir='my_simulation_result')
-```
-
-The function `ss.simulate_model()` takes in two necessary arguments:
-* The `model_path` argument is the path leading to the [CSV file](https://en.wikipedia.org/wiki/Comma-separated_values)
-that describes the model you want to simulate.
-How to create such a file is described in the section **Creating a CSV file describing the spring model**.
-* The `save_dir` argument is simply the name of the folder under which the simulation results will be saved.
-
-CSV file examples that describe spring assemblies are already available
-[here on GitHub](https://github.com/ducarme/springable/tree/main/examples-spring-model-CSV-files) for inspiration or to download.
-
-A simple linear spring under a tensile load can be described as follows.
+To start a simulation, we first create the file 
+that will describe the spring model we want to simulate. To do that, we create a simple
+[CSV file](https://en.wikipedia.org/wiki/Comma-separated_values),
+(a text file saved with extension *.csv*), that looks like this for example:
 ```csv
-# my_simple_spring_model.csv
+# my_spring_model.csv
 
 PARAMETERS
 stiffness, 1.0
@@ -68,11 +50,37 @@ SPRINGS
 LOADING
 1, X, 2.0
 ```
+This file defines a spring structure composed of only one horizontal spring, clamped on the left and loaded in tension from the right.
+
+How to read or make such a file is described in the section **Creating a CSV file describing the spring model**.
+Many CSV file examples that describe spring structures are already available
+[here on GitHub](https://github.com/ducarme/springable/tree/main/examples-spring-model-CSV-files) for inspiration or to download.
+
+Next, we create a Python script (a text file saved with the extension *.py*), with the following content
+```python
+"""
+Python script 'my_first_simulation.py'
+Example to learn how to use the package springable
+"""
+import springable.simulation as ss
+
+ss.simulate_model(model_path='my_spring_model.csv', save_dir='my_simulation_result')
+```
+and save it under the name - let's say - `my_first_spring_simulation.py`
+
+The function `ss.simulate_model()` takes in two necessary arguments:
+* The `model_path` argument is the path leading to the [CSV file](https://en.wikipedia.org/wiki/Comma-separated_values)
+that describes the model you want to simulate. In this case, we used the CSV file `my_spring_model.csv` that we have just created.
+* The `save_dir` argument is simply the name of the folder under which the simulation results will be saved. It should not exist yet; it will be created automatically when we run the script.
+
+Finally, we run the Python script. This can be done by simply executing
+
+    python my_first_spring_simulation.py
+
+in the terminal.
+
 
 Many settings can be tuned before running a simulation. See section **Configuring simulation settings** for more details.
-
-
-
 
 ### Creating a CSV file describing the spring model
 
