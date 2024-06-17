@@ -12,7 +12,7 @@ buckling, symmetry-breaking or restabilization.
 In its core, `springable` deals with **springs**, that we define as any entity that can store [elastic energy](https://en.wikipedia.org/wiki/Elastic_energy). **Springs** therefore include longitudinal springs (compression and extension), rotation springs (bending), area springs (useful to model fluids and pneumatic loading) and more (*see gallery*).
 ## Installation
 
-Use [pip](https://pypi.org/project/springable/) to install. In the terminal simply enter
+Use `pip` to install. In the terminal simply enter
 
     pip install springable
 
