@@ -1,5 +1,5 @@
 # springable
-
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ducarme/springable/HEAD?labpath=docs%5Cexamples%5Cexample01_getting_started%5Cexample01_getting_started.ipynb)
 
 The Python package `springable` allows you to simulate how assemblies of springs deform under loads.
 By accounting for any geometrical changes (as large as they may be), the simulation allows you to explore the richness
