@@ -1,5 +1,7 @@
 # springable
+
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ducarme/springable/HEAD?labpath=docs%2Fexamples%2Fexample01_getting_started%2Fexample01_getting_started.ipynb)
+
 The Python package `springable` allows you to simulate how assemblies of springs deform under loads.
 By accounting for any geometrical changes (as large as they may be), the simulation allows you to explore the richness
 of nonlinear mechanics, beyond the (boring) linear regime.
@@ -18,6 +20,10 @@ Use `pip` to install. In the terminal simply enter
 and you are good to go!
 
 It is supported on **Python 3.11 and above**.
+
+## Online Notebook
+Try `springable` online, without any installation in an [interactive online notebook](https://mybinder.org/v2/gh/ducarme/springable/HEAD?labpath=docs%2Fexamples%2Fexample01_getting_started%2Fexample01_getting_started.ipynb)
+
 ## How to use
 
 
