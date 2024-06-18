@@ -248,6 +248,8 @@ class StaticSolver:
         equilibrium_stability = [self._assess_stability(initial_ks, initial_loaded_dof_indices)]
         stiffness_matrix_eval_counter = 1
         linear_system_solving_counter = 0
+        total_nb_increment_retries = 0
+        total_nb_matrix_perturbations = 0
         initial_radius_p = radius
         radius_p = initial_radius_p
         delta_s = 1.0
@@ -280,7 +282,18 @@ class StaticSolver:
                     stiffness_matrix_eval_counter += 1
                     k = self._get_reduced_stiffness_matrix(ks)
                     g = self._get_reduced_vector(delta_f)
-                    delta_u_hat = self._get_structural_displacements(solve_linear(k, g, assume_a='sym'))
+                    system_solved = False
+                    delta_u_hat = None
+                    while not system_solved:
+                        try:
+                            delta_u_hat = self._get_structural_displacements(solve_linear(k, g, assume_a='sym'))
+                            system_solved = True
+                        except np.linalg.LinAlgError:
+                            if i == 0:
+                                raise MechanismDetected
+                            else:
+                                k = _perturb_singular_stiffness_matrix(k, 1e-5, show_warnings)
+                                total_nb_matrix_perturbations += 1
                     linear_system_solving_counter += 1
                     delta_u_bar = 0.0
 
@@ -318,8 +331,17 @@ class StaticSolver:
                             k = self._get_reduced_stiffness_matrix(ks)
                             g = self._get_reduced_vector(delta_f)
                             uf = self._get_reduced_vector(r)
-                            delta_u_hat = self._get_structural_displacements(solve_linear(k, g, assume_a='sym'))
+                            system_solved = False
+                            while not system_solved:
+                                try:
+                                    delta_u_hat = self._get_structural_displacements(solve_linear(k, g, assume_a='sym'))
+                                    system_solved = True
+                                except np.linalg.LinAlgError:
+                                    k = _perturb_singular_stiffness_matrix(k, 1e-5, show_warnings)
+                                    total_nb_matrix_perturbations += 1
+
                             delta_u_bar = self._get_structural_displacements(solve_linear(k, -uf, assume_a='sym'))
+
                             linear_system_solving_counter += 2
 
                             # Root computation and selection
@@ -381,6 +403,7 @@ class StaticSolver:
                                       f"\t-> retry increment with smaller radius ({radius_p / 2.0:.3})"
                                       f"\t-> attempt {increment_retries}/{5}")
                             # Resetting structure to its previous incremental state with a smaller radius
+                            total_nb_increment_retries += 1
                             self._assembly.increment_general_coordinates(-delta_u_inc)
                             f_ext -= delta_lambda_inc * delta_f
                             radius_p /= 2.0
@@ -419,10 +442,9 @@ class StaticSolver:
                                         '...', stability=equilibrium_stability[-1])
 
             if verbose:
-                print(f"Full equilibrium path was retrieved"
-                      f" increments = {i}"
-                      f" | stiffness matrix eval = {stiffness_matrix_eval_counter}"
-                      f" | linear system resolutions = {linear_system_solving_counter}")
+                _print_message_with_final_solving_stats('Full equilibrium path was retrieved',
+                                                        i, stiffness_matrix_eval_counter, linear_system_solving_counter,
+                                                        total_nb_increment_retries, total_nb_matrix_perturbations)
 
         except MaxDisplacementReached:
             if verbose:
@@ -430,49 +452,44 @@ class StaticSolver:
                 reason += '\r\n'
                 update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max, reason,
                                 stability=equilibrium_stability[-1])
-                print(f"Full equilibrium path was only retrieved up to the maximum displacement:"
-                      f" increments = {i}"
-                      f" | stiffness matrix eval = {stiffness_matrix_eval_counter}"
-                      f" | linear system resolutions = {linear_system_solving_counter}")
+                _print_message_with_final_solving_stats('Full equilibrium path was '
+                                                        'only retrieved up to the maximum displacement',
+                                                        i, stiffness_matrix_eval_counter, linear_system_solving_counter,
+                                                        total_nb_increment_retries, total_nb_matrix_perturbations)
 
         except MaxNbIterationReached:
             if verbose:
                 reason = '--> max nb of increments has been reached\r\n'
                 update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max, reason,
                                 stability=equilibrium_stability[-1])
-                print(f"Full equilibrium path was not retrieved:"
-                      f" increments = {i}"
-                      f" | stiffness matrix eval = {stiffness_matrix_eval_counter}"
-                      f" | linear system resolutions = {linear_system_solving_counter}")
-
-        except np.linalg.LinAlgError:
+                _print_message_with_final_solving_stats('Full equilibrium path was not retrieved',
+                                                        i, stiffness_matrix_eval_counter, linear_system_solving_counter,
+                                                        total_nb_increment_retries, total_nb_matrix_perturbations)
+        except MechanismDetected:
             if verbose:
                 reason = ('--> aborted because initial stiffness matrix is singular. Boundary conditions allow '
                           'rigid-body modes, or the initial equilibrium configuration is at a critical point.\r\n')
                 update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max, reason,
                                 stability=equilibrium_stability[-1])
-                print(f"Full equilibrium path was not retrieved:"
-                      f" increments = {i}"
-                      f" | stiffness matrix eval = {stiffness_matrix_eval_counter}"
-                      f" | linear system resolutions = {linear_system_solving_counter}")
+                _print_message_with_final_solving_stats('Full equilibrium path was not retrieved',
+                                                        i, stiffness_matrix_eval_counter, linear_system_solving_counter,
+                                                        total_nb_increment_retries, total_nb_matrix_perturbations)
         except ConvergenceError:
             if verbose:
                 reason = '--> aborted (could not converge)\r\n'
                 update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max, reason,
                                 stability=equilibrium_stability[-1])
-                print(f"Full equilibrium path was not retrieved:"
-                      f" increments = {i}"
-                      f" | stiffness matrix eval = {stiffness_matrix_eval_counter}"
-                      f" | linear system resolutions = {linear_system_solving_counter}")
+                _print_message_with_final_solving_stats('Full equilibrium path was not retrieved',
+                                                        i, stiffness_matrix_eval_counter, linear_system_solving_counter,
+                                                        total_nb_increment_retries, total_nb_matrix_perturbations)
         except IllDefinedShape:
             if verbose:
                 reason = '--> aborted (the shape of an element has become ill-defined)\r\n'
                 update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max, reason,
                                 stability=equilibrium_stability[-1])
-                print(f"Full equilibrium path was not retrieved:"
-                      f" increments = {i}"
-                      f" | stiffness matrix eval = {stiffness_matrix_eval_counter}"
-                      f" | linear system resolutions = {linear_system_solving_counter}")
+                _print_message_with_final_solving_stats('Full equilibrium path was not retrieved',
+                                                        i, stiffness_matrix_eval_counter, linear_system_solving_counter,
+                                                        total_nb_increment_retries, total_nb_matrix_perturbations)
         # except LinAlgWarning:
         #     pass
 
@@ -536,6 +553,9 @@ class StaticSolver:
         us[self._free_dof_indices] = u
         return us
 
+class MechanismDetected(Exception):
+    """ raise this when the stiffness matrix is singular at the start of the simulation """
+
 
 class ConvergenceError(Exception):
     """ raise this when the algorithm cannot converge """
@@ -547,6 +567,30 @@ class MaxNbIterationReached(Exception):
 
 class MaxDisplacementReached(Exception):
     """ raise this when the max displacement is reached """
+
+
+def _print_message_with_final_solving_stats(message,
+                                            nb_increments,
+                                            nb_stiffness_matrix_eval,
+                                            nb_linear_system_resolutions,
+                                            nb_increment_retries,
+                                            nb_matrix_perturbations):
+    print(f"{message}: "
+          f"increments = {nb_increments}"
+          f" | stiffness matrix eval = {nb_stiffness_matrix_eval}"
+          f" | linear system resolutions = {nb_linear_system_resolutions}"
+          f" | increment retries = {nb_increment_retries}"
+          f" | stiffness matrix perturbations = {nb_matrix_perturbations}")
+
+
+def _perturb_singular_stiffness_matrix(k, epsilon, show_message):
+    frobenius_norm = np.linalg.norm(k, 'fro')
+    epsilon_frobenius = epsilon * frobenius_norm
+    if show_message:
+        print(f'\nStiffness matrix was exactly singular.'
+              f'\n\tApplying a small perturbation ({epsilon_frobenius}'
+              f'\ton the diagonal elements')
+    return k + np.eye(*k.shape) * epsilon_frobenius
 
 
 def update_progress(title, progress, i, i_max, status, stability: str = None):
