@@ -588,7 +588,7 @@ def _perturb_singular_stiffness_matrix(k, epsilon, show_message):
     epsilon_frobenius = epsilon * frobenius_norm
     if show_message:
         print(f'\nStiffness matrix was exactly singular.'
-              f'\n\tApplying a small perturbation ({epsilon_frobenius}'
+              f'\n\tApplying a small perturbation ({epsilon_frobenius})'
               f'\ton the diagonal elements')
     return k + np.eye(*k.shape) * epsilon_frobenius
 
