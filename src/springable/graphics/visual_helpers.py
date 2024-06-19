@@ -43,12 +43,14 @@ class ColorHandler(PropertyHandler):
 
     def _make_mapper(self):
         if self._mode == 'energy':
-            cn = plt.Normalize(vmin=-self._high_value, vmax=self._high_value, clip=True)
+            h_val = max(1e-4, self._high_value)
+            cn = plt.Normalize(vmin=-h_val, vmax=h_val, clip=True)
             mapper = lambda value, norm=cn: mcm.ScalarMappable(norm=norm, cmap=ColorHandler.cmap).to_rgba(value)
         elif self._mode not in ('none', 'energy'):
             mapper = {}
             for dim, hv in self._high_value.items():
-                cn = plt.Normalize(vmin=-hv, vmax=hv, clip=True)
+                h_val = max(1e-4, hv)
+                cn = plt.Normalize(vmin=-h_val, vmax=h_val, clip=True)
                 mapper[dim] = lambda value, norm=cn: mcm.ScalarMappable(norm=norm, cmap=ColorHandler.cmap).to_rgba(
                     value)
         else:
@@ -60,13 +62,14 @@ class OpacityHandler(PropertyHandler):
 
     def _make_mapper(self):
         if self._mode == 'energy':
-            mapper = lambda value, high_val=self._high_value: (
-                float(interp1d([0.0, high_val], [0.0, 1.0], bounds_error=False,
-                               fill_value=(0.0, 1.0))(abs(value))))
+            h_val = max(1e-4, self._high_value)
+            mapper = lambda value, high_val=h_val: \
+                (float(interp1d([0.0, high_val], [0.0, 1.0], bounds_error=False, fill_value=(0.0, 1.0))(abs(value))))
         elif self._mode not in ('none', 'energy'):
             mapper = {}
             for dim, hv in self._high_value.items():
-                mapper[dim] = lambda value, high_val=hv: (
+                h_val = max(1e-4, hv)
+                mapper[dim] = lambda value, high_val=h_val: (
                     float(interp1d([0.0, high_val], [0.0, 1.0], bounds_error=False,
                                    fill_value=(0.0, 1.0))(abs(value))))
         else:
@@ -160,9 +163,11 @@ def compute_requirements_for_animation(_result: Result, assembly_appearance):
         case _:
             high_value = None
 
-    color_handler = ColorHandler(high_value, mode=assembly_appearance['element_coloring_mode']) if assembly_appearance['element_coloring_mode'] != 'none' else None
+    color_handler = ColorHandler(high_value, mode=assembly_appearance['element_coloring_mode']) if assembly_appearance[
+                                                                                                       'element_coloring_mode'] != 'none' else None
     opacity_handler = OpacityHandler(high_value,
-                                     mode=assembly_appearance['element_coloring_mode']) if assembly_appearance['element_coloring_mode'] != 'none' else None
+                                     mode=assembly_appearance['element_coloring_mode']) if assembly_appearance[
+                                                                                               'element_coloring_mode'] != 'none' else None
     characteristic_length = np.mean(characteristic_lengths)
     _assembly.set_general_coordinates(_initial_coordinates)
 

@@ -13,6 +13,8 @@ from .model import Model
 from .node import Node
 from .shape import IllDefinedShape
 
+warnings.filterwarnings("ignore")
+
 
 class Result:
     def __init__(self, model: Model,
@@ -161,9 +163,9 @@ class StaticSolver:
                                 'i_max': 10e3,
                                 'j_max': 20,
                                 'convergence_value': 1e-6,
-                                'alpha': 0.0,
-                                'psi_p': 0.0,
-                                'psi_c': 0.0
+                                'alpha': 0.0,  # never larger than 0.5
+                                'psi_p': 0.01,
+                                'psi_c': 0.01
                                 }
 
     def __init__(self, model: Model, **solver_settings):
@@ -171,6 +173,7 @@ class StaticSolver:
         self._assembly = model.get_assembly()
         self._nb_dofs = self._assembly.get_nb_dofs()
         self._free_dof_indices = self._assembly.get_free_dof_indices()
+        self._nb_free_dofs = len(self._free_dof_indices)
         self._fixed_dof_indices = self._assembly.get_fixed_dof_indices()
         self._loaded_dof_indices_step_list = (self._model.get_loaded_dof_indices_preloading_step_list()
                                               + [self._model.get_loaded_dof_indices()])
@@ -230,8 +233,6 @@ class StaticSolver:
         # warnings.filterwarnings('ignore', category=LinAlgWarning)
         start = time.time()
         nb_steps = len(force_vector_step_list)
-        if verbose:
-            update_progress(f'Solving progress (step {0}/{nb_steps})', 0.0, 0, i_max, status='...')
 
         equilibrium_forces = [np.zeros(self._nb_dofs)]
         equilibrium_displacements = [np.zeros(self._nb_dofs)]
@@ -242,6 +243,13 @@ class StaticSolver:
             equilibrium_eigval_stats = [self._compute_lowest_eigenvalues_and_count_negative_ones(initial_ks,
                                                                                                  initial_loaded_dof_indices)]
         except IllDefinedShape:
+            if verbose:
+                reason = '--> aborted (the shape of an element is ill-defined)\r\n'
+                update_progress(f'Solving progress (step 1/{nb_steps})', 0, 0, i_max, reason)
+                _print_message_with_final_solving_stats('Full equilibrium path was not retrieved',
+                                                        0, 0, 0, 0, 0)
+                end = time.time()
+                print(f"Solving duration: {end - start:.4f} s")
             return (np.array([np.nan]), np.array([np.nan]), np.array(['nan'], dtype=str),
                     np.array([np.nan]), np.array([0], dtype=int))
 
@@ -255,48 +263,55 @@ class StaticSolver:
         delta_s = 1.0
         f_ext = np.zeros(self._nb_dofs)
         u = np.zeros(self._nb_dofs)
-        i = 0
         force_progress = 0.0
         current_step = None
+        i = 0
         try:
             for step, step_force_vector in enumerate(force_vector_step_list):
                 current_step = step + 1
                 loaded_dof_indices = self._loaded_dof_indices_step_list[step]
                 force_reached_at_previous_step = f_ext.copy()
+                displacement_reached_at_previous_step = u.copy()
                 delta_f = reference_load_parameter * step_force_vector
                 previous_delta_u_inc = None
                 previous_delta_lambda_inc = None
                 increment_retries = 0
                 force_progress = 0.0
+
                 if verbose:
+                    if not set(loaded_dof_indices).isdisjoint(self._fixed_dof_indices):
+                        print(f'For step {current_step}/{nb_steps}, '
+                              f'one or more forces have been applied on fixed degrees of freedom. '
+                              'It is probably not intended (these forces cannot affect the deformation)')
                     update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max,
                                     status='...', stability=equilibrium_stability[-1])
+
+
+                g = self._get_reduced_vector(delta_f)
+                norm_g = np.linalg.norm(g)
 
                 while True:
                     has_increment_converged = False
 
                     # Predictor phase of increment i
-                    delta_u_inc = np.zeros(self._nb_dofs)
+                    delta_u_inc = np.zeros(self._nb_free_dofs)
                     delta_lambda_inc = 0.0
                     ks = self._assembly.compute_structural_stiffness_matrix()
                     stiffness_matrix_eval_counter += 1
                     k = self._get_reduced_stiffness_matrix(ks)
-                    g = self._get_reduced_vector(delta_f)
-                    system_solved = False
-                    delta_u_hat = None
-                    while not system_solved:
+                    matrix_has_been_perturbed = False
+                    while True:
                         try:
-                            delta_u_hat = self._get_structural_displacements(solve_linear(k, g, assume_a='sym'))
-                            system_solved = True
+                            delta_u_hat = solve_linear(k, g, assume_a='sym')
+                            break
                         except np.linalg.LinAlgError:
-                            if i == 0:
+                            if matrix_has_been_perturbed:
                                 raise MechanismDetected
-                            else:
-                                k = _perturb_singular_stiffness_matrix(k, 1e-5, show_warnings)
-                                total_nb_matrix_perturbations += 1
-                    linear_system_solving_counter += 1
-                    delta_u_bar = 0.0
+                            k = _perturb_singular_stiffness_matrix(k, 1e-5, show_warnings)
+                            total_nb_matrix_perturbations += 1
+                            matrix_has_been_perturbed = True
 
+                    linear_system_solving_counter += 1
                     # Root computation and selection
                     delta_lambda_ite = radius_p / np.sqrt(np.inner(delta_u_hat, delta_u_hat) + psi_p ** 2)
                     root_choice_criteria = previous_delta_lambda_inc is None \
@@ -306,16 +321,18 @@ class StaticSolver:
                     delta_lambda_ite *= root_sign
 
                     # Updating loads, displacements and structure + computation of the unbalanced forces
-                    delta_u_ite = delta_s * delta_u_bar + delta_lambda_ite * delta_u_hat
+                    delta_u_ite = delta_lambda_ite * delta_u_hat
                     delta_u_inc += delta_u_ite
                     delta_lambda_inc += delta_lambda_ite
-                    self._assembly.increment_general_coordinates(delta_u_ite)
+                    self._assembly.increment_general_coordinates(self._get_structural_displacements(delta_u_ite))
                     f_ext += (delta_lambda_ite * delta_f)
                     f_int = self._assembly.compute_internal_nodal_forces()
                     r = f_int - f_ext
                     # Convergence check and preparation for next increment
-                    if np.linalg.norm(self._get_reduced_vector(r)) / np.linalg.norm(
-                            self._get_reduced_vector(delta_f)) < convergence_value:
+                    if norm_g / reference_load_parameter < 1e-9:
+                        # no force has been applied on the unconstrained degrees of freedom
+                        has_increment_converged = True
+                    elif np.linalg.norm(self._get_reduced_vector(r)) / norm_g < convergence_value:
                         has_increment_converged = True
 
                     if not has_increment_converged:
@@ -329,19 +346,19 @@ class StaticSolver:
                             ks = self._assembly.compute_structural_stiffness_matrix()
                             stiffness_matrix_eval_counter += 1
                             k = self._get_reduced_stiffness_matrix(ks)
-                            g = self._get_reduced_vector(delta_f)
-                            uf = self._get_reduced_vector(r)
-                            system_solved = False
-                            while not system_solved:
+                            matrix_has_been_perturbed = False
+                            while True:
                                 try:
-                                    delta_u_hat = self._get_structural_displacements(solve_linear(k, g, assume_a='sym'))
-                                    system_solved = True
+                                    delta_u_hat = solve_linear(k, g, assume_a='sym')
+                                    break
                                 except np.linalg.LinAlgError:
+                                    if matrix_has_been_perturbed:
+                                        raise MechanismDetected
                                     k = _perturb_singular_stiffness_matrix(k, 1e-5, show_warnings)
                                     total_nb_matrix_perturbations += 1
+                                    matrix_has_been_perturbed = True
 
-                            delta_u_bar = self._get_structural_displacements(solve_linear(k, -uf, assume_a='sym'))
-
+                            delta_u_bar = solve_linear(k, -self._get_reduced_vector(r), assume_a='sym')
                             linear_system_solving_counter += 2
 
                             # Root computation and selection
@@ -370,13 +387,14 @@ class StaticSolver:
                             delta_lambda_inc += delta_lambda_ite
                             rhom_u_inc += delta_u_ite
                             rhom_lambda_inc += delta_lambda_ite
-                            self._assembly.increment_general_coordinates(delta_u_ite)
+                            self._assembly.increment_general_coordinates(
+                                self._get_structural_displacements(delta_u_ite))
                             f_int = self._assembly.compute_internal_nodal_forces()
                             f_ext += delta_lambda_ite * delta_f
                             r = f_int - f_ext
                             # Convergence check and preparation for next increment
-                            if np.linalg.norm(self._get_reduced_vector(r)) / np.linalg.norm(
-                                    self._get_reduced_vector(delta_f)) < convergence_value:
+                            if (norm_g / reference_load_parameter < 1e-9 or
+                                    np.linalg.norm(self._get_reduced_vector(r)) / norm_g < convergence_value):
                                 has_increment_converged = True
                                 break
 
@@ -386,7 +404,7 @@ class StaticSolver:
                         increment_retries = 0
                         previous_delta_u_inc = delta_u_inc.copy()
                         previous_delta_lambda_inc = delta_lambda_inc
-                        u += delta_u_inc
+                        u += self._get_structural_displacements(delta_u_inc)
                         radius_p = min(initial_radius_p, radius_p * 2.0)
                         stability_state = self._assess_stability(ks, loaded_dof_indices)
                         step_indices.append(step)
@@ -404,7 +422,8 @@ class StaticSolver:
                                       f"\t-> attempt {increment_retries}/{5}")
                             # Resetting structure to its previous incremental state with a smaller radius
                             total_nb_increment_retries += 1
-                            self._assembly.increment_general_coordinates(-delta_u_inc)
+                            self._assembly.increment_general_coordinates(
+                                self._get_structural_displacements(-delta_u_inc))
                             f_ext -= delta_lambda_inc * delta_f
                             radius_p /= 2.0
                             continue  # go to the next increment
@@ -413,10 +432,9 @@ class StaticSolver:
 
                     # Check if final force has been reached. If yes, we can go to the next loading step
                     step_f_ext = f_ext - force_reached_at_previous_step
-                    step_f_ext_norm = np.linalg.norm(self._get_reduced_vector(step_f_ext))
-                    step_force_vector_norm = np.linalg.norm(self._get_reduced_vector(step_force_vector))
-                    f_vectors_aligned = np.inner(self._get_reduced_vector(step_force_vector),
-                                                 self._get_reduced_vector(step_f_ext)) > 0
+                    step_f_ext_norm = np.linalg.norm(step_f_ext)
+                    step_force_vector_norm = np.linalg.norm(step_force_vector)
+                    f_vectors_aligned = np.inner(step_force_vector, step_f_ext) > 0
                     final_force_has_been_reached = step_force_vector_norm - step_f_ext_norm < 0.0 and f_vectors_aligned
                     force_progress = step_f_ext_norm / step_force_vector_norm if f_vectors_aligned else 0.0
                     if final_force_has_been_reached:
@@ -427,11 +445,21 @@ class StaticSolver:
                                             i_max, reason, stability=equilibrium_stability[-1])
                         break  # go to next loading step
 
-                    # Checking if max displacement has been reached. If yes, the solving process is aborted.
-                    if max_displacement_map_step_list[step] is not None:
-                        for dof_index, max_displacement in max_displacement_map_step_list[step].items():
-                            if abs(u[dof_index]) >= abs(max_displacement) and u[dof_index] * max_displacement >= 0.0:
-                                raise MaxDisplacementReached
+                    # Checking if max displacement has been reached. If yes, we go to the next loading step.
+                    try:
+                        step_u = u - displacement_reached_at_previous_step
+                        if max_displacement_map_step_list[step] is not None:
+                            for dof_index, max_displacement in max_displacement_map_step_list[step].items():
+                                if (abs(step_u[dof_index]) >= abs(max_displacement)
+                                        and step_u[dof_index] * max_displacement >= 0.0):
+                                    raise MaxDisplacementReached
+                    except MaxDisplacementReached:
+                        if verbose:
+                            reason = f'--> max displacement for loading step {current_step} has been reached'
+                            reason += '\r\n'
+                            update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i,
+                                            i_max, reason, stability=equilibrium_stability[-1])
+                        break  # go to next loading step
 
                     # Checking if the max number of iteration has been reached. If yes, the solving process is aborted.
                     if i == i_max:
@@ -446,16 +474,6 @@ class StaticSolver:
                                                         i, stiffness_matrix_eval_counter, linear_system_solving_counter,
                                                         total_nb_increment_retries, total_nb_matrix_perturbations)
 
-        except MaxDisplacementReached:
-            if verbose:
-                reason = f'--> max displacement has been reached'
-                reason += '\r\n'
-                update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max, reason,
-                                stability=equilibrium_stability[-1])
-                _print_message_with_final_solving_stats('Full equilibrium path was '
-                                                        'only retrieved up to the maximum displacement',
-                                                        i, stiffness_matrix_eval_counter, linear_system_solving_counter,
-                                                        total_nb_increment_retries, total_nb_matrix_perturbations)
 
         except MaxNbIterationReached:
             if verbose:
@@ -467,8 +485,8 @@ class StaticSolver:
                                                         total_nb_increment_retries, total_nb_matrix_perturbations)
         except MechanismDetected:
             if verbose:
-                reason = ('--> aborted because initial stiffness matrix is singular. Boundary conditions allow '
-                          'rigid-body modes, or the initial equilibrium configuration is at a critical point.\r\n')
+                reason = ('--> aborted because the initial stiffness matrix is singular. '
+                          'Boundary conditions most likely allow rigid-body modes.\r\n')
                 update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max, reason,
                                 stability=equilibrium_stability[-1])
                 _print_message_with_final_solving_stats('Full equilibrium path was not retrieved',
@@ -552,6 +570,7 @@ class StaticSolver:
         us = np.zeros(self._nb_dofs)
         us[self._free_dof_indices] = u
         return us
+
 
 class MechanismDetected(Exception):
     """ raise this when the stiffness matrix is singular at the start of the simulation """

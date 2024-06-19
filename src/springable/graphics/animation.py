@@ -104,51 +104,56 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                    axis=1)
 
     if ao['drive_mode'] != 'none':
-        loading_path_indices, _, _ = plot.extract_loading_path(_result, ao['drive_mode'])
-        unloading_path_indices = None
-        if ao['cycling']:
-            unloading_path_indices, _, _ = plot.extract_unloading_path(_result, ao['drive_mode'],
-                                                                       starting_index=loading_path_indices[-1])
-
-        if ao['drive_mode'] == 'force':
+        try:
+            loading_path_indices, _, _ = plot.extract_loading_path(_result, ao['drive_mode'])
+            unloading_path_indices = None
             if ao['cycling']:
-                loading_nb_frames = ao['nb_frames'] // 2
-                unloading_nb_frames = ao['nb_frames'] - loading_nb_frames
-                loading_driving_force = np.linspace(force[loading_path_indices[0]], force[loading_path_indices[-1]],
-                                                    loading_nb_frames)
-                unloading_driving_force = np.linspace(force[unloading_path_indices[0]],
-                                                      force[unloading_path_indices[-1]], unloading_nb_frames)
-                loading_frame_indices = interp1d(force[loading_path_indices], loading_path_indices, kind='nearest')(
-                    loading_driving_force).astype(int)
-                unloading_frame_indices = interp1d(force[unloading_path_indices], unloading_path_indices,
-                                                   kind='nearest')(unloading_driving_force).astype(int)
-                frame_indices = np.hstack((loading_frame_indices, unloading_frame_indices))
-            else:
-                driving_force = np.linspace(force[loading_path_indices[0]], force[loading_path_indices[-1]],
-                                            ao['nb_frames'])
-                frame_indices = interp1d(force[loading_path_indices], loading_path_indices, kind='nearest')(
-                    driving_force).astype(int)
+                unloading_path_indices, _, _ = plot.extract_unloading_path(_result, ao['drive_mode'],
+                                                                           starting_index=loading_path_indices[-1])
 
-        elif ao['drive_mode'] == 'displacement':
-            if ao['cycling']:
-                loading_nb_frames = ao['nb_frames'] // 2
-                unloading_nb_frames = ao['nb_frames'] - loading_nb_frames
-                loading_driving_displacement = np.linspace(deformation[loading_path_indices[0]],
-                                                           deformation[loading_path_indices[-1]], loading_nb_frames)
-                unloading_driving_displacement = np.linspace(deformation[unloading_path_indices[0]],
-                                                             deformation[unloading_path_indices[-1]],
-                                                             unloading_nb_frames)
-                loading_frame_indices = interp1d(deformation[loading_path_indices], loading_path_indices,
-                                                 kind='nearest')(loading_driving_displacement).astype(int)
-                unloading_frame_indices = interp1d(deformation[unloading_path_indices], unloading_path_indices,
-                                                   kind='nearest')(unloading_driving_displacement).astype(int)
-                frame_indices = np.hstack((loading_frame_indices, unloading_frame_indices))
+            if ao['drive_mode'] == 'force':
+                if ao['cycling']:
+                    loading_nb_frames = ao['nb_frames'] // 2
+                    unloading_nb_frames = ao['nb_frames'] - loading_nb_frames
+                    loading_driving_force = np.linspace(force[loading_path_indices[0]], force[loading_path_indices[-1]],
+                                                        loading_nb_frames)
+                    unloading_driving_force = np.linspace(force[unloading_path_indices[0]],
+                                                          force[unloading_path_indices[-1]], unloading_nb_frames)
+                    loading_frame_indices = interp1d(force[loading_path_indices], loading_path_indices, kind='nearest')(
+                        loading_driving_force).astype(int)
+                    unloading_frame_indices = interp1d(force[unloading_path_indices], unloading_path_indices,
+                                                       kind='nearest')(unloading_driving_force).astype(int)
+                    frame_indices = np.hstack((loading_frame_indices, unloading_frame_indices))
+                else:
+                    driving_force = np.linspace(force[loading_path_indices[0]], force[loading_path_indices[-1]],
+                                                ao['nb_frames'])
+                    frame_indices = interp1d(force[loading_path_indices], loading_path_indices, kind='nearest')(
+                        driving_force).astype(int)
+
+            elif ao['drive_mode'] == 'displacement':
+                if ao['cycling']:
+                    loading_nb_frames = ao['nb_frames'] // 2
+                    unloading_nb_frames = ao['nb_frames'] - loading_nb_frames
+                    loading_driving_displacement = np.linspace(deformation[loading_path_indices[0]],
+                                                               deformation[loading_path_indices[-1]], loading_nb_frames)
+                    unloading_driving_displacement = np.linspace(deformation[unloading_path_indices[0]],
+                                                                 deformation[unloading_path_indices[-1]],
+                                                                 unloading_nb_frames)
+                    loading_frame_indices = interp1d(deformation[loading_path_indices], loading_path_indices,
+                                                     kind='nearest')(loading_driving_displacement).astype(int)
+                    unloading_frame_indices = interp1d(deformation[unloading_path_indices], unloading_path_indices,
+                                                       kind='nearest')(unloading_driving_displacement).astype(int)
+                    frame_indices = np.hstack((loading_frame_indices, unloading_frame_indices))
+                else:
+                    driving_displacement = np.linspace(0.0, deformation[loading_path_indices[-1]], ao['nb_frames'])
+                    frame_indices = interp1d(deformation[loading_path_indices], loading_path_indices, kind='nearest')(
+                        driving_displacement).astype(int)
             else:
-                driving_displacement = np.linspace(0.0, deformation[loading_path_indices[-1]], ao['nb_frames'])
-                frame_indices = interp1d(deformation[loading_path_indices], loading_path_indices, kind='nearest')(
-                    driving_displacement).astype(int)
-        else:
-            raise ValueError(f'unknown drive mode {ao["drive_mode"]}')
+                raise ValueError(f'unknown drive mode {ao["drive_mode"]}')
+        except plot.LoadingPathEmpty:
+            print(f"Cannot make the animation in {ao['drive_mode']}-driven mode, "
+                  f"because not stable points have been found under these loading conditions")
+            return
     else:
         frame_indices = np.round(np.linspace(0, u.shape[0] - 1, ao['nb_frames'])).astype(int)
 

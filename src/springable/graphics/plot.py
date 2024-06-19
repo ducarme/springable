@@ -23,7 +23,7 @@ def extract_loading_path(result: static_solver.Result, drive_mode: str, starting
     u_load = np.sum((u[:, loaded_dof_indices] - u[0, loaded_dof_indices]) * f_goal_normalized, axis=1)
     match drive_mode:
         case 'force':
-            path_indices = [0]
+            path_indices = []
             current_load = f_load[starting_index]
             for index in range(starting_index, f_load.shape[0]):
                 load = f_load[index]
@@ -32,7 +32,7 @@ def extract_loading_path(result: static_solver.Result, drive_mode: str, starting
                     current_load = f_load[index]
                     path_indices.append(index)
         case 'displacement':
-            path_indices = [0]
+            path_indices = []
             current_load = u_load[starting_index]
             for index in range(starting_index, u_load.shape[0]):
                 load = u_load[index]
@@ -42,6 +42,8 @@ def extract_loading_path(result: static_solver.Result, drive_mode: str, starting
                     path_indices.append(index)
         case _:
             raise ValueError(f'invalid drive mode {drive_mode}')
+    if not path_indices:
+        raise LoadingPathEmpty
     is_restabilization = np.diff(path_indices, prepend=[0]) > 1
     restabilization_indices = np.array(path_indices)[is_restabilization]
     tmp = [is_restabilization[index + 1] == True for index in range(len(is_restabilization) - 1)]
@@ -84,6 +86,8 @@ def extract_unloading_path(result: static_solver.Result, drive_mode: str, starti
                     path_indices.append(index)
         case _:
             raise ValueError(f'invalid drive mode {drive_mode}')
+    if not path_indices:
+        raise LoadingPathEmpty
     is_restabilization = np.diff(path_indices, prepend=path_indices[0]) < -1
     restabilization_indices = np.array(path_indices)[is_restabilization]
     tmp = [is_restabilization[index + 1] for index in range(len(is_restabilization) - 1)]
@@ -172,7 +176,8 @@ def force_displacement_curve_in_ax(result: static_solver.Result, ax: plt.Axes, p
 
             else:  # 'color_mode' is 'none' or something else
                 # then the default color is used
-                ax.plot(u_load, f_load, po['default_marker'], color=po['default_color'], markersize=po['default_markersize'],
+                ax.plot(u_load, f_load, po['default_marker'], color=po['default_color'],
+                        markersize=po['default_markersize'],
                         label=label if label is not None else '', zorder=1)
         else:  # a color has been specified as input
             zorder = 1.0
@@ -192,69 +197,74 @@ def force_displacement_curve_in_ax(result: static_solver.Result, ax: plt.Axes, p
                         label=lbl_i)
                 zorder -= 0.1
 
-    if po['drive_mode'] != 'none':
-        (loading_path_indices,
-         loading_critical_indices,
-         loading_restabilization_indices) = extract_loading_path(result, po['drive_mode'])
-        if po['loading_sequence'] in ('cycle', 'loading_unloading'):
-            unloading_start_index = loading_path_indices[-1] if po['loading_sequence'] == 'cycle' else -1
-            (unloading_path_indices,
-             unloading_critical_indices,
-             unloading_restabilization_indices) = extract_unloading_path(result, po['drive_mode'],
-                                                                         starting_index=unloading_start_index)
+    if po['drive_mode'] != 'none' and (po['show_driven_path'] or po['show_snapping_arrows']):
+        try:
+            (loading_path_indices,
+             loading_critical_indices,
+             loading_restabilization_indices) = extract_loading_path(result, po['drive_mode'])
+            if po['loading_sequence'] in ('cycle', 'loading_unloading'):
+                unloading_start_index = loading_path_indices[-1] if po['loading_sequence'] == 'cycle' else -1
+                (unloading_path_indices,
+                 unloading_critical_indices,
+                 unloading_restabilization_indices) = extract_unloading_path(result, po['drive_mode'],
+                                                                             starting_index=unloading_start_index)
 
-            path_indices = loading_path_indices + unloading_path_indices
-            critical_indices = loading_critical_indices + unloading_critical_indices
-            restabilization_indices = loading_restabilization_indices + unloading_restabilization_indices
-        else:
-            path_indices = loading_path_indices
-            critical_indices = loading_critical_indices
-            restabilization_indices = loading_restabilization_indices
-
-        if label is None:
-            if po['show_driven_path_legend']:
-                lbl = f'{po["drive_mode"]}-driven path'
+                path_indices = loading_path_indices + unloading_path_indices
+                critical_indices = loading_critical_indices + unloading_critical_indices
+                restabilization_indices = loading_restabilization_indices + unloading_restabilization_indices
             else:
-                lbl = ''
-        else:
-            lbl = label if po['driven_path_only'] else ''
+                path_indices = loading_path_indices
+                critical_indices = loading_critical_indices
+                restabilization_indices = loading_restabilization_indices
 
-        if po['show_driven_path']:
-            ax.plot(u_load[path_indices], f_load[path_indices], ls='',
-                    markersize=po['size_for_driven_path'] * po['default_markersize'],
-                    marker=po['default_marker'],
-                    color=color if color is not None else po['driven_path_color'],
-                    label=lbl,
-                    zorder=1.1, alpha=0.75)
-        nb_transitions = min(len(critical_indices), len(restabilization_indices))
-        if po['show_snapping_arrows']:
-            match po['drive_mode']:
-                case 'force':
-                    for i in range(nb_transitions):
-                        arrow = mpatches.FancyArrowPatch((u_load[critical_indices[i]],
-                                                          f_load[critical_indices[i]]),
-                                                         (u_load[restabilization_indices[i]],
-                                                          f_load[critical_indices[i]]),
-                                                         edgecolor='none',
-                                                         facecolor=po[
-                                                             'snapping_arrow_color'] if color is None else color,
-                                                         mutation_scale=15,
-                                                         alpha=po['snapping_arrow_opacity'],
-                                                         zorder=1.2)
-                        ax.add_patch(arrow)
-                case 'displacement':
-                    for i in range(nb_transitions):
-                        arrow = mpatches.FancyArrowPatch((u_load[critical_indices[i]],
-                                                          f_load[critical_indices[i]]),
-                                                         (u_load[critical_indices[i]],
-                                                          f_load[restabilization_indices[i]]),
-                                                         edgecolor='none',
-                                                         facecolor=po[
-                                                             'snapping_arrow_color'] if color is None else color,
-                                                         mutation_scale=15,
-                                                         alpha=po['snapping_arrow_opacity'],
-                                                         zorder=1.2)
-                        ax.add_patch(arrow)
+            if label is None:
+                if po['show_driven_path_legend']:
+                    lbl = f'{po["drive_mode"]}-driven path'
+                else:
+                    lbl = ''
+            else:
+                lbl = label if po['driven_path_only'] else ''
+
+            if po['show_driven_path']:
+                ax.plot(u_load[path_indices], f_load[path_indices], ls='',
+                        markersize=po['size_for_driven_path'] * po['default_markersize'],
+                        marker=po['default_marker'],
+                        color=color if color is not None else po['driven_path_color'],
+                        label=lbl,
+                        zorder=1.1, alpha=0.75)
+            nb_transitions = min(len(critical_indices), len(restabilization_indices))
+            if po['show_snapping_arrows']:
+                match po['drive_mode']:
+                    case 'force':
+                        for i in range(nb_transitions):
+                            arrow = mpatches.FancyArrowPatch((u_load[critical_indices[i]],
+                                                              f_load[critical_indices[i]]),
+                                                             (u_load[restabilization_indices[i]],
+                                                              f_load[critical_indices[i]]),
+                                                             edgecolor='none',
+                                                             facecolor=po[
+                                                                 'snapping_arrow_color'] if color is None else color,
+                                                             mutation_scale=15,
+                                                             alpha=po['snapping_arrow_opacity'],
+                                                             zorder=1.2)
+                            ax.add_patch(arrow)
+                    case 'displacement':
+                        for i in range(nb_transitions):
+                            arrow = mpatches.FancyArrowPatch((u_load[critical_indices[i]],
+                                                              f_load[critical_indices[i]]),
+                                                             (u_load[critical_indices[i]],
+                                                              f_load[restabilization_indices[i]]),
+                                                             edgecolor='none',
+                                                             facecolor=po[
+                                                                 'snapping_arrow_color'] if color is None else color,
+                                                             mutation_scale=15,
+                                                             alpha=po['snapping_arrow_opacity'],
+                                                             zorder=1.2)
+                            ax.add_patch(arrow)
+        except LoadingPathEmpty:
+            print(f"Cannot draw the {po['drive_mode']}-driven path, "
+                  f"because not stable points have been found under these loading conditions")
+            pass
     elif po['driven_path_only']:
         raise ValueError('Inconsistent plot options: "driven_path_only == True", and "drive_mode == "none"')
 
@@ -327,7 +337,8 @@ def parametric_force_displacement_curve(results: list[static_solver.Result] | ty
             plt.close()
 
 
-def force_displacement_curve(result: static_solver.Result, save_dir=None, save_name=None, color=None, label=None, show=True,
+def force_displacement_curve(result: static_solver.Result, save_dir=None, save_name=None, color=None, label=None,
+                             show=True,
                              xlim=None, ylim=None, **plot_options):
     if save_dir is None and show is None:
         print("Plot-making cancelled because no save directory and show = False")
@@ -360,3 +371,7 @@ def force_displacement_curve(result: static_solver.Result, save_dir=None, save_n
             plt.show()
         else:
             plt.close()
+
+
+class LoadingPathEmpty(Exception):
+    """ raise this when the loading (or unloading) path is empty"""
