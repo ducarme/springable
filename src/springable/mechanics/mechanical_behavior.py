@@ -43,9 +43,6 @@ class UnivariateBehavior(MechanicalBehavior):
         raise NotImplementedError("The method is abstract")
 
 
-
-
-
 class BivariateBehavior(MechanicalBehavior):
     _nb_dofs = 2
 
@@ -81,19 +78,20 @@ class LinearBehavior(UnivariateBehavior):
 
 
 class BezierBehavior(UnivariateBehavior):
-
-    def __init__(self, u_i: list[float], f_i: list[float], sampling=100):
+    def __init__(self, u_i: list[float], f_i: list[float], sampling: int = 100):
         super().__init__(u_i=u_i, f_i=f_i)
         u_coefs = np.array([0.0] + u_i)
         f_coefs = np.array([0.0] + f_i)
+        if not is_monotonic(u_coefs):
+            raise InvalidBehaviorParameters("The Bezier behavior does not describe a function, use Bezier2 instead.")
         t = np.linspace(0, 1, sampling)
         alpha = evaluate_poly(t, u_coefs)
         energy = odeint(lambda _, t_: evaluate_poly(t_, f_coefs) * evaluate_derivative_poly(t_, u_coefs), 0.0, t)[:, 0]
         generalized_force = evaluate_poly(t, f_coefs)
         generalized_stiffness = evaluate_derivative_poly(t, f_coefs) / evaluate_derivative_poly(t, u_coefs)
-        self._energy = interp1d(alpha, energy, fill_value='extrapolate')
-        self._first_der_energy = interp1d(alpha, generalized_force, fill_value='extrapolate')
-        self._second_der_energy = interp1d(alpha, generalized_stiffness, fill_value='extrapolate')
+        self._energy = interp1d(alpha, energy, kind='cubic', fill_value='extrapolate')
+        self._first_der_energy = interp1d(alpha, generalized_force, kind='cubic', fill_value='extrapolate')
+        self._second_der_energy = interp1d(alpha, generalized_stiffness, kind='cubic', fill_value='extrapolate')
 
     def elastic_energy(self, alpha: float | np.ndarray) -> float:
         return self._energy(alpha)
@@ -124,8 +122,8 @@ class BezierBehavior(UnivariateBehavior):
                 mismatch += np.sum((f_exp - f_fit) ** 2)
             return mismatch
 
-        u_guess = np.linspace(1/degree, 1.0, degree) * umax
-        f_guess = np.linspace(1/degree, 1.0, degree) * fmax
+        u_guess = np.linspace(1 / degree, 1.0, degree) * umax
+        f_guess = np.linspace(1 / degree, 1.0, degree) * fmax
 
         initial_values = np.array([u_guess[i // 2] if i % 2 == 0 else f_guess[i // 2] for i in range(2 * degree)])
         bounds = [(0.0, None) if i % 2 == 0 else (None, None) for i in range(2 * degree)]
@@ -134,7 +132,7 @@ class BezierBehavior(UnivariateBehavior):
         # control point abscissas should be monotonically increasing
         constraint_matrix = np.zeros((degree - 1, 2 * degree))
         for i in range(degree - 1):
-            constraint_matrix[i, 2*i:2*i+3] = [-1.0, 0.0, 1.0]
+            constraint_matrix[i, 2 * i:2 * i + 3] = [-1.0, 0.0, 1.0]
         lb = np.zeros(constraint_matrix.shape[0])
         ub = np.ones(constraint_matrix.shape[0]) * np.inf
         constraints = LinearConstraint(constraint_matrix, lb, ub)
@@ -154,7 +152,7 @@ class BezierBehavior(UnivariateBehavior):
 
 class Bezier2Behavior(BivariateBehavior):
 
-    def __init__(self, u_i: list[float], f_i: list[float], n=100):
+    def __init__(self, u_i: list[float], f_i: list[float]):
         super().__init__(u_i=u_i, f_i=f_i)
         self._a_coefs = np.array([0.0] + u_i)
         self._b_coefs = np.array([0.0] + f_i)
@@ -224,9 +222,9 @@ class Bezier2Behavior(BivariateBehavior):
 class ZigZagBehavior(UnivariateBehavior):
     def __init__(self, a, x, delta):
         if x[0] - 0.0 < delta or (len(x) > 1 and np.min(np.diff(x)) < 2 * delta):
-            raise ValueError(f'Smoothing factor {delta} is too large for the zigzag intervals provided.')
+            raise InvalidBehaviorParameters(f'Smoothing factor {delta} is too large for the zigzag intervals provided.')
         if len(a) != len(x) + 1:
-            raise ValueError(f'Expected {len(a) - 1} transitions, but only {len(x)} were provided.')
+            raise InvalidBehaviorParameters(f'Expected {len(a) - 1} transitions, but only {len(x)} were provided.')
         super().__init__(a=a, x=x, delta=delta)
         self._u_i, self._f_i = compute_zigzag_control_points(a, x)
         self._generalized_force_function = create_smooth_zigzag_function(a, x, delta)
@@ -268,7 +266,7 @@ class ContactBehavior(UnivariateBehavior):
         elif 0.0 < alpha < d0:
             return 0.5 * k * (d0 ** 2 - alpha ** 2) + 2 * k * d0 * (alpha - d0) - k * d0 ** 2 * np.log(alpha / d0)
         else:
-            raise ValueError('Negative or zero value entered for a contact behavior')
+            raise InvalidBehaviorParameters('Negative or zero value entered for a contact behavior')
 
     def gradient_energy(self, alpha: float) -> tuple[float]:
         k = self._parameters['k']
@@ -278,7 +276,7 @@ class ContactBehavior(UnivariateBehavior):
         elif 0.0 < alpha < d0:
             return -k * (alpha - d0) ** 2 / alpha,
         else:
-            raise ValueError('Negative or zero value entered for a contact behavior')
+            raise InvalidBehaviorParameters('Negative or zero value entered for a contact behavior')
 
     def hessian_energy(self, alpha: float) -> tuple[float]:
         k = self._parameters['k']
@@ -288,4 +286,8 @@ class ContactBehavior(UnivariateBehavior):
         elif 0.0 < alpha < d0:
             return k * ((d0 / alpha) ** 2 - 1),
         else:
-            raise ValueError('Negative or zero value entered for a contact behavior')
+            raise InvalidBehaviorParameters('Negative or zero value entered for a contact behavior')
+
+
+class InvalidBehaviorParameters(Exception):
+    """ raise this when one attempts to create a mechanical behavior with invalid parameters"""

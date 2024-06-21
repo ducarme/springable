@@ -8,5 +8,5 @@ convergence_value = 1e-6
 # herein below, more advanced settings for the arclength method
 j_max = 20  # max number of iterations to correct the prediction
 alpha = 0.0  # positive and never larger than 0.5
-psi_p = 0.01  # strictly larger than 0
-psi_c = 0.01  # strictly larger than 0
+psi_p = 0.0
+psi_c = 0.0

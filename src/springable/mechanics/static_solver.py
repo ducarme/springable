@@ -164,8 +164,8 @@ class StaticSolver:
                                 'j_max': 20,
                                 'convergence_value': 1e-6,
                                 'alpha': 0.0,  # never larger than 0.5
-                                'psi_p': 0.01,
-                                'psi_c': 0.01
+                                'psi_p': 0.0,
+                                'psi_c': 0.0
                                 }
 
     def __init__(self, model: Model, **solver_settings):
@@ -405,7 +405,7 @@ class StaticSolver:
                         previous_delta_u_inc = delta_u_inc.copy()
                         previous_delta_lambda_inc = delta_lambda_inc
                         u += self._get_structural_displacements(delta_u_inc)
-                        radius_p = min(initial_radius_p, radius_p * 2.0)
+                        radius_p = min(initial_radius_p, radius_p * 2)
                         stability_state = self._assess_stability(ks, loaded_dof_indices)
                         step_indices.append(step)
                         equilibrium_displacements.append(u.copy())

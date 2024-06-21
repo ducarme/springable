@@ -15,6 +15,13 @@ def compute_zigzag_control_points(a, x):
     return np.array(cp_x), np.array(cp_y)
 
 
+def compute_zizag_slopes_and_transitions_from_control_points(cp_x, cp_y)\
+        -> tuple[list[float], list[float]]:
+    a = (np.diff(cp_y) / np.diff(cp_x)).tolist()
+    x = np.array(cp_x[1:-1]).tolist()
+    return a, x
+
+
 def _compute_intercepts(a, x):
     b = [0.0]
     for i in range(len(x)):

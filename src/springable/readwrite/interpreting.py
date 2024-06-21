@@ -55,15 +55,17 @@ def text_to_node(text, evaluator: se.SimpleEval = None) -> Node:
     return Node(x, y, fixed_horizontally, fixed_vertically, node_nb)
 
 
-def behavior_to_text(_behavior: MechanicalBehavior) -> str:
+def behavior_to_text(_behavior: MechanicalBehavior, fmt='') -> str:
     if isinstance(_behavior, LinearBehavior):
         return str(_behavior.get_spring_constant())
 
     text = usable_behaviors.type_to_name[type(_behavior)]
     text += '('
-    text += ', '.join([f'{par_name}={par_val}' for par_name, par_val in _behavior.get_parameters().items()])
+    text += '; '.join([f'{par_name}={par_val:{fmt}}' if not isinstance(par_val, list)
+                       else f'{par_name}=[{"; ".join([f"{par_val_i:{fmt}}" for par_val_i in par_val])}]'
+                       for par_name, par_val in _behavior.get_parameters().items()])
     text += ')'
-    return text.replace(',', ';')
+    return text
 
 
 def text_to_behavior(text: str, evaluator: se.SimpleEval = None) -> MechanicalBehavior:
