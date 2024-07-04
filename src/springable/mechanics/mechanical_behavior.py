@@ -1,7 +1,7 @@
 from .math_utils.bezier_curve import *
 from .math_utils.smooth_zigzag_curve import *
 from scipy.interpolate import interp1d
-from scipy.integrate import odeint, quad
+from scipy.integrate import quad, solve_ivp
 from scipy.optimize import minimize, LinearConstraint
 import numpy as np
 import matplotlib.pyplot as plt
@@ -83,15 +83,17 @@ class BezierBehavior(UnivariateBehavior):
         u_coefs = np.array([0.0] + u_i)
         f_coefs = np.array([0.0] + f_i)
         if not is_monotonic(u_coefs):
-            raise InvalidBehaviorParameters("The Bezier behavior does not describe a function, use Bezier2 instead.")
+            raise InvalidBehaviorParameters("The Bezier behavior does not describe a function, try Bezier2 instead.")
         t = np.linspace(0, 1, sampling)
         alpha = evaluate_poly(t, u_coefs)
-        energy = odeint(lambda _, t_: evaluate_poly(t_, f_coefs) * evaluate_derivative_poly(t_, u_coefs), 0.0, t)[:, 0]
+        def fdu(_t, _): return evaluate_poly(_t, f_coefs) * evaluate_derivative_poly(_t, u_coefs)
+
+        energy = solve_ivp(fun=fdu, t_span=[0.0, 1.0], y0=[0.0], t_eval=t).y[0, :]
         generalized_force = evaluate_poly(t, f_coefs)
         generalized_stiffness = evaluate_derivative_poly(t, f_coefs) / evaluate_derivative_poly(t, u_coefs)
-        self._energy = interp1d(alpha, energy, kind='cubic', fill_value='extrapolate')
-        self._first_der_energy = interp1d(alpha, generalized_force, kind='cubic', fill_value='extrapolate')
-        self._second_der_energy = interp1d(alpha, generalized_stiffness, kind='cubic', fill_value='extrapolate')
+        self._energy = interp1d(alpha, energy, kind='linear', fill_value='extrapolate')
+        self._first_der_energy = interp1d(alpha, generalized_force, kind='linear', fill_value='extrapolate')
+        self._second_der_energy = interp1d(alpha, generalized_stiffness, kind='linear', fill_value='extrapolate')
 
     def elastic_energy(self, alpha: float | np.ndarray) -> float:
         return self._energy(alpha)
@@ -156,38 +158,195 @@ class Bezier2Behavior(BivariateBehavior):
         super().__init__(u_i=u_i, f_i=f_i)
         self._a_coefs = np.array([0.0] + u_i)
         self._b_coefs = np.array([0.0] + f_i)
-        self._a = lambda t: np.sign(t) * evaluate_poly(np.abs(t), self._a_coefs)
-        self._b = lambda t: np.sign(t) * evaluate_poly(np.abs(t), self._b_coefs)
-        self._da = lambda t: evaluate_derivative_poly(np.abs(t), self._a_coefs)
-        self._db = lambda t: evaluate_derivative_poly(np.abs(t), self._b_coefs)
-        self._d2a = lambda t: np.sign(t) * evaluate_second_derivative_poly(np.abs(t), self._a_coefs)
-        self._d2b = lambda t: np.sign(t) * evaluate_second_derivative_poly(np.abs(t), self._b_coefs)
+
+        # checking validity of behavior
+        da0 = evaluate_derivative_poly(0.0, self._a_coefs)
+        db0 = evaluate_derivative_poly(0.0, self._b_coefs)
+        if da0 == 0.0 or db0 == 0.0:
+            raise InvalidBehaviorParameters('The initial slope of the behavior'
+                                            'cannot be perfectly horizontal or vertical')
+        a_extrema = get_extrema(self._a_coefs)
+        b_extrema = get_extrema(self._b_coefs)
+        if any(x in set(b_extrema) for x in a_extrema):
+            raise InvalidBehaviorParameters('The behavior curve cannot have cusps.')
+        a_extrema = [(a_extremum, 'a_max' if i % 2 == (0 if da0 > 0 else 1) else 'a_min')
+                     for i, a_extremum in enumerate(a_extrema)]
+        b_extrema = [(b_extremum, 'b_max' if i % 2 == (0 if db0 > 0 else 1) else 'b_min')
+                     for i, b_extremum in enumerate(b_extrema)]
+        extrema = []
+        aa = 0
+        bb = 0
+        while aa < len(a_extrema) and bb < len(b_extrema):
+            if a_extrema[aa][0] < b_extrema[bb][0]:
+                ext = a_extrema[aa]
+                aa += 1
+            else:
+                ext = b_extrema[bb]
+                bb += 1
+            extrema.append(ext)
+        if aa < len(a_extrema):
+            extrema += a_extrema[aa:]
+        if bb < len(b_extrema):
+            extrema += b_extrema[bb:]
+
+        transitions = [extremum[1] for extremum in extrema]
+        current_state = f'{"top" if db0 > 0 else "bottom"}-{"right" if da0 > 0 else "left"}'
+        for transition in transitions:
+            match current_state:
+                case 'top-right':
+                    if transition != 'b_max':
+                        raise InvalidBehaviorParameters('The curve cannot have such fold(s)')
+                    current_state = 'bottom-right'
+                case 'bottom-right':
+                    if transition == 'a_max':
+                        current_state = 'bottom-left'
+                    elif transition == 'b_min':
+                        current_state = 'top-right'
+                    else:
+                        raise InvalidBehaviorParameters('The curve cannot have such fold(s)')
+                case 'top-left':
+                    if transition != 'b_max':
+                        raise InvalidBehaviorParameters('The curve cannot have such fold(s)')
+                    current_state = 'bottom-left'
+                case 'bottom-left':
+                    if transition == 'a_min':
+                        current_state = 'bottom-right'
+                    elif transition == 'b_min':
+                        current_state = 'top-left'
+                    else:
+                        raise InvalidBehaviorParameters('The curve cannot have such fold(s)')
+                case _:
+                    print('error')
+
+        a1 = evaluate_poly(1.0, self._a_coefs)
+        da1 = evaluate_derivative_poly(1.0, self._a_coefs)
+        b1 = evaluate_poly(1.0, self._b_coefs)
+        db1 = evaluate_derivative_poly(1.0, self._b_coefs)
+        self._a = lambda t: ((np.abs(t) <= 1) * np.sign(t) * evaluate_poly(np.abs(t), self._a_coefs)
+                             + (np.abs(t) > 1) * np.sign(t) * (a1 + da1 * (np.abs(t) - 1)))
+        self._b = lambda t: ((np.abs(t) <= 1) * np.sign(t) * evaluate_poly(np.abs(t), self._b_coefs)
+                             + (np.abs(t) > 1) * np.sign(t) * (b1 + db1 * (np.abs(t) - 1)))
+        self._da = lambda t: ((np.abs(t) <= 1) * evaluate_derivative_poly(np.abs(t), self._a_coefs)
+                              + (np.abs(t) > 1) * da1)
+        self._db = lambda t: ((np.abs(t) <= 1) * evaluate_derivative_poly(np.abs(t), self._b_coefs)
+                              + (np.abs(t) > 1) * db1)
+        self._d2a = lambda t: (np.abs(t) <= 1) * np.sign(t) * evaluate_second_derivative_poly(np.abs(t), self._a_coefs)
+        self._d2b = lambda t: (np.abs(t) <= 1) * np.sign(t) * evaluate_second_derivative_poly(np.abs(t), self._b_coefs)
+        self._d3a = lambda t: (np.abs(t) <= 1) * evaluate_third_derivative_poly(np.abs(t), self._a_coefs)
+        self._d3b = lambda t: (np.abs(t) <= 1) * evaluate_third_derivative_poly(np.abs(t), self._b_coefs)
+
         self._dbda = lambda t: self._db(t) / self._da(t)
-        adb = lambda t: self._db(t) * self._a(t)
-        self._int_adb = lambda t: quad(adb, 0, t)[0]
+        self._d_dbda = lambda t: (self._d2b(t) * self._da(t) - self._db(t) * self._d2a(t)) / self._da(t) ** 2
+        def d2_dbda(t):
+            da = self._da(t)
+            db = self._db(t)
+            d2a = self._d2a(t)
+            d2b = self._d2b(t)
+            d3a = self._d3a(t)
+            d3b = self._d3b(t)
+            return (d3b * da**2 - db * d3a * da - 2 * d2b * da * d2a + 2 * db * d2a ** 2) / da ** 3
+
+        self._d2_dbda = d2_dbda
+
+        def int_adb(t):
+            if isinstance(t, float):
+                def adb(_t): return self._db(_t) * self._a(_t)
+                return quad(adb, 0, t)[0]
+            elif isinstance(t, np.ndarray):
+                def adb(_t, _): return self._db(_t) * self._a(_t)
+                if t.ndim == 1:
+                    return solve_ivp(fun=adb, t_span=[np.min(t), np.max(t)], y0=[0.0], t_eval=t).y[0, :]
+                # if t.ndim == 2:
+                #     int_adbdt = solve_ivp(fun=adb, t_span=[np.min(t), np.max(t)], y0=[0.0], t_eval=t[0, :]).y[0, :]
+                #     return int_adbdt.reshape(1, -1).repeat(t.shape[0], axis=0)
+                else:
+                    raise TypeError('numpy array must be 1-dimensional')
+            else:
+                raise TypeError('must be float or numpy array')
+
+        def int_bda(t):
+            if isinstance(t, float):
+                def bda(_t): return self._b(_t) * self._da(_t)
+                return quad(bda, 0, t)[0]
+            elif isinstance(t, np.ndarray):
+                def bda(_t, _): return self._b(_t) * self._da(_t)
+                if t.ndim == 1:
+                    return solve_ivp(fun=bda, t_span=[np.min(t), np.max(t)], y0=[0.0], t_eval=t).y[0, :]
+                # if t.ndim == 2:
+                #     int_bdadt = solve_ivp(fun=bda, t_span=[np.min(t), np.max(t)], y0=[0.0], t_eval=t[0, :]).y[0, :]
+                #     return int_bdadt.reshape(1, -1).repeat(t.shape[0], axis=0)
+                else:
+                    raise TypeError('numpy array must be 1-dimensional')
+            else:
+                raise TypeError('must be float or 1-dimensional numpy array')
+
+        self._int_adb = int_adb
+        self._int_bda = int_bda
         self._hysteron_info = None
 
         all_t = np.linspace(0, 1, 50)
-        k_low = np.max(self._dbda(all_t)[self._da(all_t) > 0.0])
-        k_high = np.min(self._dbda(all_t)[self._da(all_t) < 0.0]) if np.any(self._da(all_t) < 0.0) else + np.inf
-        self._k = k_low * (1 + 0.1 * (1.0 - np.exp(-(k_high - k_low) / k_low)))
-        # print(f'k low = {k_low}')
-        # print(f'k high = {k_high}')
-        # print(f'k = {self._k}')
+        da = self._da(all_t)
+        db = self._db(all_t)
+        db_da = db / da
+        kmax = np.max(db_da[da > 0])
+        kmin = np.min(db_da[da < 0]) if np.any(da < 0.0) else np.inf
+        delta = 0.05 * kmax
+        kstar = min(kmin - delta, kmax + delta)
+
+        if kmin - kmax > 2 * delta:
+            self._is_k_constant = True
+
+            def k_fun(t):
+                return np.ones_like(t) * kstar
+
+            dk_fun = None  # should not be used
+            d2k_fun = None  # should not be used
+
+        else:
+            self._is_k_constant = False
+
+            def k_fun(t):
+                k_arr = np.zeros_like(t)
+                da_pos = self._da(t) >= 0
+                da_neg = self._da(t) < 0
+                k_arr[da_pos] = np.maximum(self._dbda(t[da_pos]) + delta, kstar)
+                k_arr[da_neg] = kstar
+                return k_arr
+
+            def dk_fun(t):
+                dk_arr = np.zeros_like(t)
+                indices = np.logical_and(self._da(t) >= 0, self._dbda(t) + delta > kstar)
+                dk_arr[indices] = 1.0 * self._d_dbda(t[indices])
+                return dk_arr
+
+            def d2k_fun(t):
+                d2k_arr = np.zeros_like(t)
+                indices = np.logical_and(self._da(t) >= 0, self._dbda(t) + delta > kstar)
+                d2k_arr[indices] = 1.0 * self._d2_dbda(t[indices])
+                return d2k_arr
+
+        self._k = k_fun
+        self._dk = dk_fun
+        self._d2k = d2k_fun
 
     def elastic_energy(self, alpha: float, t: float) -> np.ndarray:
-        return 0.5 * self._k * (alpha - self._a(t)) ** 2 + alpha * self._b(t) - self._int_adb(t)
+        return 0.5 * self._k(t) * (alpha - self._a(t)) ** 2 + alpha * self._b(t) - self._int_adb(t)
 
     def gradient_energy(self, alpha: float, t: float) -> tuple[np.ndarray, np.ndarray]:
-        dvdalpha = self._k * (alpha - self._a(t)) + self._b(t)
-        dvdt = (alpha - self._a(t)) * (self._db(t) - self._k * self._da(t))
+        dvdalpha = self._k(t) * (alpha - self._a(t)) + self._b(t)
+        dvdt = (alpha - self._a(t)) * (self._db(t) - self._k(t) * self._da(t))
+        if not self._is_k_constant:
+            dvdt += 0.5 * (alpha - self._a(t)) ** 2 * self._dk(t)
         return dvdalpha, dvdt
 
     def hessian_energy(self, alpha: float, t: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        d2vdalpha2 = self._k
-        d2vdalphadt = self._k * (alpha - self._a(t)) + self._db(t) - self._k * self._da(t)
-        d2vdt2 = (alpha - self._a(t)) * (self._d2b(t) - self._k * self._d2a(t)) + self._da(t) * (
-                self._k * self._da(t) - self._db(t))
+        d2vdalpha2 = self._k(t)
+        d2vdalphadt = self._db(t) - self._k(t) * self._da(t)
+        d2vdt2 = (alpha - self._a(t)) * (self._d2b(t) - self._k(t) * self._d2a(t)) + self._da(t) * (
+                self._k(t) * self._da(t) - self._db(t))
+        if not self._is_k_constant:
+            d2vdalphadt += self._dk(t) * (alpha - self._a(t))
+            d2vdt2 += (alpha - self._a(t)) * (0.5 * self._d2k(t) * (alpha - self._a(t)) - 2 * self._da(t) * self._dk(t))
         return d2vdalpha2, d2vdalphadt, d2vdt2
 
     def get_hysteron_info(self) -> dict[str, float]:
@@ -217,6 +376,32 @@ class Bezier2Behavior(BivariateBehavior):
                                    'branch_intervals': branch_intervals,
                                    'is_branch_stable': is_branch_stable,
                                    'branch_ids': branch_ids}
+    def plot_energy_landscape(self, ax):
+        n = 50
+        t = np.linspace(0, 1, n)
+        alpha = np.linspace(np.min(self._a(t)), np.max(self._a(t)), n)
+        f = np.linspace(np.min(self._b(t)), np.max(self._b(t)), n)
+        t_grid, alpha_grid = np.meshgrid(t, alpha)
+        v_grid = np.empty_like(t_grid)
+        for i in range(t_grid.shape[0]):
+            v_grid[i, :] = self.elastic_energy(alpha_grid[i, :], t_grid[i, :])
+        # fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+
+        a = self._a(t)
+        int_bda = self._int_bda(t)
+        stable = np.logical_and(self._db(t) > 0, self._da(t) > 0)
+        stabilizable = np.logical_and(self._db(t) < 0, self._da(t) > 0)
+        unstable = self._da(t) < 0
+
+        ax.plot_surface(t_grid, alpha_grid, v_grid, cmap='viridis')
+        ax.plot(t[stable], a[stable], int_bda[stable], 'bo', label='path')
+        ax.plot(t[stabilizable], a[stabilizable], int_bda[stabilizable], 'ko', label='path')
+        ax.plot(t[unstable], a[unstable], int_bda[unstable], 'ro', label='path')
+        ax.set_xlabel('$t$')
+        ax.set_ylabel('$\\alpha$')
+        ax.set_zlabel('$U$')
+
+
 
 
 class ZigZagBehavior(UnivariateBehavior):

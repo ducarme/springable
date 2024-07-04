@@ -352,7 +352,7 @@ def force_displacement_curve(result: static_solver.Result, save_dir=None, save_n
 
         if (label is not None
                 or (po['show_stability_legend'] and po['color_mode'] == 'stability')
-                or (po['show_driven_path_legend'] and po['drive_mode'] in ('force', 'displacement'))):
+                or (po['show_driven_path_legend'] and po['show_driven_path'] and po['drive_mode'] in ('force', 'displacement'))):
             ax.legend(numpoints=5, markerscale=1.5)
 
         ax.set_xlabel('displacement (mm)')

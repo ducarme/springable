@@ -15,7 +15,18 @@ The implementation of the package is geared towards understanding how spring ass
 ranging from simple monotonic responses to complex, highly-nonlinear ones, such as snapping instabilities, sequencing,
 buckling, symmetry-breaking or restabilization.
 
-In its core, `springable` deals with **springs**, that we define as any entity that can store [elastic energy](https://en.wikipedia.org/wiki/Elastic_energy). **Springs** therefore include longitudinal springs (compression and extension), rotation springs (bending), area springs (useful to model fluids and pneumatic loading) and more (*see gallery*).
+
+
+
+In its core, `springable` deals with **springs**, that we define as any entity that can store [elastic energy](https://en.wikipedia.org/wiki/Elastic_energy).
+**Springs** therefore include longitudinal springs (compression and extension),
+rotation springs (bending), area springs (useful to model fluids and pneumatic loading) and more (*see gallery*).
+
+#### Our motto
+The pivotal idea of `springable` is based on the observation that
+[all models are wrong, but some are useful](https://en.wikipedia.org/wiki/All_models_are_wrong).
+We believe that spring models are more often than not **the most useful kind of model**, when one wants to gain understanding
+in nonlinear mechanics or to guide engineers and creators in the early design stages of a mechanical system.
 ## Installation
 
 Use `pip` to install. In the terminal simply enter

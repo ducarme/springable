@@ -12,6 +12,51 @@ from ..readwrite import interpreting
 from ..readwrite.keywords import usable_behaviors
 
 
+def beta_plus(s, delta_inf=0.5, kappa=1.0):
+    return 0.5 * (np.sqrt((s + delta_inf) ** 2 + kappa ** 2) + s + delta_inf)
+
+
+def beta_minus(s, delta_inf=0.5, kappa=1.0):
+    return -beta_plus(-s, delta_inf, kappa)
+
+
+def gamma_plus(s, delta_s, delta_inf, kappa):
+    return beta_plus(s - delta_s, delta_inf, kappa) + delta_s
+
+
+def gamma_minus(s, delta_s, delta_inf, kappa):
+    return beta_minus(s - delta_s, delta_inf, kappa) + delta_s
+
+
+def mu_plus(s, k_star, delta, epsilon):
+    s_star_plus = k_star - delta
+    return ((s <= s_star_plus - epsilon) * k_star
+            + (s_star_plus - epsilon < s) * (s <= s_star_plus + epsilon) * (
+                    0.5 / epsilon * (0.5 * s ** 2 - (s_star_plus - epsilon) * s) + k_star + 0.25 / epsilon * (
+                    s_star_plus - epsilon) ** 2)
+            + (s > s_star_plus + epsilon) * (s + delta))
+
+
+def mu_minus(s, k_star, delta, epsilon):
+    s_star_minus = k_star + delta
+    return ((s <= s_star_minus - epsilon) * (s - delta)
+            + (s_star_minus - epsilon < s) * (s <= s_star_minus + epsilon) * (
+                    0.5 / epsilon * ((s_star_minus + epsilon) * s - 0.5 * s ** 2) + k_star - 0.25 / epsilon * (
+                    s_star_minus + epsilon) ** 2)
+            + (s > s_star_minus + epsilon) * k_star)
+
+
+def k_star_fun(delta_k, epsilon_k, k_max, delta, epsilon):
+    c = k_max + delta + epsilon - 0.25 / epsilon_k * (k_max + delta + epsilon) / (delta + epsilon) * (
+                delta + epsilon + epsilon_k)**2
+    return ((delta_k < delta + epsilon - epsilon_k) * delta_k * (k_max + delta + epsilon) / (delta + epsilon)
+            + (np.abs(delta_k - (delta + epsilon)) < epsilon_k) *
+            (0.5 / epsilon_k * (k_max + delta + epsilon) / (delta + epsilon)
+             * ((delta + epsilon + epsilon_k) * delta_k - 0.5 * delta_k ** 2) + c)
+            + (delta_k > delta + epsilon + epsilon_k) * (k_max + delta + epsilon)
+            )
+
+
 def update_behavior_parameters_from_control_points(behavior_type: type[mb.MechanicalBehavior],
                                                    behavior_parameters: dict[str, ...],
                                                    x, y):
@@ -83,17 +128,36 @@ class CurveInteractor:
         self._ind = None  # the active vert
 
         # draw curve defined by control points
+        self.curve2 = None
+        # self.curve3 = None
+        # self.curve4 = None
         if self._behavior_parameters_valid:
             if isinstance(self._behavior, mb.UnivariateBehavior):
                 span = np.max(self.poly.xy[:, 0]) - np.min(self.poly.xy[:, 0])
                 t = np.linspace(np.min(self.poly.xy[:, 0]), np.max(self.poly.xy[:, 0]) + 0.2 * span, 250)
                 self.curve = Line2D(t, self._behavior.gradient_energy(t)[0], animated=True)
+                self.curve.set_color('tab:blue')
             elif isinstance(self._behavior, mb.BivariateBehavior):
-                t = np.linspace(0, 1, 250)
+                t = np.linspace(0, 1.1, 3000)
                 self.curve = Line2D(self._behavior._a(t), self._behavior._b(t), animated=True)
+                self.curve.set_color('tab:blue')
+                # self.curve2 = Line2D(t * np.max(self._behavior._a(t)), self._behavior._dbda(t),
+                #                      linestyle='', color='#a0a0a0', marker='o', markersize=2,
+                #                      markerfacecolor='#a0a0a0', animated=True)
+                # self.curve3 = Line2D(t * np.max(self._behavior._a(t)), self._behavior._k(t),
+                #                      linestyle='', color='r', marker='o', markersize=2,
+                #                      markerfacecolor='r', animated=True)
+                #self.curve4 = Line2D(t * np.max(self._behavior._a(t)), k_star * np.ones_like(t),
+                                     #linestyle='', color='g', marker='o', markersize=2,
+                                     #markerfacecolor='g', animated=True)
             else:
                 self.curve = Line2D([], [], animated=True)
+                self.curve.set_color('salmon')
+
         self.ax.add_line(self.curve)
+        # self.ax.add_line(self.curve2)
+        # self.ax.add_line(self.curve3)
+        #self.ax.add_line(self.curve4)
 
         canvas.mpl_connect('draw_event', self.on_draw)
         canvas.mpl_connect('button_press_event', self.on_button_press)
@@ -103,6 +167,7 @@ class CurveInteractor:
         self.canvas = canvas
 
         self.behavior_creator_gui = gui
+        # self.behavior_creator_gui.update_energy_landscape(self._behavior)
         if self._behavior_parameters_valid:
             self.behavior_creator_gui.update_behavior_txt(interpreting.behavior_to_text(self._behavior, fmt='.2E'))
             self.behavior_creator_gui.enable_copy_button()
@@ -119,6 +184,9 @@ class CurveInteractor:
         self.ax.draw_artist(self.poly)
         self.ax.draw_artist(self.line)
         self.ax.draw_artist(self.curve)
+        # self.ax.draw_artist(self.curve2)
+        # self.ax.draw_artist(self.curve3)
+        #self.ax.draw_artist(self.curve4)
         # do not need to blit here, this will fire before the screen is
         # updated
 
@@ -207,25 +275,34 @@ class CurveInteractor:
 
         if self._behavior_parameters_valid:
             self.behavior_creator_gui.update_behavior_txt(interpreting.behavior_to_text(self._behavior, fmt='.2E'))
+            # self.behavior_creator_gui.update_energy_landscape(self._behavior)
             self.behavior_creator_gui.enable_copy_button()
+            self.curve.set_color('tab:blue')
             if isinstance(self._behavior, mb.UnivariateBehavior):
                 span = np.max(self.poly.xy[:, 0]) - np.min(self.poly.xy[:, 0])
                 t = np.linspace(np.min(self.poly.xy[:, 0]), np.max(self.poly.xy[:, 0]) + 0.2 * span, 250)
                 self.curve.set_data(t, self._behavior.gradient_energy(t)[0])
             elif isinstance(self._behavior, mb.BivariateBehavior):
-                t = np.linspace(0, 1, 250)
+                t = np.linspace(0, 1.1, 1000)
                 self.curve.set_data(self._behavior._a(t), self._behavior._b(t))
+                # self.curve2.set_data(t * np.max(self._behavior._a(t)), self._behavior._dbda(t))
+                # self.curve3.set_data(t * np.max(self._behavior._a(t)), self._behavior._k(t))
+                #self.curve4.set_data(t * np.max(self._behavior._a(t)), k_star * np.ones_like(t))
+
         else:
             self.behavior_creator_gui.update_behavior_txt(f'PARAMETERS DO NOT DEFINE A VALID '
                                                           f'{usable_behaviors.type_to_name[self._behavior_type]} BEHAVIOR')
             self.behavior_creator_gui.disable_copy_button()
-            self.curve.set_data([], [])
+            self.curve.set_color('salmon')
 
         # update canvas
         self.canvas.restore_region(self.background)
         self.ax.draw_artist(self.poly)
         self.ax.draw_artist(self.line)
         self.ax.draw_artist(self.curve)
+        # self.ax.draw_artist(self.curve2)
+        # self.ax.draw_artist(self.curve3)
+        #self.ax.draw_artist(self.curve4)
         self.canvas.blit(self.ax.bbox)
 
 
@@ -234,9 +311,16 @@ class BehaviorCreatorGUI:
     DEFAULT_HOVER_COLOR = '#EEEEEE'
 
     def __init__(self, initial_behavior: mb.MechanicalBehavior):
-        self._fig = plt.figure(figsize=(9, 5))
+        self._fig, ax0 = plt.subplots(figsize=(8, 5))
+        # self._fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(15, 5))
+        # ax1.remove()
+        # ax1 = self._fig.add_subplot(1, 2, 2, projection='3d')
         shift_x = +0.0
         shift_y = +0.05
+
+        self.ax_main = ax0
+        self.ax_main.set_xlabel('$\\alpha$ (displacement, angle, ...)')
+        self.ax_main.set_ylabel('$\\nabla_{\\alpha} U $ (force, torque, ...)')
 
         behavior_txt_ax = self._fig.add_axes((0.15, 0.9, 0.75, 0.075))
         self.behavior_txt = TextBox(behavior_txt_ax, "")
@@ -247,9 +331,8 @@ class BehaviorCreatorGUI:
         self._copy_button_cid = self._copy_button.on_clicked(self.copy_behavior_txt)
         self._is_copy_button_enabled = True
 
-        self.ax_main = self._fig.add_subplot()
-        self.ax_main.set_xlabel('$\\alpha$ (displacement, angle, ...)')
-        self.ax_main.set_ylabel('$\\nabla_{\\alpha} U $ (force, torque, ...)')
+        # self.el_ax = ax1
+        # self._el_surface = None
 
         cp_x, cp_y = get_control_points_from_behavior(initial_behavior)
 
@@ -296,6 +379,13 @@ class BehaviorCreatorGUI:
     def update_behavior_txt(self, txt):
         self.behavior_txt.set_val(txt)
 
+    def update_energy_landscape(self, _behavior: mb.Bezier2Behavior):
+        self.el_ax.clear()
+        self.el_surface = _behavior.plot_energy_landscape(self.el_ax)
+        self.el_ax.set_zlim((0, 45))
+        self._fig.canvas.draw_idle()
+
+
     def enable_copy_button(self):
         if not self._is_copy_button_enabled:
             print('enable')
@@ -312,7 +402,6 @@ class BehaviorCreatorGUI:
             self._copy_button.label.set_color('gray')
             self._copy_button_cid = None  # Clear the connection ID
             self._is_copy_button_enabled = False
-
 
     def copy_behavior_txt(self, event):
         print('copy click')

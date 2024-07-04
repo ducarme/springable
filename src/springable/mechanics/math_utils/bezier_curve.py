@@ -4,7 +4,7 @@ from scipy.special import factorial
 
 def valid_t_among(t: np.ndarray):
     t = np.real(t[np.isreal(t)])
-    return t[np.logical_and(t >= 0.0, t <= 1.0)]
+    return np.sort(t[np.logical_and(t >= 0.0, t <= 1.0)])
 
 
 def evaluate_poly(t: float | np.ndarray, coefs: np.ndarray) -> float | np.ndarray:
@@ -72,6 +72,11 @@ def evaluate_second_derivative_poly(t: float | np.ndarray, coefs: np.ndarray) ->
     return evaluate_poly(t, coefs)
 
 
+def evaluate_third_derivative_poly(t: float | np.ndarray, coefs: np.ndarray) -> float | np.ndarray:
+    coefs = np.diff(coefs, 3) * (coefs.shape[0] - 1) * (coefs.shape[0] - 2) * (coefs.shape[0] - 3)
+    return evaluate_poly(t, coefs)
+
+
 def get_monomial_coefs_of_second_derivative(coefs: np.ndarray):
     coefs = np.diff(coefs, 2) * (coefs.shape[0] - 1) * (coefs.shape[0] - 2)
     return get_monomial_coefs(coefs)
@@ -85,42 +90,91 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import numpy as np
 
-    _u_i = np.array([0.0, 1.0, -0.65, 1.0])
-    _f_i = np.array([0.0, 3.0, -2.0, 2.0])
-    _t = np.linspace(0, 1, 100)
+
+    def beta_plus(s, delta_inf=0.5, kappa=1.0):
+        return 0.5 * (np.sqrt((s + delta_inf) ** 2 + kappa ** 2) + s + delta_inf)
+
+
+    def beta_minus(s, delta_inf=0.5, kappa=1.0):
+        return -beta_plus(-s, delta_inf, kappa)
+
+
+    def gamma_plus(s, delta_s, delta_inf, kappa):
+        return beta_plus(s - delta_s, delta_inf, kappa) + delta_s
+
+
+    def gamma_minus(s, delta_s, delta_inf, kappa):
+        return beta_minus(s - delta_s, delta_inf, kappa) + delta_s
+
+
+    _u_i = np.array([0.0,
+                     3.6469744295621784,
+                     1.7703266451373811,
+                     2.16166551961459,
+                     0.8453438509185234,
+                     1.1210598761183754,
+                     1.3078352480279523,
+                     3.6025041029170413])
+    _f_i = np.array([0.0,
+                     8.726919339164237,
+                     -1.1127308066083579,
+                     -0.9608843537414966,
+                     11.439909297052154,
+                     -2.448979591836734,
+                     -2.9956268221574343,
+                     6.692176870748298])
+
+    # _u_i = np.array([0.0, 1.0, -0.65, 1.0])
+    # _f_i = np.array([0.0, 3.0, -2.0, 2.0])
+    _t = np.linspace(0, 1, 300)
     u = evaluate_poly(_t, _u_i)
     f = evaluate_poly(_t, _f_i)
     du = evaluate_derivative_poly(_t, _u_i)
     d2u = evaluate_second_derivative_poly(_t, _u_i)
-    df = evaluate_poly(_t, f)
+    df = evaluate_derivative_poly(_t, _f_i)
     u_roots = get_roots(_u_i)
     u_extrema = get_extrema(_u_i)
     u_inflexions = get_inflexions(_u_i)
 
-    fig, ax = plt.subplots()
-    uuu = np.array([0.0, 1.0, 1.01, 5.0])
-    x = np.linspace(0.1, 4.9)
-    ax.plot(x, evaluate_inverse_poly(x, uuu))
-    ax.plot(_t, evaluate_poly(_t, evaluate_poly(_t, uuu)))
-    plt.show()
+    delta_inf = 0.0
+    kappa = 2.0
+    delta_s = (np.max(df[du > 0] / du[du > 0]) + np.min(df[du < 0] / du[du < 0])) / 2.
+    k = ((du >= 0) * gamma_plus(df / du, delta_s, delta_inf, kappa)
+         + (du < 0) * gamma_minus(df / du, delta_s, delta_inf, kappa))
 
-    fig, axs = plt.subplots(4, 1, figsize=(9, 20))
-    axs[0].plot(u, f)
-    axs[0].plot(evaluate_poly(u_roots, _u_i), evaluate_poly(u_roots, _f_i), '*')
-    axs[0].plot(evaluate_poly(u_extrema, _u_i), evaluate_poly(u_extrema, _f_i), 'o')
-    axs[0].plot(evaluate_poly(u_inflexions, _u_i), evaluate_poly(u_inflexions, _f_i), 's')
-    axs[1].plot(_t, u)
-    axs[1].plot(u_roots, evaluate_poly(u_roots, _u_i), '*')
-    axs[1].plot(u_extrema, evaluate_poly(u_extrema, _u_i), 'o')
-    axs[1].plot(u_inflexions, evaluate_poly(u_inflexions, _u_i), 's')
-    axs[2].plot(_t, du)
-    axs[2].plot(u_roots, evaluate_derivative_poly(u_roots, _u_i), '*')
-    axs[2].plot(u_extrema, evaluate_derivative_poly(u_extrema, _u_i), 'o')
-    axs[2].plot(u_inflexions, evaluate_derivative_poly(u_inflexions, _u_i), 's')
-    axs[3].plot(_t, d2u)
-    axs[3].plot(u_roots, evaluate_second_derivative_poly(u_roots, _u_i), '*')
-    axs[3].plot(u_extrema, evaluate_second_derivative_poly(u_extrema, _u_i), 'o')
-    axs[3].plot(u_inflexions, evaluate_second_derivative_poly(u_inflexions, _u_i), 's')
+    # fig, ax = plt.subplots()
+    # uuu = np.array([0.0, 1.0, 1.01, 5.0])
+    # x = np.linspace(0.1, 4.9)
+    # ax.plot(x, evaluate_inverse_poly(x, uuu))
+    # ax.plot(_t, evaluate_poly(_t, evaluate_poly(_t, uuu)))
+    # plt.show()
+
+    fig, axs = plt.subplots(1, 1, figsize=(9, 20))
+    if not isinstance(axs, np.ndarray):
+        axs = [axs]
+    # axs[0].plot(u, f, 'o', markersize=2)
+    # axs[0].plot(evaluate_poly(u_roots, _u_i), evaluate_poly(u_roots, _f_i), '*')
+    # axs[0].plot(evaluate_poly(u_extrema, _u_i), evaluate_poly(u_extrema, _f_i), 'o')
+    # axs[0].plot(evaluate_poly(u_inflexions, _u_i), evaluate_poly(u_inflexions, _f_i), 's')
+    # axs[1].plot(_t, u, 'o', markersize=2)
+    # axs[1].plot(u_roots, evaluate_poly(u_roots, _u_i), '*')
+    # axs[1].plot(u_extrema, evaluate_poly(u_extrema, _u_i), 'o')
+    # axs[1].plot(u_inflexions, evaluate_poly(u_inflexions, _u_i), 's')
+    # axs[2].plot(_t, du, 'o', markersize=2)
+    # axs[2].plot(u_roots, evaluate_derivative_poly(u_roots, _u_i), '*')
+    # axs[2].plot(u_extrema, evaluate_derivative_poly(u_extrema, _u_i), 'o')
+    # axs[2].plot(u_inflexions, evaluate_derivative_poly(u_inflexions, _u_i), 's')
+    # axs[3].plot(_t, d2u, 'o', markersize=2)
+    # axs[3].plot(u_roots, evaluate_second_derivative_poly(u_roots, _u_i), '*')
+    # axs[3].plot(u_extrema, evaluate_second_derivative_poly(u_extrema, _u_i), 'o')
+    # axs[3].plot(u_inflexions, evaluate_second_derivative_poly(u_inflexions, _u_i), 's')
+    axs[0].plot(_t, df / du, 'o', markersize=2)
+    axs[0].plot(_t, k, 'ro', markersize=2)
+    axs[0].plot(u_roots, evaluate_derivative_poly(u_roots, _f_i) / evaluate_derivative_poly(u_roots, _u_i), '*')
+    axs[0].plot(u_extrema, evaluate_derivative_poly(u_extrema, _f_i) / evaluate_derivative_poly(u_extrema, _u_i), 'o')
+    axs[0].plot(u_inflexions,
+                evaluate_derivative_poly(u_inflexions, _f_i) / evaluate_derivative_poly(u_inflexions, _u_i), 's')
+    axs[0].set_ylim((-7.5, 7.5))
     for ax in axs:
         ax.grid()
     plt.show()

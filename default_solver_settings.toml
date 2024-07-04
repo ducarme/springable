@@ -4,6 +4,7 @@ show_warnings = false
 verbose = true
 i_max = 10_000  # max number of increments to reach the prescribed force
 convergence_value = 1e-6
+detect_mechanism = true
 
 # herein below, more advanced settings for the arclength method
 j_max = 20  # max number of iterations to correct the prediction
