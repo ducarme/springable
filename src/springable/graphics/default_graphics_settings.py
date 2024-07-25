@@ -44,6 +44,7 @@ DEFAULT_PLOT_OPTIONS = {
     "size_for_stabilizable_points": .66,
     "size_for_unstable_points": .33,
     "stylesheet": "default",
+    "spine_offset": 10
 }
 
 DEFAULT_ANIMATION_OPTIONS = {
@@ -58,12 +59,16 @@ DEFAULT_ANIMATION_OPTIONS = {
     "save_as_gif": True,
     "save_frames_as_png": False,
     "side_plot_mode": "force_displacement_curve",
-    "plot_stylesheet": "default"
+    "stylesheet": "default",
+    "spine_offset": 10,
+    "animated_equilibrium_point_color": "#ff0000",
+    "animated_equilibrium_point_size": 2,
 }
 
 DEFAULT_ASSEMBLY_APPEARANCE = {
     "element_coloring_mode": "generalized_force",
     "force_coloring_mode": "none",
+    "colormap": "coolwarm",
     "show_state_of_hysterons": True,
     "hysteron_state_label_size": 10,
     "hysteron_state_bg_color": "#E0E0E0",

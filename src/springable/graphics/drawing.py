@@ -6,6 +6,7 @@ from ..mechanics.model import Model
 from ..mechanics import shape
 from .visual_helpers import compute_zigzag_line, compute_arc_line
 from scipy.interpolate import interp1d
+from matplotlib.colors import to_hex
 import matplotlib.pyplot as plt
 import numpy as np
 

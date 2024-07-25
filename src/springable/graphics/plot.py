@@ -28,7 +28,7 @@ def extract_loading_path(result: static_solver.Result, drive_mode: str, starting
             for index in range(starting_index, f_load.shape[0]):
                 load = f_load[index]
                 stable = stability[index] == static_solver.StaticSolver.STABLE
-                if load > current_load and stable:
+                if load >= current_load and stable:
                     current_load = f_load[index]
                     path_indices.append(index)
         case 'displacement':
@@ -37,7 +37,7 @@ def extract_loading_path(result: static_solver.Result, drive_mode: str, starting
             for index in range(starting_index, u_load.shape[0]):
                 load = u_load[index]
                 stable = stability[index] != static_solver.StaticSolver.UNSTABLE
-                if load > current_load and stable:
+                if load >= current_load and stable:
                     current_load = u_load[index]
                     path_indices.append(index)
         case _:
@@ -72,7 +72,7 @@ def extract_unloading_path(result: static_solver.Result, drive_mode: str, starti
             for index in range(starting_index, -1, -1):
                 load = f_load[index]
                 stable = stability[index] == static_solver.StaticSolver.STABLE
-                if load < current_load and stable:
+                if load <= current_load and stable:
                     current_load = f_load[index]
                     path_indices.append(index)
         case 'displacement':
@@ -81,7 +81,7 @@ def extract_unloading_path(result: static_solver.Result, drive_mode: str, starti
             for index in range(starting_index, -1, -1):
                 load = u_load[index]
                 stable = stability[index] != static_solver.StaticSolver.UNSTABLE
-                if load < current_load and stable:
+                if load <= current_load and stable:
                     current_load = u_load[index]
                     path_indices.append(index)
         case _:
@@ -113,7 +113,7 @@ def force_displacement_curve_in_ax(result: static_solver.Result, ax: plt.Axes, p
                              po['size_for_unstable_points']]
     if not po['driven_path_only']:
         stability = result.get_stability()
-        ax.plot(u_load, f_load, 'k-', linewidth=0.5, zorder=3.0)
+        ax.plot(u_load, f_load, 'k-', linewidth=0.5, zorder=1.05)
         if color is None:  # then color is determined by 'color_mode' set in the plot options
 
             if po['color_mode'] == 'stability':
@@ -324,7 +324,7 @@ def parametric_force_displacement_curve(results: list[static_solver.Result] | ty
             ax.set_xlim(xlim)
         if ylim is not None:
             ax.set_ylim(ylim)
-        ff.adjust_spines(ax)
+        ff.adjust_spines(ax, po['spine_offset'])
         ff.adjust_figure_layout(fig)
 
         if save_dir is not None:
@@ -361,7 +361,7 @@ def force_displacement_curve(result: static_solver.Result, save_dir=None, save_n
             ax.set_xlim(xlim)
         if ylim is not None:
             ax.set_ylim(ylim)
-        ff.adjust_spines(ax)
+        ff.adjust_spines(ax, po['spine_offset'])
         ff.adjust_figure_layout(fig)
         if save_dir is not None:
             if save_name is None:

@@ -75,6 +75,7 @@ size_for_unstable_points = 0.33
 stylesheet = "default"
 # one of the style names of matplotlib (see https://matplotlib.org/stable/gallery/style_sheets/style_sheets_reference.html)
 # or the path/url to a stylesheet, such as "my_style_sheets/my_favorite_style.mplstyle" (see https://matplotlib.org/stable/users/explain/customizing.html#defining-your-own-style)
+spine_offset = 10
 
 
 [animation_options]
@@ -91,15 +92,19 @@ save_as_gif = true
 save_frames_as_png = false
 side_plot_mode = "force_displacement_curve"
 # "none", "force_displacement_curve"
-plot_stylesheet = "default"
+stylesheet = "default"
 # one of the style names of matplotlib (see https://matplotlib.org/stable/gallery/style_sheets/style_sheets_reference.html)
 # or the path/url to a stylesheet, such as "my_style_sheets/my_favorite_style.mplstyle" (see https://matplotlib.org/stable/users/explain/customizing.html#defining-your-own-style)
-
+animated_equilibrium_point_color = "#ff0000"
+animated_equilibrium_point_size= 10
 
 [assembly_appearance]
 element_coloring_mode = "generalized_force"
 # "none", "energy", "generalized_force", "generalized_stiffness"
 force_coloring_mode = "none"
+colormap="coolwarm"
+# Colormap to color the elements and the forces. Must be a named colormap from matplotlib
+# (visit https =//matplotlib.org/stable/users/explain/colors/colormaps.html for more info)
 show_state_of_hysterons = true
 hysteron_state_label_size = 10
 hysteron_state_bg_color = "#e0e0e0"

@@ -2,12 +2,12 @@ import os
 from pathlib import Path
 
 
-def _adjust_spines(ax, spines=("left", "bottom"), outward=True):
+def _adjust_spines(ax, offset, spines=("left", "bottom"), outward=True):
     for loc, spine in ax.spines.items():
         if loc in spines:
             ax.spines[loc].set_visible(True)
             if outward:
-                spine.set_position(("outward", 12))  # outward by 18 points
+                spine.set_position(("outward", offset))
         else:
             ax.spines[loc].set_visible(False)  # don't draw spine
     if "left" in spines:
@@ -35,12 +35,12 @@ def save_fig(fig, save_dir, save_name, formats):
         fig.savefig(os.path.join(save_dir, save_name + '.' + format))
 
 
-def adjust_spines(axs):
+def adjust_spines(axs, offset):
     only_one_axis = not isinstance(axs, list)
     if only_one_axis:
         axs = [axs]
     for ax in axs:
-        _adjust_spines(ax)
+        _adjust_spines(ax, offset)
 
 
 def adjust_figure_layout(fig, fig_width=None, fig_height=None, pad=0.0):

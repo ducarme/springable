@@ -15,6 +15,18 @@ shape_unit_dimensions: dict[type[shape], int] = {shape.Segment: 1,
                                                  shape.SquaredDistancePointSegment: -2}
 
 
+def is_dark(hex_color):
+    color = hex_color[1:]
+    hex_red = int(color[0:2], base=16)
+    hex_green = int(color[2:4], base=16)
+    hex_blue = int(color[4:6], base=16)
+    return (hex_red * 0.2126 + hex_green * 0.7152 + hex_blue * 0.0722) < 140
+
+
+def get_bg_color():
+    return plt.rcParams['savefig.facecolor'] if not plt.rcParams['savefig.facecolor'] == 'auto' else plt.rcParams['figure.facecolor']
+
+
 class PropertyHandler:
     def __init__(self, high_value, mode):
         self._high_value = high_value
@@ -39,19 +51,22 @@ class PropertyHandler:
 
 
 class ColorHandler(PropertyHandler):
-    cmap = plt.get_cmap('coolwarm')
+
+    def __init__(self, high_value, mode, cmap):
+        super().__init__(high_value, mode)
+        self._cmap = cmap
 
     def _make_mapper(self):
         if self._mode == 'energy':
-            h_val = max(1e-4, self._high_value)
+            h_val = max(1e-5, self._high_value)
             cn = plt.Normalize(vmin=-h_val, vmax=h_val, clip=True)
-            mapper = lambda value, norm=cn: mcm.ScalarMappable(norm=norm, cmap=ColorHandler.cmap).to_rgba(value)
+            mapper = lambda value, norm=cn: mcm.ScalarMappable(norm=norm, cmap=self._cmap).to_rgba(value)
         elif self._mode not in ('none', 'energy'):
             mapper = {}
             for dim, hv in self._high_value.items():
-                h_val = max(1e-4, hv)
+                h_val = max(1e-5, hv)
                 cn = plt.Normalize(vmin=-h_val, vmax=h_val, clip=True)
-                mapper[dim] = lambda value, norm=cn: mcm.ScalarMappable(norm=norm, cmap=ColorHandler.cmap).to_rgba(
+                mapper[dim] = lambda value, norm=cn: mcm.ScalarMappable(norm=norm, cmap=self._cmap).to_rgba(
                     value)
         else:
             raise NotImplemented(f'Cannot make a color handler with mode {self._mode}')
@@ -129,21 +144,21 @@ def compute_requirements_for_animation(_result: Result, assembly_appearance):
         _assembly.set_general_coordinates(_initial_coordinates + u[i, :])
         match assembly_appearance['element_coloring_mode']:
             case 'energy':
-                energy_means.append(np.mean(list(_assembly.compute_elemental_energies().values())))
+                energy_means.append(np.max(list(_assembly.compute_elemental_energies().values())))
             case 'generalized_force':
                 energy_derivatives = _assembly.compute_elemental_energy_derivatives()
                 for dim in existing_shape_unit_dimensions:
-                    energy_derivative_means[dim].append(np.mean(np.abs([energy_derivatives[el]
-                                                                        for el in _assembly.get_elements()
-                                                                        if shape_unit_dimensions[
-                                                                            type(el.get_shape())] == dim])))
+                    energy_derivative_means[dim].append(np.max(np.abs([energy_derivatives[el]
+                                                                       for el in _assembly.get_elements()
+                                                                       if shape_unit_dimensions[
+                                                                           type(el.get_shape())] == dim])))
             case 'generalized_stiffness':
                 energy_second_derivatives = _assembly.compute_elemental_energy_second_derivatives()
                 for dim in existing_shape_unit_dimensions:
-                    energy_second_derivative_means[dim].append(np.mean(np.abs([energy_second_derivatives[el]
-                                                                               for el in _assembly.get_elements()
-                                                                               if shape_unit_dimensions[
-                                                                                   type(el.get_shape())] == dim])))
+                    energy_second_derivative_means[dim].append(np.max(np.abs([energy_second_derivatives[el]
+                                                                              for el in _assembly.get_elements()
+                                                                              if shape_unit_dimensions[
+                                                                                  type(el.get_shape())] == dim])))
         bounds = _assembly.get_dimensional_bounds()
         xmin = min(xmin, bounds[0])
         ymin = min(ymin, bounds[1])
@@ -163,8 +178,9 @@ def compute_requirements_for_animation(_result: Result, assembly_appearance):
         case _:
             high_value = None
 
-    color_handler = ColorHandler(high_value, mode=assembly_appearance['element_coloring_mode']) if assembly_appearance[
-                                                                                                       'element_coloring_mode'] != 'none' else None
+    color_handler = ColorHandler(high_value,
+                                 mode=assembly_appearance['element_coloring_mode'],
+                                 cmap=assembly_appearance['colormap']) if assembly_appearance['element_coloring_mode'] != 'none' else None
     opacity_handler = OpacityHandler(high_value,
                                      mode=assembly_appearance['element_coloring_mode']) if assembly_appearance[
                                                                                                'element_coloring_mode'] != 'none' else None

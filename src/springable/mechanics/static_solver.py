@@ -301,9 +301,10 @@ class StaticSolver:
                 increment_retries = 0
                 force_progress = 0.0
 
-
                 if (set(loaded_dof_indices) <= set(self._fixed_dof_indices)
-                        or np.linalg.norm(step_force_vector) == 0.0):
+                        or np.linalg.norm(step_force_vector[self._free_dof_indices]) == 0.0):
+                    # all loaded degrees of freedom are constrained
+                    # or the force applied of the unconstrained degrees of freedom has a magnitude of zero
                     update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max,
                                     status='--> skipped because trivial: no nonzero forces have been applied '
                                            'on the free degrees of freedom\r\n', stability=equilibrium_stability[-1])
@@ -316,7 +317,6 @@ class StaticSolver:
                               'It is probably not intended (these forces cannot affect the deformation)')
                     update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max,
                                     status='...', stability=equilibrium_stability[-1])
-
 
                 g = self._get_reduced_vector(delta_f)
                 norm_g = np.linalg.norm(g)
@@ -333,7 +333,8 @@ class StaticSolver:
                     # solve linear system
                     k = self._get_reduced_stiffness_matrix(ks)
                     if i == 0 and detect_mechanism:
-                        if cond(k, p=1) > 1e6:
+                        if cond(k, p=1) > 1e8:
+                            print(cond(k, p=1))
                             raise MechanismDetected
                     try:
                         delta_u_hat = solve(k, g, assume_a='sym')
@@ -388,7 +389,7 @@ class StaticSolver:
                             # solve two linear systems
                             k = self._get_reduced_stiffness_matrix(ks)
                             if i == 0 and detect_mechanism:
-                                if cond(k, p=1) > 1e6:
+                                if cond(k, p=1) > 1e8:
                                     # this should probably never be executed, because, if there is a mechanism, it is
                                     # most likely detected during the predictor phase.
                                     raise MechanismDetected
@@ -553,7 +554,6 @@ class StaticSolver:
                                                         i, stiffness_matrix_eval_counter, linear_system_solving_counter,
                                                         total_nb_increment_retries, total_nb_singular_matrices_avoided)
 
-
         end = time.time()
         if verbose:
             print(f"Solving duration: {end - start:.4f} s")
@@ -647,7 +647,7 @@ def _print_message_with_final_solving_stats(message,
 
 def _perturb_singular_stiffness_matrix(k: np.ndarray, epsilon, show_message):
     frobenius_norm = np.linalg.norm(k, 'fro')
-    perturbation = max(epsilon * frobenius_norm, 0.0) # epsilon * 1e-3)
+    perturbation = max(epsilon * frobenius_norm, 0.0)  # epsilon * 1e-3)
     if show_message:
         print(f'\nStiffness matrix is exactly singular. '
               f'Applying a small perturbation ({perturbation}) '

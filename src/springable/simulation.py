@@ -135,7 +135,7 @@ def scan_parameter_space(model_path, save_dir, scan_parameters_one_by_one=True,
                                          show=general_options['show_all_model_drawings'], **custom_assembly_appearance)
 
                 # run simulation
-                res = solve_model(mdl, **solver_settings)
+                res = solve_model(mdl, solver_settings)
 
                 # save results and extra information
                 save_results(res, subsave_dir)

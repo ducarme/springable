@@ -63,12 +63,13 @@ def behavior_to_text(_behavior: MechanicalBehavior, fmt='') -> str:
     text += '('
     text += '; '.join([f'{par_name}={par_val:{fmt}}' if not isinstance(par_val, list)
                        else f'{par_name}=[{"; ".join([f"{par_val_i:{fmt}}" for par_val_i in par_val])}]'
-                       for par_name, par_val in _behavior.get_parameters().items()])
+                       for par_name, par_val in _behavior.get_parameters().items()
+                       if not (isinstance(_behavior, IdealGas) and par_name == 'v0')])
     text += ')'
     return text
 
 
-def text_to_behavior(text: str, evaluator: se.SimpleEval = None) -> MechanicalBehavior:
+def text_to_behavior(text: str, evaluator: se.SimpleEval = None, natural_measure: float = None) -> MechanicalBehavior:
     if evaluator is None:
         evaluator = se.SimpleEval()
     for behavior_type, behavior_name in usable_behaviors.type_to_name.items():
@@ -99,6 +100,10 @@ def text_to_behavior(text: str, evaluator: se.SimpleEval = None) -> MechanicalBe
                     else:
                         par_val = evaluator.eval(par_val_txt)
                     parameters[par_name] = par_val
+                if issubclass(behavior_type, IdealGas):
+                    if parameters.get('v0') is None:
+                        parameters['v0'] = natural_measure
+
             return behavior_type(**parameters)
     else:  # the behavior does not match any name --> linear behavior
         spring_constant = evaluator.eval(text.strip())
@@ -166,21 +171,17 @@ def text_to_element(element_txt: str,
     shape_description = element_description[0]
     _shape = text_to_shape((shape_type_text.removesuffix('SPRING').rstrip(), shape_description), nodes)
 
-    # behavior
-    behavior_txt = element_description[1]
-    behavior = text_to_behavior(behavior_txt, evaluator)
-
     # natural_measure
     if len(element_description) > 2:
-        if not isinstance(behavior, ContactBehavior):
-            natural_measure = evaluator.eval(element_description[2])
-        else:
-            raise ValueError('A contact spring cannot have a natural measure')
+        natural_measure = evaluator.eval(element_description[2])
     else:
-        if not isinstance(behavior, ContactBehavior):
-            natural_measure = _shape.compute(output_mode=Shape.MEASURE)
-        else:
-            natural_measure = 0.0
+        natural_measure = _shape.compute(output_mode=Shape.MEASURE)
+
+    # behavior
+    behavior_txt = element_description[1]
+    behavior = text_to_behavior(behavior_txt, evaluator, natural_measure=natural_measure)
+
+
 
     return Element(_shape, natural_measure, behavior)
 

@@ -156,19 +156,20 @@ class Angle(Shape):
     def calculate_angle(x0, y0, x1, y1, x2, y2) -> float:
         cross = Angle._calculate_cross_product(x0, y0, x1, y1, x2, y2)
         dot = Angle._calculate_dot_product(x0, y0, x1, y1, x2, y2)
-        if dot > 0.0 and cross >= 0.0:
-            angle = np.arctan(cross / dot)
-        elif dot > 0.0 and cross < 0.0:
-            angle = np.arctan(cross / dot) + 2 * np.pi
-        elif dot < 0.0:
-            angle = np.arctan(cross / dot) + 1 * np.pi
-        elif dot == 0.0 and cross > 0.0:
-            angle = 1 * np.pi / 2
-        elif dot == 0.0 and cross < 0.0:
-            angle = 3 * np.pi / 2
-        else:  # dot == cross == 0.0
-            raise ValueError('Cannot calculate the angle')
-        return angle
+        return np.arctan2(cross, dot) % (2 * np.pi)
+        # if dot > 0.0 and cross >= 0.0:
+        #     angle = np.arctan(cross / dot)
+        # elif dot > 0.0 and cross < 0.0:
+        #     angle = np.arctan(cross / dot) + 2 * np.pi
+        # elif dot < 0.0:
+        #     angle = np.arctan(cross / dot) + 1 * np.pi
+        # elif dot == 0.0 and cross > 0.0:
+        #     angle = 1 * np.pi / 2
+        # elif dot == 0.0 and cross < 0.0:
+        #     angle = 3 * np.pi / 2
+        # else:  # dot == cross == 0.0
+        #     raise ValueError('Cannot calculate the angle')
+        # return angle
 
     @staticmethod
     def _calculate_cross_product(x0, y0, x1, y1, x2, y2) -> float:

@@ -16,5 +16,8 @@ usable_behaviors = KeywordMapping({mechanical_behavior.LinearBehavior: 'LINEAR',
                                    mechanical_behavior.BezierBehavior: 'BEZIER',
                                    mechanical_behavior.Bezier2Behavior: 'BEZIER2',
                                    mechanical_behavior.ZigZagBehavior: 'ZIGZAG',
-                                   mechanical_behavior.ContactBehavior: 'CONTACT'})
+                                   mechanical_behavior.ContactBehavior: 'CONTACT',
+                                   mechanical_behavior.IsothermicGas: 'ISOTHERMIC_GAS',
+                                   mechanical_behavior.IsentropicGas: 'ISENTROPIC_GAS',
+                                   })
 

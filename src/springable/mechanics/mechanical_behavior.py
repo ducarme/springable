@@ -61,8 +61,8 @@ class BivariateBehavior(MechanicalBehavior):
 
 class LinearBehavior(UnivariateBehavior):
 
-    def __init__(self, spring_constant: float):
-        super().__init__(k=spring_constant)
+    def __init__(self, k: float):
+        super().__init__(k=k)
 
     def elastic_energy(self, alpha: float | np.ndarray) -> float:
         return 0.5 * self._parameters['k'] * alpha ** 2
@@ -86,6 +86,7 @@ class BezierBehavior(UnivariateBehavior):
             raise InvalidBehaviorParameters("The Bezier behavior does not describe a function, try Bezier2 instead.")
         t = np.linspace(0, 1, sampling)
         alpha = evaluate_poly(t, u_coefs)
+
         def fdu(_t, _): return evaluate_poly(_t, f_coefs) * evaluate_derivative_poly(_t, u_coefs)
 
         energy = solve_ivp(fun=fdu, t_span=[0.0, 1.0], y0=[0.0], t_eval=t).y[0, :]
@@ -237,6 +238,7 @@ class Bezier2Behavior(BivariateBehavior):
 
         self._dbda = lambda t: self._db(t) / self._da(t)
         self._d_dbda = lambda t: (self._d2b(t) * self._da(t) - self._db(t) * self._d2a(t)) / self._da(t) ** 2
+
         def d2_dbda(t):
             da = self._da(t)
             db = self._db(t)
@@ -244,16 +246,20 @@ class Bezier2Behavior(BivariateBehavior):
             d2b = self._d2b(t)
             d3a = self._d3a(t)
             d3b = self._d3b(t)
-            return (d3b * da**2 - db * d3a * da - 2 * d2b * da * d2a + 2 * db * d2a ** 2) / da ** 3
+            return (d3b * da ** 2 - db * d3a * da - 2 * d2b * da * d2a + 2 * db * d2a ** 2) / da ** 3
 
         self._d2_dbda = d2_dbda
 
         def int_adb(t):
             if isinstance(t, float):
-                def adb(_t): return self._db(_t) * self._a(_t)
+                def adb(_t):
+                    return self._db(_t) * self._a(_t)
+
                 return quad(adb, 0, t)[0]
             elif isinstance(t, np.ndarray):
-                def adb(_t, _): return self._db(_t) * self._a(_t)
+                def adb(_t, _):
+                    return self._db(_t) * self._a(_t)
+
                 if t.ndim == 1:
                     return solve_ivp(fun=adb, t_span=[np.min(t), np.max(t)], y0=[0.0], t_eval=t).y[0, :]
                 # if t.ndim == 2:
@@ -266,10 +272,14 @@ class Bezier2Behavior(BivariateBehavior):
 
         def int_bda(t):
             if isinstance(t, float):
-                def bda(_t): return self._b(_t) * self._da(_t)
+                def bda(_t):
+                    return self._b(_t) * self._da(_t)
+
                 return quad(bda, 0, t)[0]
             elif isinstance(t, np.ndarray):
-                def bda(_t, _): return self._b(_t) * self._da(_t)
+                def bda(_t, _):
+                    return self._b(_t) * self._da(_t)
+
                 if t.ndim == 1:
                     return solve_ivp(fun=bda, t_span=[np.min(t), np.max(t)], y0=[0.0], t_eval=t).y[0, :]
                 # if t.ndim == 2:
@@ -376,6 +386,7 @@ class Bezier2Behavior(BivariateBehavior):
                                    'branch_intervals': branch_intervals,
                                    'is_branch_stable': is_branch_stable,
                                    'branch_ids': branch_ids}
+
     def plot_energy_landscape(self, ax):
         n = 50
         t = np.linspace(0, 1, n)
@@ -402,6 +413,87 @@ class Bezier2Behavior(BivariateBehavior):
         ax.set_zlabel('$U$')
 
 
+class IdealGas(UnivariateBehavior):
+
+    def __init__(self, n: float, R: float, T0: float, v0: float):
+        """ n:  the amount of substance (number of gas particles, number of moles, ...)
+            R:  is the proportionality factor between the gas temperature and the gas thermal energy per unit of substance
+                (Boltzmann constant if the amount of substance is expressed as the number of particles,
+                the molar gas constant if the amount of substance is expressed as the number of moles, ...)
+            T0: the temperature of the gas at ambient pressure
+            v0: the volume the amount of gas would take at ambient pressure
+        """
+        super().__init__(n=n, R=R, T0=T0, v0=v0)
+
+    def elastic_energy(self, alpha: float | np.ndarray) -> float:
+        raise NotImplementedError("This method is abstract")
+
+    def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float]:
+        raise NotImplementedError("This method is abstract")
+
+    def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
+        raise NotImplementedError("This method is abstract")
+
+
+class IsothermicGas(IdealGas):
+
+    def elastic_energy(self, alpha: float | np.ndarray) -> float:
+        v0 = self._parameters['v0']
+        v = alpha + v0
+        nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
+        return nRT * (v / v0 - 1.0 - np.log(v / v0))
+
+    def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float]:
+        v0 = self._parameters['v0']
+        v = alpha + v0
+        nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
+        return nRT * (v - v0) / (v*v0),
+
+    def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
+        v0 = self._parameters['v0']
+        v = alpha + v0
+        nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
+        return nRT / v ** 2,
+
+
+class IsentropicGas(IdealGas):
+
+    def __init__(self, n: float, R: float, T0: float, v0: float, gamma: float):
+        """ n:  the amount of substance (number of gas particles, number of moles, ...)
+            R:  is the proportionality factor between the gas temperature and the gas thermal energy per unit of substance
+                (Boltzmann constant if the amount of substance is expressed as the number of particles,
+                the molar gas constant if the amount of substance is expressed as the number of moles, ...)
+            T0: the temperature of the gas at ambient pressure
+            v0: the volume the amount of gas would take at ambient pressure
+            gamma: the heat capacity ratio (a.k.a. adiabatic index), that is, cp/cv. Must be strictly greater than 1.
+                   It is a non-dimensional property of the gas (for dry air, gamma = 1.4)
+        """
+        if gamma < 1.0:
+            raise InvalidBehaviorParameters(f"The ratio of heat capacities 'gamma' must be strictly greater than 1."
+                                            f"Current value = {gamma}")
+        super().__init__(n=n, R=R, T0=T0, v0=v0)
+        self._parameters['gamma'] = gamma
+
+    def elastic_energy(self, alpha: float | np.ndarray) -> float:
+        v0 = self._parameters['v0']
+        gamma = self._parameters['gamma']
+        v = alpha + v0
+        nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
+        return nRT0 * (v/v0 - 1) + nRT0 / (gamma - 1) * ((v0 / v) ** (gamma - 1) - 1)
+
+    def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float]:
+        v0 = self._parameters['v0']
+        gamma = self._parameters['gamma']
+        v = alpha + v0
+        nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
+        return nRT0 * (1/v0 - 1 / v * (v0 / v) ** (gamma - 1)),
+
+    def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
+        v0 = self._parameters['v0']
+        gamma = self._parameters['gamma']
+        v = alpha + v0
+        nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
+        return nRT0 * gamma / v ** 2 * (v0 / v) ** (gamma - 1),
 
 
 class ZigZagBehavior(UnivariateBehavior):
