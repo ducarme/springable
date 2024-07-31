@@ -1,5 +1,4 @@
 from ..mechanics.static_solver import Result
-from ..readwrite import fileio as io
 from ..mechanics import model
 from .drawing import ModelDrawing
 from . import plot, visual_helpers
@@ -21,6 +20,7 @@ def draw_model(mdl: model.Model, save_dir=None, save_name='model', show=True, **
 
     fig, ax = plt.subplots()
     ax.set_aspect('equal')
+
     ModelDrawing(ax, mdl, aa)
     xmin, ymin, xmax, ymax = mdl.get_assembly().get_dimensional_bounds()
     assembly_span = max(xmax - xmin, ymax - ymin)
@@ -68,8 +68,12 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             extra = extra_init(fig, ax1, ax2)
 
         ax1.axis('off')
-        bounds, characteristic_length, color_handler, opacity_handler = visual_helpers.compute_requirements_for_animation(
-            _result, aa)
+        (bounds, characteristic_length,
+         element_color_handler,
+         element_opacity_handler,
+         force_color_handler,
+         all_force_amounts,
+         all_preforce_amounts) = visual_helpers.compute_requirements_for_animation(_result, aa)
         xmin, ymin, xmax, ymax = bounds
         assembly_span = max(xmax - xmin, ymax - ymin)
         canvas_span = 1.25 * assembly_span
@@ -77,31 +81,29 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
         ax1.set_xlim(midx - canvas_span / 2, midx + canvas_span / 2)
         ax1.set_ylim(midy - canvas_span / 2, midy + canvas_span / 2)
         ax1.set_aspect('equal', 'box')
+
         _model = _result.get_model()
-        fext = _result.get_forces()
-
-        force_vector = _model.get_force_vector()
-        force_direction = force_vector / np.linalg.norm(force_vector)
-        loaded_dof_indices = _model.get_loaded_dof_indices()
-
-        fext_i = fext[0, :].copy()
         u = _result.get_displacements()
+        forces_after_preloading = _result.get_forces()[0]
         _natural_coordinates = _model.get_assembly().get_general_coordinates()
         _model.get_assembly().set_general_coordinates(_natural_coordinates + u[0, :])
+        if all_force_amounts is not None:
+            force_amounts = {loaded_node: amounts[0] for loaded_node, amounts in all_force_amounts.items()}
+        else:
+            force_amounts = None
 
-        _model_drawing = ModelDrawing(ax1, _model, aa, fext_i, characteristic_length, assembly_span, color_handler,
-                                      opacity_handler, None)
+        if all_preforce_amounts is not None:
+            preforce_amounts = {loaded_node: amounts[0] for loaded_node, amounts in all_preforce_amounts.items()}
+        else:
+            preforce_amounts = None
+        _model_drawing = ModelDrawing(ax1, _model, aa, characteristic_length, assembly_span,
+                                      element_color_handler=element_color_handler,
+                                      element_opacity_handler=element_opacity_handler,
+                                      force_color_handler=force_color_handler, force_amounts=force_amounts,
+                                      force_vector_after_preloading=forces_after_preloading,
+                                      preforce_amounts=preforce_amounts)
 
-        # projection of the displacement vector (relative to preload)
-        # on the force direction final loading step
-        deformation = np.sum((u[:, loaded_dof_indices] - u[0, loaded_dof_indices]) * force_direction[loaded_dof_indices],
-                             axis=1)
-
-        # projection of the applied vector force (relative to preload)
-        # on the force direction prescribed in final loading step
-        force = np.sum((fext[:, loaded_dof_indices] - fext[0, loaded_dof_indices]) * force_direction[loaded_dof_indices],
-                       axis=1)
-
+        deformation, force = _result.get_equilibrium_path()
         if ao['drive_mode'] != 'none':
             try:
                 loading_path_indices, _, _ = plot.extract_loading_path(_result, ao['drive_mode'])
@@ -171,8 +173,19 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                 ax2.legend(numpoints=5, markerscale=1.5)
 
         def update(i):
+            # update assembly
             _model.get_assembly().set_general_coordinates(_natural_coordinates + u[i, :])
-            fext_i[:] = fext[i, :]
+
+            # update external forces
+            # # /!\ force_amounts should not be overridden
+            if force_amounts is not None:
+                for loaded_node in force_amounts.keys():
+                    force_amounts[loaded_node] = all_force_amounts[loaded_node][i]
+
+            if preforce_amounts is not None:
+                for preloaded_node in preforce_amounts.keys():
+                    preforce_amounts[preloaded_node] = all_preforce_amounts[preloaded_node][i]
+
             _model_drawing.update()
             if extra_update is not None:
                 extra_update(fig, ax1, ax2, extra)

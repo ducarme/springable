@@ -64,17 +64,32 @@ class Element:
         alpha = self._shape.compute(shape.Shape.MEASURE) - self._natural_measure
         return self._behavior.elastic_energy(alpha, *self._t)
 
-    def compute_energy_derivative(self) -> float:
-        """ Computes and returns the value of
-        the first (partial) derivative of the elastic energy with respect to alpha (elemental reference system) """
+    def compute_generalized_force(self) -> float:
+        """ Computes and returns the value of the generalized force with respect to alpha (elemental reference
+        system)"""
         alpha = self._shape.compute(shape.Shape.MEASURE) - self._natural_measure
         return self._behavior.gradient_energy(alpha, *self._t)[0]
 
-    def compute_energy_second_derivative(self) -> float:
-        """ Computes and returns the value of
-        the second (partial) derivative of the elastic energy with respect to alpha (elemental reference system) """
+    def compute_generalized_stiffness(self) -> float:
+        """ Computes and returns the value of the generalized stiffness with respect to alpha """
         alpha = self._shape.compute(shape.Shape.MEASURE) - self._natural_measure
-        return self._behavior.hessian_energy(alpha, *self._t)[0]
+        hessian = self._behavior.hessian_energy(alpha, *self._t)
+        if len(hessian) == 1:  # for behavior with 0 hidden variable (Univariate behavior)
+            return hessian[0]
+        if len(hessian) == 3:  # for behavior with 1 hidden variable (Bivariate behavior)
+            return (hessian[0] * hessian[2] - hessian[1] ** 2) / hessian[2]
+        else:  # for behavior with more than 1 hidden variable (Trivariate behavior for example)
+            hessian_size = int(round((np.sqrt(1 + 8 * len(hessian)) - 1) / 2))
+            hessian_matrix = np.zeros((hessian_size, hessian_size))
+            index = 0
+            for i in range(hessian_size):
+                for j in range(i, hessian_size):
+                    hessian_matrix[i, j] = hessian[index]
+                    index += 1
+            for i in range(1, hessian_size):
+                for j in range(i):
+                    hessian_matrix[i, j] = hessian_matrix[j, i]
+            return np.linalg.det(hessian_matrix) / np.linalg.det(hessian_matrix[1:hessian_size, 1:hessian_size])
 
     def compute_force_vector(self) -> np.ndarray:
         """ Computes and returns the gradient of the elastic energy with respect to the general coordinates (global

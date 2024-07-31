@@ -2,6 +2,7 @@ from ..mechanics.static_solver import Result
 from ..mechanics.element import Element
 from ..mechanics import shape
 from scipy.interpolate import interp1d
+from scipy.integrate import cumulative_trapezoid, trapezoid
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as mcm
@@ -24,7 +25,8 @@ def is_dark(hex_color):
 
 
 def get_bg_color():
-    return plt.rcParams['savefig.facecolor'] if not plt.rcParams['savefig.facecolor'] == 'auto' else plt.rcParams['figure.facecolor']
+    return (plt.rcParams['savefig.facecolor'] if not plt.rcParams['savefig.facecolor'] == 'auto'
+            else plt.rcParams['figure.facecolor'])
 
 
 class PropertyHandler:
@@ -36,18 +38,33 @@ class PropertyHandler:
     def _make_mapper(self):
         raise NotImplemented
 
-    def determine_property_value(self, _element: Element):
-        match self._mode:
-            case 'energy':
-                return self._mapper(_element.compute_energy())
-            case 'generalized_force':
-                return self._mapper[shape_unit_dimensions[type(_element.get_shape())]](
-                    _element.compute_energy_derivative())
-            case 'generalized_stiffness':
-                return self._mapper[shape_unit_dimensions[type(_element.get_shape())]](
-                    _element.compute_energy_second_derivative())
-            case _:
-                raise ValueError(f"Unknown mode {self._mode}")
+    def determine_property_value(self, quantity: Element | float):
+        if isinstance(quantity, Element):
+            _element = quantity
+            match self._mode:
+                case 'energy':
+                    return self._mapper(_element.compute_energy())
+                case 'generalized_force':
+                    return self._mapper[shape_unit_dimensions[type(_element.get_shape())]](
+                        _element.compute_generalized_force())
+                case 'generalized_stiffness':
+                    return self._mapper[shape_unit_dimensions[type(_element.get_shape())]](
+                        _element.compute_generalized_stiffness())
+                case _:
+                    raise ValueError(f"Unknown mode {self._mode}")
+        elif isinstance(quantity, float):
+            match self._mode:
+                case 'energy':
+                    force_work = quantity
+                    return self._mapper(force_work)
+                case 'generalized_force':
+                    force_signed_magnitude = quantity
+                    return self._mapper[1](force_signed_magnitude)
+                case 'generalized_stiffness':
+                    stiffness = quantity
+                    return self._mapper[1](stiffness)
+                case _:
+                    raise ValueError(f"Unknown mode {self._mode}")
 
 
 class ColorHandler(PropertyHandler):
@@ -60,16 +77,18 @@ class ColorHandler(PropertyHandler):
         if self._mode == 'energy':
             h_val = max(1e-5, self._high_value)
             cn = plt.Normalize(vmin=-h_val, vmax=h_val, clip=True)
-            mapper = lambda value, norm=cn: mcm.ScalarMappable(norm=norm, cmap=self._cmap).to_rgba(value)
-        elif self._mode not in ('none', 'energy'):
+
+            def mapper(value, norm=cn):
+                return mcm.ScalarMappable(norm=norm, cmap=self._cmap).to_rgba(value)
+
+        elif self._mode in ('generalized_force', 'generalized_stiffness'):
             mapper = {}
             for dim, hv in self._high_value.items():
                 h_val = max(1e-5, hv)
                 cn = plt.Normalize(vmin=-h_val, vmax=h_val, clip=True)
-                mapper[dim] = lambda value, norm=cn: mcm.ScalarMappable(norm=norm, cmap=self._cmap).to_rgba(
-                    value)
+                mapper[dim] = lambda value, norm=cn: mcm.ScalarMappable(norm=norm, cmap=self._cmap).to_rgba(value)
         else:
-            raise NotImplemented(f'Cannot make a color handler with mode {self._mode}')
+            raise ValueError(f'Cannot make a color handler with mode {self._mode}')
         return mapper
 
 
@@ -77,18 +96,21 @@ class OpacityHandler(PropertyHandler):
 
     def _make_mapper(self):
         if self._mode == 'energy':
-            h_val = max(1e-4, self._high_value)
-            mapper = lambda value, high_val=h_val: \
-                (float(interp1d([0.0, high_val], [0.0, 1.0], bounds_error=False, fill_value=(0.0, 1.0))(abs(value))))
-        elif self._mode not in ('none', 'energy'):
+            h_val = max(1e-5, self._high_value)
+
+            def mapper(value, high_val=h_val):
+                return float(
+                    interp1d([0.0, high_val], [0.0, 1.0], bounds_error=False, fill_value=(0.0, 1.0))(abs(value)))
+
+        elif self._mode in ('generalized_force', 'generalized_stiffness'):
             mapper = {}
             for dim, hv in self._high_value.items():
-                h_val = max(1e-4, hv)
+                h_val = max(1e-5, hv)
                 mapper[dim] = lambda value, high_val=h_val: (
                     float(interp1d([0.0, high_val], [0.0, 1.0], bounds_error=False,
                                    fill_value=(0.0, 1.0))(abs(value))))
         else:
-            raise NotImplemented(f'Cannot make a opacity handler with mode {self._mode}')
+            raise ValueError(f'Cannot make a opacity handler with mode {self._mode}')
         return mapper
 
 
@@ -126,68 +148,171 @@ def compute_arc_line(center, radius, start_angle, end_angle, nb_points=30) -> tu
 
 
 def compute_requirements_for_animation(_result: Result, assembly_appearance):
+    aa = assembly_appearance
+
     _assembly = _result.get_model().get_assembly()
-    existing_shape_unit_dimensions = set()
-    for _el in _assembly.get_elements():
-        existing_shape_unit_dimensions.add(shape_unit_dimensions[type(_el.get_shape())])
-    existing_shape_unit_dimensions = sorted(existing_shape_unit_dimensions)
+    u = _result.get_displacements(include_preloading=True)
+    f = _result.get_forces(include_preloading=True)
 
     _initial_coordinates = _assembly.get_general_coordinates()
-    u = _result.get_displacements(include_preloading=True)
-    energy_means = []
-    energy_derivative_means = {dim: [] for dim in existing_shape_unit_dimensions}
-    energy_second_derivative_means = {dim: [] for dim in existing_shape_unit_dimensions}
     xmin = ymin = np.inf
     xmax = ymax = -np.inf
     characteristic_lengths = []
-    for i in range(u.shape[0]):
-        _assembly.set_general_coordinates(_initial_coordinates + u[i, :])
-        match assembly_appearance['element_coloring_mode']:
-            case 'energy':
-                energy_means.append(np.max(list(_assembly.compute_elemental_energies().values())))
-            case 'generalized_force':
-                energy_derivatives = _assembly.compute_elemental_energy_derivatives()
-                for dim in existing_shape_unit_dimensions:
-                    energy_derivative_means[dim].append(np.max(np.abs([energy_derivatives[el]
-                                                                       for el in _assembly.get_elements()
-                                                                       if shape_unit_dimensions[
-                                                                           type(el.get_shape())] == dim])))
-            case 'generalized_stiffness':
-                energy_second_derivatives = _assembly.compute_elemental_energy_second_derivatives()
-                for dim in existing_shape_unit_dimensions:
-                    energy_second_derivative_means[dim].append(np.max(np.abs([energy_second_derivatives[el]
-                                                                              for el in _assembly.get_elements()
-                                                                              if shape_unit_dimensions[
-                                                                                  type(el.get_shape())] == dim])))
-        bounds = _assembly.get_dimensional_bounds()
-        xmin = min(xmin, bounds[0])
-        ymin = min(ymin, bounds[1])
-        xmax = max(xmax, bounds[2])
-        ymax = max(ymax, bounds[3])
-        characteristic_lengths.append(_assembly.compute_characteristic_length())
+    element_color_handler = None
+    element_opacity_handler = None
+    force_color_handler = None
+    force_amounts = {}
+    preforce_amounts = {}
+    assembly_scanned = False
+    start = _result.get_starting_index()
+    n = u.shape[0] - start
+    if aa['coloring_mode'] != 'none':
+        if aa['show_forces'] and aa['color_forces']:
+            loaded_nodes = _result.get_model().get_loaded_nodes()
+            preloaded_nodes = _result.get_model().get_preloaded_nodes()
+            node_nb_to_dof_indices = _result.get_model().get_assembly().get_nodes_dof_indices()
+            final_force_vector = _result.get_model().get_force_vector()
+            for _node in loaded_nodes:
+                dof_indices = node_nb_to_dof_indices[_node.get_node_nb()]
+                final_force = final_force_vector[dof_indices]
+                direction = final_force / np.linalg.norm(final_force)
+                if not np.isnan(direction).any():
+                    match aa['coloring_mode']:
+                        case 'energy':
+                            forces = np.inner(f[start:, dof_indices] - f[start, dof_indices], direction)
+                            displacements = np.inner(u[start:, dof_indices], direction)
+                            force_amounts[_node] = cumulative_trapezoid(forces, displacements, initial=0)
+                        case 'generalized_force':
+                            force_amounts[_node] = np.inner(f[start:, dof_indices] - f[start, dof_indices], direction)
+                        case 'generalized_stiffness':
+                            forces = np.inner(f[start:, dof_indices], direction)
+                            displacements = np.inner(u[start:, dof_indices], direction)
+                            stiffnesses = np.diff(forces) / np.diff(displacements)
+                            force_amounts[_node] = np.append(stiffnesses, stiffnesses[-1])
 
-    match assembly_appearance['element_coloring_mode']:
-        case 'energy':
-            high_value = np.max(np.abs(np.percentile(energy_means, [10, 90])))
-        case 'generalized_force':
-            high_value = {dim: np.max(np.abs(np.percentile(energy_derivative_means[dim], [10, 90])))
-                          for dim in existing_shape_unit_dimensions}
-        case 'generalized_stiffness':
-            high_value = {dim: np.max(np.abs(np.percentile(energy_second_derivative_means[dim], [10, 90])))
-                          for dim in existing_shape_unit_dimensions}
-        case _:
-            high_value = None
+            for _node in preloaded_nodes:
+                dof_indices = node_nb_to_dof_indices[_node.get_node_nb()]
+                preforce_vector = f[start, dof_indices]
+                direction = preforce_vector / np.linalg.norm(preforce_vector)
+                if not np.isnan(direction).any():
+                    match aa['coloring_mode']:
+                        case 'energy':
+                            preforces = np.inner(f[:start, dof_indices], direction)
+                            predisplacements = np.inner(u[:start, dof_indices], direction)
+                            work_after_preloading = trapezoid(preforces, predisplacements)
+                            pre_displacements = u[start, dof_indices]
+                            preforce_amounts[_node] = (work_after_preloading
+                                                       + np.inner(preforce_vector,
+                                                                  u[start:, dof_indices] - pre_displacements))
+                        case 'generalized_force':
+                            preforce_amounts[_node] = np.inner(preforce_vector, direction) * np.ones(n)
+                        case 'generalized_stiffness':
+                            preforce_amounts[_node] = np.zeros(n)
+        if aa['color_elements'] or (aa['color_forces'] and aa['show_forces']):
+            unit_dimensions = set()
+            if aa['color_elements']:
+                existing_shape_unit_dimensions = set()
+                for _el in _assembly.get_elements():
+                    existing_shape_unit_dimensions.add(shape_unit_dimensions[type(_el.get_shape())])
+                unit_dimensions |= existing_shape_unit_dimensions
+            if aa['color_forces'] and aa['show_forces']:
+                unit_dimensions |= {1}
 
-    color_handler = ColorHandler(high_value,
-                                 mode=assembly_appearance['element_coloring_mode'],
-                                 cmap=assembly_appearance['colormap']) if assembly_appearance['element_coloring_mode'] != 'none' else None
-    opacity_handler = OpacityHandler(high_value,
-                                     mode=assembly_appearance['element_coloring_mode']) if assembly_appearance[
-                                                                                               'element_coloring_mode'] != 'none' else None
+            energy_maxs = []
+            generalized_force_highs = {dim: [] for dim in unit_dimensions}
+            generalized_stiffness_highs = {dim: [] for dim in unit_dimensions}
+
+            for i in range(n):
+                _assembly.set_general_coordinates(_initial_coordinates + u[start + i, :])
+                match aa['coloring_mode']:
+                    case 'energy':
+                        energies = []
+                        if aa['color_elements']:
+                            element_energies = list(_assembly.compute_elemental_energies().values())
+                            energies += element_energies
+                        if aa['color_forces'] and aa['show_forces']:
+                            force_works = [force_amount[i] for force_amount in force_amounts.values()]
+                            preforce_works = [preforce_amount[i] for preforce_amount in preforce_amounts.values()]
+                            energies += force_works + preforce_works
+                        energy_maxs.append(np.max(np.abs(energies)))
+                    case 'generalized_force':
+                        generalized_forces = {dim: [] for dim in unit_dimensions}
+                        if aa['color_elements']:
+                            element_to_generalized_forces = _assembly.compute_elemental_generalized_forces()
+                            for dim in unit_dimensions:
+                                generalized_forces[dim] += [element_to_generalized_forces[el]
+                                                            for el in _assembly.get_elements()
+                                                            if shape_unit_dimensions[type(el.get_shape())] == dim]
+                        if aa['color_forces'] and aa['show_forces']:
+                            generalized_forces[1] += [force_amount[i] for force_amount in force_amounts.values()]
+                            generalized_forces[1] += [preforce_amount[i]
+                                                      for preforce_amount in preforce_amounts.values()]
+                        for dim in unit_dimensions:
+                            generalized_force_highs[dim].append(np.quantile(np.abs(generalized_forces[dim]), .7))
+
+                    case 'generalized_stiffness':
+                        generalized_stiffnesses = {dim: [] for dim in unit_dimensions}
+                        if aa['color_elements']:
+                            element_to_generalized_stiffnesses = _assembly.compute_elemental_generalized_stiffnesses()
+                            for dim in unit_dimensions:
+                                generalized_stiffnesses[dim] += [element_to_generalized_stiffnesses[el]
+                                                                 for el in _assembly.get_elements()
+                                                                 if shape_unit_dimensions[type(el.get_shape())] == dim]
+                        if aa['color_forces'] and aa['show_forces']:
+                            generalized_stiffnesses[1] += [force_amount[i] for force_amount in force_amounts.values()]
+                            generalized_stiffnesses[1] += [preforce_amount[i]
+                                                           for preforce_amount in preforce_amounts.values()]
+                        for dim in unit_dimensions:
+                            generalized_stiffness_highs[dim].append(
+                                np.quantile(np.abs(generalized_stiffnesses[dim]), .7))
+
+                bounds = _assembly.get_dimensional_bounds()
+                xmin = min(xmin, bounds[0])
+                ymin = min(ymin, bounds[1])
+                xmax = max(xmax, bounds[2])
+                ymax = max(ymax, bounds[3])
+                characteristic_lengths.append(_assembly.compute_characteristic_length())
+            _assembly.set_general_coordinates(_initial_coordinates)
+            assembly_scanned = True
+
+            match aa['coloring_mode']:
+                case 'energy':
+                    high_value = np.quantile(energy_maxs, .9)
+                case 'generalized_force':
+                    high_value = {dim: np.quantile(generalized_force_highs[dim], .9)
+                                  for dim in unit_dimensions}
+                case 'generalized_stiffness':
+                    high_value = {dim: np.quantile(generalized_stiffness_highs[dim], .9)
+                                  for dim in unit_dimensions}
+                case _:
+                    high_value = None
+
+            element_color_handler = (ColorHandler(high_value, mode=aa['coloring_mode'], cmap=aa['colormap'])
+                                     if aa['color_elements'] else None)
+
+            element_opacity_handler = (OpacityHandler(high_value, mode=aa['coloring_mode'])
+                                       if aa['color_elements'] else None)
+
+            force_color_handler = (ColorHandler(high_value, mode=aa['coloring_mode'], cmap=aa['colormap'])
+                                   if aa['color_forces'] and aa['show_forces'] else None)
+
+    if not assembly_scanned:
+        for i in range(n):
+            _assembly.set_general_coordinates(_initial_coordinates + u[i + start, :])
+            bounds = _assembly.get_dimensional_bounds()
+            xmin = min(xmin, bounds[0])
+            ymin = min(ymin, bounds[1])
+            xmax = max(xmax, bounds[2])
+            ymax = max(ymax, bounds[3])
+            characteristic_lengths.append(_assembly.compute_characteristic_length())
+        _assembly.set_general_coordinates(_initial_coordinates)
+
     characteristic_length = np.mean(characteristic_lengths)
-    _assembly.set_general_coordinates(_initial_coordinates)
 
-    return (xmin, ymin, xmax, ymax), characteristic_length, color_handler, opacity_handler
+    force_amounts = force_amounts if force_amounts else None
+    preforce_amounts = preforce_amounts if preforce_amounts else None
+    return ((xmin, ymin, xmax, ymax), characteristic_length, element_color_handler, element_opacity_handler,
+            force_color_handler, force_amounts, preforce_amounts)
 
 
 def print_progress(frame_index, nb_frames):

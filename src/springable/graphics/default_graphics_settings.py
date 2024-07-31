@@ -66,8 +66,9 @@ DEFAULT_ANIMATION_OPTIONS = {
 }
 
 DEFAULT_ASSEMBLY_APPEARANCE = {
-    "element_coloring_mode": "generalized_force",
-    "force_coloring_mode": "none",
+    "coloring_mode": "generalized_force",
+    "color_elements": True,
+    "color_forces": False,
     "colormap": "coolwarm",
     "show_state_of_hysterons": True,
     "hysteron_state_label_size": 10,
@@ -96,7 +97,9 @@ DEFAULT_ASSEMBLY_APPEARANCE = {
     "node_color": "#101010",
     "show_node_numbers": False,
     "node_nb_color": "#CECECE",
-    "force_default_inner_color": "#101010",
+    "force_inner_color": "#010101",
+    "preload_force_inner_color": "#A0A0A0",
     "force_default_outer_color": "#CECECE",
-    "force_vector_length_scaling": 1.0
+    "force_vector_length_scaling": 1.0,
+    "force_vector_connection": "tail"
 }

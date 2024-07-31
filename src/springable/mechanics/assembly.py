@@ -88,16 +88,16 @@ class Assembly:
             energies[_element] = _element.compute_energy()
         return energies
 
-    def compute_elemental_energy_derivatives(self):
+    def compute_elemental_generalized_forces(self):
         energy_derivatives = {}
         for _element in self._elements:
-            energy_derivatives[_element] = _element.compute_energy_derivative()
+            energy_derivatives[_element] = _element.compute_generalized_force()
         return energy_derivatives
 
-    def compute_elemental_energy_second_derivatives(self):
+    def compute_elemental_generalized_stiffnesses(self):
         energy_second_derivatives = {}
         for _element in self._elements:
-            energy_second_derivatives[_element] = _element.compute_energy_second_derivative()
+            energy_second_derivatives[_element] = _element.compute_generalized_stiffness()
         return energy_second_derivatives
 
     def compute_elastic_energy(self) -> float:

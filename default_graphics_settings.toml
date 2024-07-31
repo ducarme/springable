@@ -99,9 +99,10 @@ animated_equilibrium_point_color = "#ff0000"
 animated_equilibrium_point_size= 10
 
 [assembly_appearance]
-element_coloring_mode = "generalized_force"
+coloring_mode = "generalized_force"
 # "none", "energy", "generalized_force", "generalized_stiffness"
-force_coloring_mode = "none"
+color_elements = true
+color_forces = false
 colormap="coolwarm"
 # Colormap to color the elements and the forces. Must be a named colormap from matplotlib
 # (visit https =//matplotlib.org/stable/users/explain/colors/colormaps.html for more info)
@@ -132,6 +133,8 @@ node_size = 3
 node_color = "#101010"
 show_node_numbers = false
 node_nb_color = "#cecece"
-force_default_inner_color = "#101010"
+force_inner_color = "#101010"
+preload_force_inner_color = "#a0a0a0"
 force_default_outer_color = "#cecece"
 force_vector_length_scaling = 1.0
+force_vector_connection = "tail"

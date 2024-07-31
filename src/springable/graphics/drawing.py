@@ -6,7 +6,7 @@ from ..mechanics.model import Model
 from ..mechanics import shape
 from .visual_helpers import compute_zigzag_line, compute_arc_line
 from scipy.interpolate import interp1d
-from matplotlib.colors import to_hex
+from matplotlib.colors import to_rgba
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -63,7 +63,8 @@ class NodeDrawing(Drawing):
 
 class ElementDrawing(Drawing):
 
-    def __init__(self, ax: plt.Axes, _element: Element, width, assembly_appearance, color_handler=None, opacity_handler=None):
+    def __init__(self, ax: plt.Axes, _element: Element, width, assembly_appearance,
+                 color_handler=None, opacity_handler=None):
         super().__init__(ax, assembly_appearance)
         self._element = _element
         self._color_handler = color_handler
@@ -80,7 +81,10 @@ class ElementDrawing(Drawing):
         else:
             color = self._color_handler.determine_property_value(self._element)
 
-        if self._opacity_handler is None or not isinstance(self._element.get_shape(), shape.DistancePointLine):
+        if self._opacity_handler is None or not isinstance(self._element.get_shape(),
+                                                           (
+                                                                   shape.DistancePointLine,
+                                                                   shape.SquaredDistancePointSegment)):
             opacity = None  # to specify later
         else:
             opacity = self._opacity_handler.determine_property_value(self._element)
@@ -95,7 +99,8 @@ class ElementDrawing(Drawing):
             if self._aa['show_state_of_hysterons'] and self._hysteron_info:
                 hysteron_state_drawing_position = ((x0 + x1) / 2, (y0 + y1) / 2)
             element_graphic = \
-                self._ax.plot(x_coords, y_coords, lw=self._aa['spring_linewidth'], color=color, alpha=opacity, zorder=0.1)[0]
+                self._ax.plot(x_coords, y_coords, lw=self._aa['spring_linewidth'], color=color, alpha=opacity,
+                              zorder=0.1)[0]
         elif isinstance(self._element.get_shape(), shape.Angle):
             color = color if color is not None else self._aa['rotation_spring_default_color']
             opacity = opacity if opacity is not None else self._aa['rotation_spring_default_opacity']
@@ -104,7 +109,8 @@ class ElementDrawing(Drawing):
             angle = shape.Angle.calculate_angle(x0, y0, x1, y1, x2, y2)
             end_angle = shape.Angle.calculate_angle(x1 + 1, y1, x1, y1, x2, y2)
             start_angle = end_angle - angle
-            x_coords, y_coords = compute_arc_line(center, self._width * self._aa['rotation_spring_radius_scaling'], start_angle,
+            x_coords, y_coords = compute_arc_line(center, self._width * self._aa['rotation_spring_radius_scaling'],
+                                                  start_angle,
                                                   end_angle)
             if self._aa['show_state_of_hysterons'] and self._hysteron_info:
                 mid_angle = (start_angle + end_angle) / 2
@@ -138,9 +144,11 @@ class ElementDrawing(Drawing):
             t = np.linspace(0, 1, 10) * lengths[-1]
             xx = interp1d(lengths, x)(t[1:-1])
             yy = interp1d(lengths, y)(t[1:-1])
-            element_graphic0 = self._ax.plot(x, y, lw=self._aa['line_spring_linewidth'], color=color, alpha=opacity, zorder=0)[0]
+            element_graphic0 = \
+                self._ax.plot(x, y, lw=self._aa['line_spring_linewidth'], color=color, alpha=opacity, zorder=0)[0]
             element_graphic1 = \
-                self._ax.plot(xx, yy, ls='', marker='o', markersize=self._aa['line_spring_linewidth'] * 0.4, color='#CECECE',
+                self._ax.plot(xx, yy, ls='', marker='o', markersize=self._aa['line_spring_linewidth'] * 0.4,
+                              color='#CECECE',
                               zorder=0.1)[0]
             element_graphic = (element_graphic0, element_graphic1)
             if self._aa['show_state_of_hysterons'] and self._hysteron_info:
@@ -178,7 +186,8 @@ class ElementDrawing(Drawing):
             hysteron_state_id_graphic = self._ax.annotate(state_id, xy=hysteron_state_drawing_position,
                                                           color=self._aa['hysteron_state_txt_color'],
                                                           fontsize=0.65 / min(2,
-                                                                              len(state_id)) * self._aa['hysteron_state_label_size'],
+                                                                              len(state_id)) * self._aa[
+                                                                       'hysteron_state_label_size'],
                                                           weight='bold',
                                                           verticalalignment="center",
                                                           horizontalalignment="center",
@@ -205,7 +214,8 @@ class ElementDrawing(Drawing):
             angle = shape.Angle.calculate_angle(x0, y0, x1, y1, x2, y2)
             end_angle = shape.Angle.calculate_angle(x1 + 1, y1, x1, y1, x2, y2)
             start_angle = end_angle - angle
-            x_coords, y_coords = compute_arc_line(center, self._width * self._aa['rotation_spring_radius_scaling'], start_angle,
+            x_coords, y_coords = compute_arc_line(center, self._width * self._aa['rotation_spring_radius_scaling'],
+                                                  start_angle,
                                                   end_angle)
             self._element_graphic.set_xdata(x_coords)
             self._element_graphic.set_ydata(y_coords)
@@ -283,7 +293,8 @@ class ElementDrawing(Drawing):
             self._hysteron_state_id_graphic.set_position(hysteron_state_graphic_position)
             self._hysteron_state_id_graphic.xy = hysteron_state_graphic_position
             self._hysteron_state_id_graphic.set_text(state_id)
-            self._hysteron_state_id_graphic.set_fontsize(0.65 / min(2, len(state_id)) * self._aa['hysteron_state_label_size'])
+            self._hysteron_state_id_graphic.set_fontsize(
+                0.65 / min(2, len(state_id)) * self._aa['hysteron_state_label_size'])
             self._hysteron_state_bg_graphic.set_xdata([hysteron_state_graphic_position[0]])
             self._hysteron_state_bg_graphic.set_ydata([hysteron_state_graphic_position[1]])
             if color is not None:
@@ -326,47 +337,64 @@ class AssemblyDrawing(Drawing):
 
 class ForceDrawing(Drawing):
     def __init__(self, ax: plt.Axes, _node: Node, force_info: dict[str, float], vector_size, assembly_appearance,
-                 color_handler=None):
+                 color_handler=None, is_preload=False):
         super().__init__(ax, assembly_appearance)
         self._node = _node
         self._force_info = force_info
         self._vector_size = vector_size * self._aa['force_vector_scaling']
         self._color_handler = color_handler
+        self._is_preload = is_preload
 
         # CREATE GRAPHICS FOR FORCE DRAWING
         self._force_graphic = self._make()
 
     def _make(self) -> plt.Annotation:
-        origin = np.array((self._node.get_x(), self._node.get_y()))
-        direction = self._force_info['direction']
-        destination = origin + self._vector_size * direction
-        color = self._color_handler.determine_property_value(self._force_info['magnitude']) \
-            if self._color_handler is not None else self._aa['force_default_outer_color']
-        force_graphic = self._ax.annotate('',
-                                          xytext=(origin[0], origin[1]),
-                                          xy=(destination[0], destination[1]),
-                                          verticalalignment="center",
-                                          arrowprops=dict(width=4, headwidth=10, shrink=0.1, lw=1.5,
-                                                          facecolor=self._aa['force_default_inner_color'], edgecolor=color),
-                                          zorder=2)
-
+        if self._force_info is not None:
+            direction = self._force_info['direction']
+            if self._aa['force_vector_connection'] == 'head':
+                destination = np.array((self._node.get_x(), self._node.get_y()))
+                origin = destination - self._vector_size * direction
+            else:
+                origin = np.array((self._node.get_x(), self._node.get_y()))
+                destination = origin + self._vector_size * direction
+            color = (self._color_handler.determine_property_value(self._force_info['amount'])
+                     if self._color_handler is not None else self._aa['force_default_outer_color'])
+            facecolor = self._aa['force_inner_color'] if not self._is_preload else self._aa['preload_force_inner_color']
+            force_graphic = self._ax.annotate('',
+                                              xytext=(origin[0], origin[1]),
+                                              xy=(destination[0], destination[1]),
+                                              verticalalignment="center",
+                                              arrowprops=dict(width=4, headwidth=10, lw=1.5, headlength=10, shrink=0.1,
+                                                              facecolor=to_rgba(facecolor, alpha=0.65), edgecolor=color),
+                                              zorder=2 if not self._is_preload else 1.9)
+        else:
+            force_graphic = None
         return force_graphic
 
     def update(self):
-        origin = np.array((self._node.get_x(), self._node.get_y()))
-        direction = self._force_info['direction']
-        destination = origin + self._vector_size * direction
-        self._force_graphic.set_position((origin[0], origin[1]))
-        self._force_graphic.xy = (destination[0], destination[1])
-        if self._color_handler is not None:
-            color = self._color_handler.determine_property_value(self._force_info['magnitude'])
-            self._force_graphic.arrow_patch.set_edgecolor(color)
+        if self._force_graphic is not None:
+            direction = self._force_info['direction']
+            if self._aa['force_vector_connection'] == 'head':
+                destination = np.array((self._node.get_x(), self._node.get_y()))
+                origin = destination - self._vector_size * direction
+            else:
+                origin = np.array((self._node.get_x(), self._node.get_y()))
+                destination = origin + self._vector_size * direction
+            self._force_graphic.set_position((origin[0], origin[1]))
+            self._force_graphic.xy = (destination[0], destination[1])
+            if self._color_handler is not None:
+                color = self._color_handler.determine_property_value(self._force_info['amount'])
+                self._force_graphic.arrow_patch.set_edgecolor(color)
+        else:
+            pass
 
 
 class ModelDrawing(Drawing):
     def __init__(self, ax: plt.Axes, _model: Model, assembly_appearance: dict,
-                 external_force_vector=None, characteristic_length=None, assembly_span=None,
-                 element_color_handler=None, element_opacity_handler=None, force_color_handler=None,
+                 characteristic_length=None, assembly_span=None,
+                 element_color_handler=None, element_opacity_handler=None,
+                 force_color_handler=None, force_amounts: dict = None,
+                 force_vector_after_preloading=None, preforce_amounts: dict = None
                  ):
         super().__init__(ax, assembly_appearance)
         if characteristic_length is None:
@@ -374,28 +402,63 @@ class ModelDrawing(Drawing):
         if assembly_span is None:
             xmin, ymin, xmax, ymax = _model.get_assembly().get_dimensional_bounds()
             assembly_span = max(xmax - xmin, ymax - ymin)
-        if external_force_vector is None:
-            external_force_vector = _model.get_force_vector()
+
+        self._force_amounts = (force_amounts if force_amounts is not None
+                               else {n: None for n in _model.get_loaded_nodes()})
+
+        self._initial_force_vector = (force_vector_after_preloading if force_vector_after_preloading is not None
+                                      else _model.get_preforce_vector())
+
+        self._preforce_amounts = (preforce_amounts if preforce_amounts is not None
+                                  else {n: None for n in _model.get_preloaded_nodes()})
+
         self._assembly = _model.get_assembly()
         self._element_color_handler = element_color_handler
         self._element_opacity_handler = element_opacity_handler
         self._force_color_handler = force_color_handler
-        self._external_force_vector = external_force_vector
-        self._loaded_nodes_to_dof_indices = {}
+        self._node_to_dof_indices = {}
         self._characteristic_length = characteristic_length
         self._assembly_span = assembly_span
+        self._loaded_nodes = _model.get_loaded_nodes()
+        self._preloaded_nodes = _model.get_preloaded_nodes()
         node_nb_to_dof_indices = self._assembly.get_nodes_dof_indices()
-        for loaded_node in _model.get_loaded_nodes():
-            self._loaded_nodes_to_dof_indices[loaded_node] = node_nb_to_dof_indices[loaded_node.get_node_nb()]
+        for _node in self._loaded_nodes | self._preloaded_nodes:
+            self._node_to_dof_indices[_node] = node_nb_to_dof_indices[_node.get_node_nb()]
 
-        self._all_loaded_node_info = {}
-        self._final_force_vector = _model.get_force_vector()
-        for loaded_node in _model.get_loaded_nodes():
-            ldm_force = self._final_force_vector[self._loaded_nodes_to_dof_indices[loaded_node]]
-            force = self._external_force_vector[self._loaded_nodes_to_dof_indices[loaded_node]]
-            direction = ldm_force / np.linalg.norm(ldm_force)
-            magnitude = np.linalg.norm(force)
-            self._all_loaded_node_info[loaded_node] = {'direction': direction, 'magnitude': magnitude}
+        self._force_directions = {}
+        final_force_vector = _model.get_force_vector()
+        for loaded_node in self._loaded_nodes:
+            final_force = final_force_vector[self._node_to_dof_indices[loaded_node]]
+            direction = final_force / np.linalg.norm(final_force)
+            if np.isnan(direction).any():
+                direction = None
+            self._force_directions[loaded_node] = direction
+
+        self._preforce_directions = {}
+        for preloaded_node in self._preloaded_nodes:
+            initial_force = self._initial_force_vector[self._node_to_dof_indices[preloaded_node]]
+            direction = initial_force / np.linalg.norm(initial_force)
+            if np.isnan(direction).any():
+                direction = None
+            self._preforce_directions[preloaded_node] = direction
+
+        self._all_forces_info = {}
+        if self._aa['show_forces']:
+            for _node in self._loaded_nodes:
+                if self._force_directions[_node] is not None:
+                    self._all_forces_info[_node] = {'direction': self._force_directions[_node],
+                                                    'amount': self._force_amounts[_node]}
+                else:
+                    self._all_forces_info[_node] = None
+
+        self._all_preforces_info = {}
+        if self._aa['show_forces']:
+            for _node in self._preloaded_nodes:
+                if self._preforce_directions[_node] is not None:
+                    self._all_preforces_info[_node] = {'direction': self._preforce_directions[_node],
+                                                       'amount': self._preforce_amounts[_node]}
+                else:
+                    self._all_preforces_info[_node] = None
 
         # CREATE GRAPHIC FOR MODEL DRAWING
         self._assembly_drawing, self._force_drawings = self._make()
@@ -405,25 +468,30 @@ class ModelDrawing(Drawing):
                                            self._element_color_handler, self._element_opacity_handler)
         force_drawings = set()
         if self._aa['show_forces']:
-            for _node, force_info in self._all_loaded_node_info.items():
-                force_drawings.add(
-                    ForceDrawing(self._ax, _node, force_info, 0.1 * self._assembly_span, self._aa,
-                                 self._force_color_handler))
+            for _node in self._loaded_nodes:
+                force_drawings.add(ForceDrawing(self._ax, _node, self._all_forces_info[_node],
+                                                0.1 * self._assembly_span, self._aa, self._force_color_handler,
+                                                is_preload=False))
+            for _node in self._preloaded_nodes:
+                force_drawings.add(ForceDrawing(self._ax, _node, self._all_preforces_info[_node],
+                                                0.1 * self._assembly_span, self._aa, self._force_color_handler,
+                                                is_preload=True))
 
         return assembly_drawing, force_drawings
 
     def update(self):
         self._assembly_drawing.update()
 
-        # First, updating the external force vector of each loaded node
-        for loaded_node, force_info in self._all_loaded_node_info.items():
-            ldm_force = self._final_force_vector[self._loaded_nodes_to_dof_indices[loaded_node]]
-            force = self._external_force_vector[self._loaded_nodes_to_dof_indices[loaded_node]]
-            direction = ldm_force / np.linalg.norm(ldm_force)
-            magnitude = np.linalg.norm(force)
-            self._all_loaded_node_info[loaded_node]['direction'] = direction
-            self._all_loaded_node_info[loaded_node]['magnitude'] = magnitude
+        if self._aa['show_forces']:
+            for loaded_node in self._loaded_nodes:
+                if self._all_forces_info[loaded_node] is not None:
+                    self._all_forces_info[loaded_node]['direction'] = self._force_directions[loaded_node]
+                    self._all_forces_info[loaded_node]['amount'] = self._force_amounts[loaded_node]
+            for preloaded_node in self._preloaded_nodes:
+                if self._all_preforces_info[preloaded_node] is not None:
+                    self._all_preforces_info[preloaded_node]['direction'] = self._preforce_directions[preloaded_node]
+                    self._all_preforces_info[preloaded_node]['amount'] = self._preforce_amounts[preloaded_node]
 
-        # Only then, updating the force drawings
+        # updating the force drawings
         for force_drawing in self._force_drawings:
             force_drawing.update()

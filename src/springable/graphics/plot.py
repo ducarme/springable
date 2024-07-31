@@ -9,18 +9,12 @@ import typing
 
 
 def extract_loading_path(result: static_solver.Result, drive_mode: str, starting_index: int = 0):
-    mdl = result.get_model()
-    u = result.get_displacements()
-    f = result.get_forces()
+    u_load, f_load = result.get_equilibrium_path()
     stability = result.get_stability()
-    loaded_dof_indices = mdl.get_loaded_dof_indices()
-    if starting_index < 0:
-        starting_index = u.shape[0] + starting_index
 
-    f_goal = mdl.get_force_vector()
-    f_goal_normalized = f_goal[loaded_dof_indices] / np.linalg.norm(f_goal[loaded_dof_indices])
-    f_load = np.sum((f[:, loaded_dof_indices] - f[0, loaded_dof_indices]) * f_goal_normalized, axis=1)
-    u_load = np.sum((u[:, loaded_dof_indices] - u[0, loaded_dof_indices]) * f_goal_normalized, axis=1)
+    if starting_index < 0:
+        starting_index = u_load.shape[0] + starting_index
+
     match drive_mode:
         case 'force':
             path_indices = []
@@ -53,18 +47,11 @@ def extract_loading_path(result: static_solver.Result, drive_mode: str, starting
 
 
 def extract_unloading_path(result: static_solver.Result, drive_mode: str, starting_index: int = -1):
-    mdl = result.get_model()
-    u = result.get_displacements()
-    f = result.get_forces()
+    u_load, f_load = result.get_equilibrium_path()
     stability = result.get_stability()
     if starting_index < 0:
-        starting_index = u.shape[0] + starting_index
+        starting_index = u_load.shape[0] + starting_index
 
-    loaded_dof_indices = mdl.get_loaded_dof_indices()
-    f_goal = mdl.get_force_vector()
-    f_goal_normalized = f_goal[loaded_dof_indices] / np.linalg.norm(f_goal[loaded_dof_indices])
-    f_load = np.sum((f[:, loaded_dof_indices] - f[0, loaded_dof_indices]) * f_goal_normalized, axis=1)
-    u_load = np.sum((u[:, loaded_dof_indices] - u[0, loaded_dof_indices]) * f_goal_normalized, axis=1)
     match drive_mode:
         case 'force':
             path_indices = []
@@ -99,15 +86,7 @@ def extract_unloading_path(result: static_solver.Result, drive_mode: str, starti
 def force_displacement_curve_in_ax(result: static_solver.Result, ax: plt.Axes, plot_options,
                                    color=None, label=None):
     po = plot_options
-    mdl = result.get_model()
-    u = result.get_displacements()
-    f = result.get_forces()
-    loaded_dof_indices = mdl.get_loaded_dof_indices()
-
-    f_goal = mdl.get_force_vector()
-    f_goal_normalized = f_goal[loaded_dof_indices] / np.linalg.norm(f_goal[loaded_dof_indices])
-    f_load = np.sum((f[:, loaded_dof_indices] - f[0, loaded_dof_indices]) * f_goal_normalized, axis=1)
-    u_load = np.sum((u[:, loaded_dof_indices] - u[0, loaded_dof_indices]) * f_goal_normalized, axis=1)
+    u_load, f_load = result.get_equilibrium_path()
     stability_markersizes = [po['size_for_stable_points'],
                              po['size_for_stabilizable_points'],
                              po['size_for_unstable_points']]

@@ -138,15 +138,28 @@ class Result:
     def get_step_indices(self):
         return self._step_indices
 
-    def get_min_and_max_loading_displacement_and_force(self):
+    def get_equilibrium_path(self):
         u = self.get_displacements()
         f = self.get_forces()
-        loaded_dof_indices = self._model.get_loaded_dof_indices()
-        f_goal = self._model.get_force_vector()
-        f_goal_normalized = f_goal[loaded_dof_indices] / np.linalg.norm(f_goal[loaded_dof_indices])
-        f_load = np.sum((f[:, loaded_dof_indices] - f[0, loaded_dof_indices]) * f_goal_normalized, axis=1)
-        u_load = np.sum((u[:, loaded_dof_indices] - u[0, loaded_dof_indices]) * f_goal_normalized, axis=1)
+        m = self.get_model()
+        n = m.get_force_vector() / np.linalg.norm(m.get_force_vector())  # force direction
+        loaded_dof_indices = m.get_loaded_dof_indices()
+
+        # projection of the displacement vector (relative to preload)
+        # on the force direction final loading step
+        displacement = np.sum((u[:, loaded_dof_indices] - u[0, loaded_dof_indices]) * n[loaded_dof_indices], axis=1)
+
+        # projection of the applied vector force (relative to preload)
+        # on the force direction prescribed in final loading step
+        force = np.sum((f[:, loaded_dof_indices] - f[0, loaded_dof_indices]) * n[loaded_dof_indices], axis=1)
+        return displacement, force
+
+    def get_min_and_max_loading_displacement_and_force(self):
+        u_load, f_load = self.get_equilibrium_path()
         return np.min(u_load), np.max(u_load), np.min(f_load), np.max(f_load)
+
+    def get_starting_index(self):
+        return self._starting_index
 
 
 class UnusableSolution(Exception):
@@ -300,6 +313,13 @@ class StaticSolver:
                 previous_delta_lambda_inc = None
                 increment_retries = 0
                 force_progress = 0.0
+
+                if step > 0:
+                    equilibrium_displacements.append(equilibrium_displacements[-1])
+                    equilibrium_forces.append(equilibrium_forces[-1])
+                    equilibrium_stability.append(equilibrium_stability[-1])
+                    equilibrium_eigval_stats.append(equilibrium_eigval_stats[-1])
+                    step_indices.append(step)
 
                 if (set(loaded_dof_indices) <= set(self._fixed_dof_indices)
                         or np.linalg.norm(step_force_vector[self._free_dof_indices]) == 0.0):

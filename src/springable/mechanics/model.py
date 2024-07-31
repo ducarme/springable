@@ -49,14 +49,23 @@ class Model:
     def get_loaded_nodes_preloading_step_list(self):
         return self._loaded_nodes_step_list[:-1]
 
-    def get_loaded_nodes(self):
+    def get_loaded_nodes(self) -> set[Node]:
         return self._loaded_nodes_step_list[-1]
+
+    def get_preloaded_nodes(self) -> set[Node]:
+        preloaded_nodes = set()
+        for loaded_nodes in self._loaded_nodes_step_list[:-1]:
+            preloaded_nodes |= loaded_nodes
+        return preloaded_nodes
 
     def get_force_vectors_preloading_step_list(self):
         return self._force_vector_step_list[:-1]
 
     def get_force_vector(self):
         return self._force_vector_step_list[-1]
+
+    def get_preforce_vector(self):
+        return np.sum(self._force_vector_step_list[:-1], axis=0)
 
     def get_max_displacement_map_preloading_step_list(self):
         return self._max_displacement_map_step_list[:-1]
