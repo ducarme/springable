@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "springable"
-version = "0.0.3"
+version = "0.0.4"
 authors = [
     {name="Paul Ducarme"},
     {email="paulducarme@hotmail.com" },
@@ -24,6 +24,11 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 keywords = ["nonlinear", "spring", "simulation", "animation", "instability", "snap-through"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = ["springable.gui"]
+
 
 [project.urls]
 Homepage = "https://github.com/ducarme/springable"
