@@ -27,7 +27,7 @@ keywords = ["nonlinear", "spring", "simulation", "animation", "instability", "sn
 
 [tool.setuptools.packages.find]
 where = ["src"]
-exclude = ["springable.gui", "springable.behavior_creation"]
+exclude = ["springable.gui", "springable.behavior_creation.py"]
 
 
 [project.urls]
