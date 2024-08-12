@@ -13,6 +13,7 @@ usable_shape_operations = KeywordMapping({shape.Sum: 'SUM',
                                           shape.Negative: 'NEG'})
 
 usable_behaviors = KeywordMapping({mechanical_behavior.LinearBehavior: 'LINEAR',
+                                   mechanical_behavior.NaturalBehavior: 'NATURAL',
                                    mechanical_behavior.BezierBehavior: 'BEZIER',
                                    mechanical_behavior.Bezier2Behavior: 'BEZIER2',
                                    mechanical_behavior.ZigZagBehavior: 'ZIGZAG',

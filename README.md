@@ -31,7 +31,7 @@ in nonlinear mechanics or to guide engineers and creators in the early design st
 
 Use `pip` to install. In the terminal simply enter
 
-    pip install springable
+    python -m pip install springable
 
 and you are good to go!
 
@@ -206,7 +206,7 @@ Along with its three nodes, the **mechanical behavior** must be specified, and o
 spring (in radians). If no natural angle is provided, the natural angle is automatically set to the angle defined by the
 three specified nodes.
 To define a rotation spring, a line with the following structure is added to the section `ROTATION SPRINGS`:\
-`<node index>-<node index>-<node index>, <nechanical behavior>, [natural angle]`.
+`<node index>-<node index>-<node index>, <mechanical behavior>, [natural angle]`.
 * `<node index>` is the index of node A.
 * `<node index>` is the index of node B.
 * `<node index>` is the index of node C.

@@ -7,9 +7,8 @@ from .mechanical_behavior import (MechanicalBehavior)
 class Element:
     """ Class describing an element"""
 
-    def __init__(self, _shape: shape.Shape, natural_measure: float, behavior: MechanicalBehavior, element_name=None):
+    def __init__(self, _shape: shape.Shape, behavior: MechanicalBehavior, element_name=None):
         self._shape = _shape
-        self._natural_measure = natural_measure
         self._behavior = behavior
         self._t = np.zeros(self._behavior.get_nb_dofs() - 1)  # values of the internal degrees of freedom
         self._el_nb = None
@@ -17,9 +16,6 @@ class Element:
 
     def get_nodes(self) -> tuple[Node, ...]:
         return self._shape.get_nodes()
-
-    def get_natural_measure(self) -> float:
-        return self._natural_measure
 
     def get_shape(self) -> shape.Shape:
         return self._shape
@@ -61,18 +57,18 @@ class Element:
 
     def compute_energy(self) -> float:
         """ Computes and returns the elastic energy currently stored in the element """
-        alpha = self._shape.compute(shape.Shape.MEASURE) - self._natural_measure
+        alpha = self._shape.compute(shape.Shape.MEASURE)
         return self._behavior.elastic_energy(alpha, *self._t)
 
     def compute_generalized_force(self) -> float:
         """ Computes and returns the value of the generalized force with respect to alpha (elemental reference
         system)"""
-        alpha = self._shape.compute(shape.Shape.MEASURE) - self._natural_measure
+        alpha = self._shape.compute(shape.Shape.MEASURE)
         return self._behavior.gradient_energy(alpha, *self._t)[0]
 
     def compute_generalized_stiffness(self) -> float:
         """ Computes and returns the value of the generalized stiffness with respect to alpha """
-        alpha = self._shape.compute(shape.Shape.MEASURE) - self._natural_measure
+        alpha = self._shape.compute(shape.Shape.MEASURE)
         hessian = self._behavior.hessian_energy(alpha, *self._t)
         if len(hessian) == 1:  # for behavior with 0 hidden variable (Univariate behavior)
             return hessian[0]
@@ -95,7 +91,7 @@ class Element:
         """ Computes and returns the gradient of the elastic energy with respect to the general coordinates (global
         reference system)"""
         shape_measure, jacobian = self._shape.compute(shape.Shape.MEASURE_AND_JACOBIAN)
-        alpha = shape_measure - self._natural_measure
+        alpha = shape_measure
 
         if self._behavior.get_nb_dofs() == 1:
             force_vector = self._behavior.gradient_energy(alpha)[0] * jacobian
@@ -116,7 +112,7 @@ class Element:
         """ Computes and returns the matrix of the second derivatives of the elastic energy with respect to the general
         coordinates (global reference system)"""
         shape_measure, jacobian, hessian = self._shape.compute(shape.Shape.MEASURE_JACOBIAN_AND_HESSIAN)
-        alpha = shape_measure - self._natural_measure
+        alpha = shape_measure
 
         if self._behavior.get_nb_dofs() == 1:
             stiffness_matrix = (self._behavior.hessian_energy(alpha)[0] * np.outer(jacobian, jacobian)
@@ -126,7 +122,7 @@ class Element:
         if self._behavior.get_nb_dofs() == 2:
             n = self.get_nb_dofs()
             stiffness_matrix = np.empty((n, n))
-            alpha = shape_measure - self._natural_measure
+            alpha = shape_measure
             dvdalpha, dvdt = self._behavior.gradient_energy(alpha, *self._t)
             d2vdalpha2, d2vdalphadt, d2vdt2 = self._behavior.hessian_energy(alpha, *self._t)
             stiffness_matrix[:-1, :-1] = (d2vdalpha2 * np.outer(jacobian, jacobian)

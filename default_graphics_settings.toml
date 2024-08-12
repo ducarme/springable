@@ -86,8 +86,8 @@ drive_mode = "none"
 # "none" (nothing driven), "force" (force-driven), "displacement" (displacement-driven)
 cycling = false
 default_animation_name = "animation"
-save_as_mp4 = false
-save_as_transparent_mov = false
+save_as_mp4 = false  # can only save as mp4 if ffmpeg is installed and is 'in the PATH'
+save_as_transparent_mov = false # can only save as mov if ffmpeg is installed and is 'in the PATH'
 save_as_gif = true
 save_frames_as_png = false
 side_plot_mode = "force_displacement_curve"

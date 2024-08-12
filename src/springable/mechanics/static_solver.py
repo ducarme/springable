@@ -354,7 +354,6 @@ class StaticSolver:
                     k = self._get_reduced_stiffness_matrix(ks)
                     if i == 0 and detect_mechanism:
                         if cond(k, p=1) > 1e8:
-                            print(cond(k, p=1))
                             raise MechanismDetected
                     try:
                         delta_u_hat = solve(k, g, assume_a='sym')
@@ -480,7 +479,7 @@ class StaticSolver:
                             self._compute_lowest_eigenvalues_and_count_negative_ones(ks, loaded_dof_indices))
                     else:
                         increment_retries += 1
-                        if increment_retries <= 5:
+                        if increment_retries <= 5 and radius_p > 1e-14:
                             if show_warnings:
                                 print(f"\nCorrection iterations did not converge for the increment {i + 1}"
                                       f"\t-> retry increment with smaller radius ({radius_p / 2.0:.3})"

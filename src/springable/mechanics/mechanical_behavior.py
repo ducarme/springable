@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 class MechanicalBehavior:
     _nb_dofs: int = None
 
-    def __init__(self, **parameters):
+    def __init__(self, natural_measure, /, **parameters):
+        self._natural_measure = natural_measure
         self._parameters = parameters
 
     def elastic_energy(self, *variables: float) -> float:
@@ -28,6 +29,9 @@ class MechanicalBehavior:
 
     def get_parameters(self) -> dict[str, ...]:
         return self._parameters
+
+    def get_natural_measure(self):
+        return self._natural_measure
 
 
 class UnivariateBehavior(MechanicalBehavior):
@@ -61,14 +65,14 @@ class BivariateBehavior(MechanicalBehavior):
 
 class LinearBehavior(UnivariateBehavior):
 
-    def __init__(self, k: float):
-        super().__init__(k=k)
+    def __init__(self, natural_measure: float, k: float):
+        super().__init__(natural_measure, k=k)
 
     def elastic_energy(self, alpha: float | np.ndarray) -> float:
-        return 0.5 * self._parameters['k'] * alpha ** 2
+        return 0.5 * self._parameters['k'] * (alpha - self._natural_measure) ** 2
 
     def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float]:
-        return self._parameters['k'] * alpha,
+        return self._parameters['k'] * (alpha - self._natural_measure),
 
     def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
         return self._parameters['k'],
@@ -77,33 +81,48 @@ class LinearBehavior(UnivariateBehavior):
         return self._parameters['k']
 
 
+class NaturalBehavior(UnivariateBehavior):
+
+    def __init__(self, natural_measure: float, k: float):
+        super().__init__(natural_measure, k=k)
+
+    def elastic_energy(self, alpha: float | np.ndarray) -> float:
+        return self._parameters['k'] * self._natural_measure * alpha * (np.log(alpha / self._natural_measure) - 1)
+
+    def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float]:
+        return self._parameters['k'] * self._natural_measure * np.log(alpha / self._natural_measure),
+
+    def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
+        return self._parameters['k'] * self._natural_measure / alpha,
+
+
 class BezierBehavior(UnivariateBehavior):
-    def __init__(self, u_i: list[float], f_i: list[float], sampling: int = 100):
-        super().__init__(u_i=u_i, f_i=f_i)
+    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], sampling: int = 100):
+        super().__init__(natural_measure, u_i=u_i, f_i=f_i)
         u_coefs = np.array([0.0] + u_i)
         f_coefs = np.array([0.0] + f_i)
         if not is_monotonic(u_coefs):
             raise InvalidBehaviorParameters("The Bezier behavior does not describe a function, try Bezier2 instead.")
         t = np.linspace(0, 1, sampling)
-        alpha = evaluate_poly(t, u_coefs)
+        u = evaluate_poly(t, u_coefs)
 
         def fdu(_t, _): return evaluate_poly(_t, f_coefs) * evaluate_derivative_poly(_t, u_coefs)
 
         energy = solve_ivp(fun=fdu, t_span=[0.0, 1.0], y0=[0.0], t_eval=t).y[0, :]
         generalized_force = evaluate_poly(t, f_coefs)
         generalized_stiffness = evaluate_derivative_poly(t, f_coefs) / evaluate_derivative_poly(t, u_coefs)
-        self._energy = interp1d(alpha, energy, kind='linear', fill_value='extrapolate')
-        self._first_der_energy = interp1d(alpha, generalized_force, kind='linear', fill_value='extrapolate')
-        self._second_der_energy = interp1d(alpha, generalized_stiffness, kind='linear', fill_value='extrapolate')
+        self._energy = interp1d(u, energy, kind='linear', fill_value='extrapolate')
+        self._first_der_energy = interp1d(u, generalized_force, kind='linear', fill_value='extrapolate')
+        self._second_der_energy = interp1d(u, generalized_stiffness, kind='linear', fill_value='extrapolate')
 
     def elastic_energy(self, alpha: float | np.ndarray) -> float:
-        return self._energy(alpha)
+        return self._energy(alpha - self._natural_measure)
 
     def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float]:
-        return self._first_der_energy(alpha),
+        return self._first_der_energy(alpha - self._natural_measure),
 
     def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
-        return self._second_der_energy(alpha),
+        return self._second_der_energy(alpha - self._natural_measure),
 
     @classmethod
     def compute_fitting_parameters(cls, force_displacement_curves: list[tuple], degree: int):
@@ -113,10 +132,11 @@ class BezierBehavior(UnivariateBehavior):
         u_sampling = np.linspace(0.0, umax, nb_samples)
 
         def compute_mismatch(x: np.ndarray) -> float:
+            natural_measure = 1.0
             u_i = x[::2].tolist()
             f_i = x[1::2].tolist()
-            behavior = cls(u_i=u_i, f_i=f_i)
-            f_fit = behavior.gradient_energy(u_sampling)[0]
+            behavior = cls(natural_measure, u_i=u_i, f_i=f_i)
+            f_fit = behavior._first_der_energy(u_sampling)[0]
             mismatch = 0.0
             for fd_curve in force_displacement_curves:
                 u_data = fd_curve[0]
@@ -155,8 +175,8 @@ class BezierBehavior(UnivariateBehavior):
 
 class Bezier2Behavior(BivariateBehavior):
 
-    def __init__(self, u_i: list[float], f_i: list[float]):
-        super().__init__(u_i=u_i, f_i=f_i)
+    def __init__(self, natural_measure, u_i: list[float], f_i: list[float]):
+        super().__init__(natural_measure, u_i=u_i, f_i=f_i)
         self._a_coefs = np.array([0.0] + u_i)
         self._b_coefs = np.array([0.0] + f_i)
 
@@ -315,7 +335,7 @@ class Bezier2Behavior(BivariateBehavior):
         else:
             self._is_k_constant = False
 
-            def k_fun(t):
+            def k_fun(t) -> np.ndarray:
                 k_arr = np.zeros_like(t)
                 da_pos = self._da(t) >= 0
                 da_neg = self._da(t) < 0
@@ -323,13 +343,13 @@ class Bezier2Behavior(BivariateBehavior):
                 k_arr[da_neg] = kstar
                 return k_arr
 
-            def dk_fun(t):
+            def dk_fun(t) -> np.ndarray:
                 dk_arr = np.zeros_like(t)
                 indices = np.logical_and(self._da(t) >= 0, self._dbda(t) + delta > kstar)
                 dk_arr[indices] = 1.0 * self._d_dbda(t[indices])
                 return dk_arr
 
-            def d2k_fun(t):
+            def d2k_fun(t) -> np.ndarray:
                 d2k_arr = np.zeros_like(t)
                 indices = np.logical_and(self._da(t) >= 0, self._dbda(t) + delta > kstar)
                 d2k_arr[indices] = 1.0 * self._d2_dbda(t[indices])
@@ -339,24 +359,29 @@ class Bezier2Behavior(BivariateBehavior):
         self._dk = dk_fun
         self._d2k = d2k_fun
 
+        self.plot_energy_landscape()
+
     def elastic_energy(self, alpha: float, t: float) -> np.ndarray:
-        return 0.5 * self._k(t) * (alpha - self._a(t)) ** 2 + alpha * self._b(t) - self._int_adb(t)
+        y = alpha - self._natural_measure
+        return 0.5 * self._k(t) * (y - self._a(t)) ** 2 + y * self._b(t) - self._int_adb(t)
 
     def gradient_energy(self, alpha: float, t: float) -> tuple[np.ndarray, np.ndarray]:
-        dvdalpha = self._k(t) * (alpha - self._a(t)) + self._b(t)
-        dvdt = (alpha - self._a(t)) * (self._db(t) - self._k(t) * self._da(t))
+        y = alpha - self._natural_measure
+        dvdalpha = self._k(t) * (y - self._a(t)) + self._b(t)
+        dvdt = (y - self._a(t)) * (self._db(t) - self._k(t) * self._da(t))
         if not self._is_k_constant:
-            dvdt += 0.5 * (alpha - self._a(t)) ** 2 * self._dk(t)
+            dvdt += 0.5 * (y - self._a(t)) ** 2 * self._dk(t)
         return dvdalpha, dvdt
 
     def hessian_energy(self, alpha: float, t: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        y = alpha - self._natural_measure
         d2vdalpha2 = self._k(t)
         d2vdalphadt = self._db(t) - self._k(t) * self._da(t)
-        d2vdt2 = (alpha - self._a(t)) * (self._d2b(t) - self._k(t) * self._d2a(t)) + self._da(t) * (
+        d2vdt2 = (y - self._a(t)) * (self._d2b(t) - self._k(t) * self._d2a(t)) + self._da(t) * (
                 self._k(t) * self._da(t) - self._db(t))
         if not self._is_k_constant:
-            d2vdalphadt += self._dk(t) * (alpha - self._a(t))
-            d2vdt2 += (alpha - self._a(t)) * (0.5 * self._d2k(t) * (alpha - self._a(t)) - 2 * self._da(t) * self._dk(t))
+            d2vdalphadt += self._dk(t) * (y - self._a(t))
+            d2vdt2 += (y - self._a(t)) * (0.5 * self._d2k(t) * (y - self._a(t)) - 2 * self._da(t) * self._dk(t))
         return d2vdalpha2, d2vdalphadt, d2vdt2
 
     def get_hysteron_info(self) -> dict[str, float]:
@@ -387,16 +412,20 @@ class Bezier2Behavior(BivariateBehavior):
                                    'is_branch_stable': is_branch_stable,
                                    'branch_ids': branch_ids}
 
-    def plot_energy_landscape(self, ax):
-        n = 50
-        t = np.linspace(0, 1, n)
-        alpha = np.linspace(np.min(self._a(t)), np.max(self._a(t)), n)
+    def plot_energy_landscape(self, ax=None):
+        n = 10_000
+        t = np.linspace(0, 2.0, n)
+        y = np.linspace(np.min(self._a(t)), np.max(self._a(t)), n)
         f = np.linspace(np.min(self._b(t)), np.max(self._b(t)), n)
-        t_grid, alpha_grid = np.meshgrid(t, alpha)
+        t_grid, y_grid = np.meshgrid(t, y)
         v_grid = np.empty_like(t_grid)
         for i in range(t_grid.shape[0]):
-            v_grid[i, :] = self.elastic_energy(alpha_grid[i, :], t_grid[i, :])
-        # fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+            v_grid[i, :] = self.elastic_energy(y_grid[i, :], t_grid[i, :])
+        if ax is None:
+            make_new_fig = True
+            fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+        else:
+            make_new_fig = False
 
         a = self._a(t)
         int_bda = self._int_bda(t)
@@ -404,26 +433,29 @@ class Bezier2Behavior(BivariateBehavior):
         stabilizable = np.logical_and(self._db(t) < 0, self._da(t) > 0)
         unstable = self._da(t) < 0
 
-        ax.plot_surface(t_grid, alpha_grid, v_grid, cmap='viridis')
-        ax.plot(t[stable], a[stable], int_bda[stable], 'bo', label='path')
-        ax.plot(t[stabilizable], a[stabilizable], int_bda[stabilizable], 'ko', label='path')
-        ax.plot(t[unstable], a[unstable], int_bda[unstable], 'ro', label='path')
+        ax.plot_surface(t_grid, y_grid, v_grid - 10 * y_grid, cmap='viridis')
+        # ax.plot(t[stable], a[stable], int_bda[stable], 'bo', label='path')
+        # ax.plot(t[stabilizable], a[stabilizable], int_bda[stabilizable], 'ko', label='path')
+        # ax.plot(t[unstable], a[unstable], int_bda[unstable], 'ro', label='path')
         ax.set_xlabel('$t$')
-        ax.set_ylabel('$\\alpha$')
+        ax.set_ylabel('$\\y$')
         ax.set_zlabel('$U$')
+        if make_new_fig:
+            plt.show()
 
 
 class IdealGas(UnivariateBehavior):
 
-    def __init__(self, n: float, R: float, T0: float, v0: float):
-        """ n:  the amount of substance (number of gas particles, number of moles, ...)
+    def __init__(self, v0: float, n: float, R: float, T0: float):
+        """
+            v0: the volume the amount of gas would take at ambient pressure
+            n:  the amount of substance (number of gas particles, number of moles, ...)
             R:  is the proportionality factor between the gas temperature and the gas thermal energy per unit of substance
                 (Boltzmann constant if the amount of substance is expressed as the number of particles,
                 the molar gas constant if the amount of substance is expressed as the number of moles, ...)
             T0: the temperature of the gas at ambient pressure
-            v0: the volume the amount of gas would take at ambient pressure
         """
-        super().__init__(n=n, R=R, T0=T0, v0=v0)
+        super().__init__(v0, n=n, R=R, T0=T0)
 
     def elastic_energy(self, alpha: float | np.ndarray) -> float:
         raise NotImplementedError("This method is abstract")
@@ -439,70 +471,70 @@ class IsothermicGas(IdealGas):
 
     def elastic_energy(self, alpha: float | np.ndarray) -> float:
         v0 = self._parameters['v0']
-        v = alpha + v0
+        v = alpha
         nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
         return nRT * (v / v0 - 1.0 - np.log(v / v0))
 
     def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float]:
         v0 = self._parameters['v0']
-        v = alpha + v0
+        v = alpha
         nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
-        return nRT * (v - v0) / (v*v0),
+        return nRT * (v - v0) / (v * v0),
 
     def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
-        v0 = self._parameters['v0']
-        v = alpha + v0
+        v = alpha
         nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
         return nRT / v ** 2,
 
 
 class IsentropicGas(IdealGas):
 
-    def __init__(self, n: float, R: float, T0: float, v0: float, gamma: float):
-        """ n:  the amount of substance (number of gas particles, number of moles, ...)
+    def __init__(self, v0: float, n: float, R: float, T0: float, gamma: float):
+        """
+            v0: the volume the amount of gas would take at ambient pressure
+            n:  the amount of substance (number of gas particles, number of moles, ...)
             R:  is the proportionality factor between the gas temperature and the gas thermal energy per unit of substance
                 (Boltzmann constant if the amount of substance is expressed as the number of particles,
                 the molar gas constant if the amount of substance is expressed as the number of moles, ...)
             T0: the temperature of the gas at ambient pressure
-            v0: the volume the amount of gas would take at ambient pressure
             gamma: the heat capacity ratio (a.k.a. adiabatic index), that is, cp/cv. Must be strictly greater than 1.
                    It is a non-dimensional property of the gas (for dry air, gamma = 1.4)
         """
         if gamma < 1.0:
             raise InvalidBehaviorParameters(f"The ratio of heat capacities 'gamma' must be strictly greater than 1."
                                             f"Current value = {gamma}")
-        super().__init__(n=n, R=R, T0=T0, v0=v0)
+        super().__init__(v0, n=n, R=R, T0=T0)
         self._parameters['gamma'] = gamma
 
     def elastic_energy(self, alpha: float | np.ndarray) -> float:
-        v0 = self._parameters['v0']
+        v0 = self._natural_measure
         gamma = self._parameters['gamma']
-        v = alpha + v0
+        v = alpha
         nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
-        return nRT0 * (v/v0 - 1) + nRT0 / (gamma - 1) * ((v0 / v) ** (gamma - 1) - 1)
+        return nRT0 * (v / v0 - 1) + nRT0 / (gamma - 1) * ((v0 / v) ** (gamma - 1) - 1)
 
     def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float]:
-        v0 = self._parameters['v0']
+        v0 = self._natural_measure
         gamma = self._parameters['gamma']
-        v = alpha + v0
+        v = alpha
         nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
-        return nRT0 * (1/v0 - 1 / v * (v0 / v) ** (gamma - 1)),
+        return nRT0 * (1 / v0 - 1 / v * (v0 / v) ** (gamma - 1)),
 
     def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
-        v0 = self._parameters['v0']
+        v0 = self._natural_measure
         gamma = self._parameters['gamma']
-        v = alpha + v0
+        v = alpha
         nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
         return nRT0 * gamma / v ** 2 * (v0 / v) ** (gamma - 1),
 
 
 class ZigZagBehavior(UnivariateBehavior):
-    def __init__(self, a, x, delta):
+    def __init__(self, natural_measure, a, x, delta):
         if x[0] - 0.0 < delta or (len(x) > 1 and np.min(np.diff(x)) < 2 * delta):
             raise InvalidBehaviorParameters(f'Smoothing factor {delta} is too large for the zigzag intervals provided.')
         if len(a) != len(x) + 1:
             raise InvalidBehaviorParameters(f'Expected {len(a) - 1} transitions, but only {len(x)} were provided.')
-        super().__init__(a=a, x=x, delta=delta)
+        super().__init__(natural_measure, a=a, x=x, delta=delta)
         self._u_i, self._f_i = compute_zigzag_control_points(a, x)
         self._generalized_force_function = create_smooth_zigzag_function(a, x, delta)
         self._generalized_stiffness_function = create_smooth_zigzag_derivative_function(a, x, delta)
@@ -522,18 +554,18 @@ class ZigZagBehavior(UnivariateBehavior):
         #     return e
         # else:
         #     return quad(self._generalized_force_function, 0.0, alpha)[0]
-        return quad(self._generalized_force_function, 0.0, alpha)[0]
+        return quad(self._generalized_force_function, 0.0, alpha - self._natural_measure)[0]
 
     def gradient_energy(self, alpha: float) -> tuple[float]:
-        return self._generalized_force_function(alpha),
+        return self._generalized_force_function(alpha - self._natural_measure),
 
     def hessian_energy(self, alpha: float) -> tuple[float]:
-        return self._generalized_stiffness_function(alpha),
+        return self._generalized_stiffness_function(alpha - self._natural_measure),
 
 
 class ContactBehavior(UnivariateBehavior):
     def __init__(self, k, d0):
-        super().__init__(d0=d0, k=k)
+        super().__init__(None, d0=d0, k=k)
 
     def elastic_energy(self, alpha: float) -> float:
         k = self._parameters['k']

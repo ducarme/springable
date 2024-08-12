@@ -157,7 +157,7 @@ def scan_parameter_space(model_path, save_dir, scan_parameters_one_by_one=True,
             design_parameters = dict(zip(design_parameter_names, design_parameter_combinations[i, :]))
             parameters.update(design_parameters)
             mdl = io.read_model(model_path, parameters)
-            res = solve_model(mdl, **solver_settings)
+            res = solve_model(mdl, solver_settings)
 
             # saving
             sim_name = f"sim{i}"

@@ -57,19 +57,22 @@ def text_to_node(text, evaluator: se.SimpleEval = None) -> Node:
 
 def behavior_to_text(_behavior: MechanicalBehavior, fmt='') -> str:
     if isinstance(_behavior, LinearBehavior):
-        return str(_behavior.get_spring_constant())
+        text = str(_behavior.get_spring_constant())
+    else:
+        text = usable_behaviors.type_to_name[type(_behavior)]
+        text += '('
+        text += '; '.join([f'{par_name}={par_val:{fmt}}' if not isinstance(par_val, list)
+                           else f'{par_name}=[{"; ".join([f"{par_val_i:{fmt}}" for par_val_i in par_val])}]'
+                           for par_name, par_val in _behavior.get_parameters().items()])
+        text += ')'
 
-    text = usable_behaviors.type_to_name[type(_behavior)]
-    text += '('
-    text += '; '.join([f'{par_name}={par_val:{fmt}}' if not isinstance(par_val, list)
-                       else f'{par_name}=[{"; ".join([f"{par_val_i:{fmt}}" for par_val_i in par_val])}]'
-                       for par_name, par_val in _behavior.get_parameters().items()
-                       if not (isinstance(_behavior, IdealGas) and par_name == 'v0')])
-    text += ')'
+    natural_measure = _behavior.get_natural_measure()
+    if natural_measure is not None:
+        text += f', {natural_measure}'
     return text
 
 
-def text_to_behavior(text: str, evaluator: se.SimpleEval = None, natural_measure: float = None) -> MechanicalBehavior:
+def text_to_behavior(text: str, natural_measure, evaluator: se.SimpleEval = None, ) -> MechanicalBehavior:
     if evaluator is None:
         evaluator = se.SimpleEval()
     for behavior_type, behavior_name in usable_behaviors.type_to_name.items():
@@ -85,7 +88,7 @@ def text_to_behavior(text: str, evaluator: se.SimpleEval = None, natural_measure
                 behavior_text_path = os.path.join(unit_library, unit_name, behavior_name.lower() + '_model.txt')
                 with open(behavior_text_path) as fr:
                     line = fr.readline()
-                return text_to_behavior(line)
+                return text_to_behavior(line, natural_measure, evaluator)
             else:
                 parameters = {}
                 for parameter_txt in smart_split(parameters_txt, ';'):
@@ -100,14 +103,13 @@ def text_to_behavior(text: str, evaluator: se.SimpleEval = None, natural_measure
                     else:
                         par_val = evaluator.eval(par_val_txt)
                     parameters[par_name] = par_val
-                if issubclass(behavior_type, IdealGas):
-                    if parameters.get('v0') is None:
-                        parameters['v0'] = natural_measure
-
-            return behavior_type(**parameters)
+            if behavior_type == ContactBehavior:
+                return behavior_type(**parameters)
+            else:
+                return behavior_type(natural_measure, **parameters)
     else:  # the behavior does not match any name --> linear behavior
         spring_constant = evaluator.eval(text.strip())
-        return LinearBehavior(spring_constant)
+        return LinearBehavior(natural_measure, spring_constant)
 
 
 def _determine_usable_shape_type_name(_shape):
@@ -155,9 +157,7 @@ def element_to_text(_element: Element) -> str:
     text = text.lstrip()
     text += shape_description
     text += ', '
-    text += f"{behavior_to_text(_element.get_behavior())}"
-    if not isinstance(_element.get_behavior(), ContactBehavior):
-        text += f", {_element.get_natural_measure()}"
+    text += behavior_to_text(_element.get_behavior())
     return text
 
 
@@ -179,11 +179,9 @@ def text_to_element(element_txt: str,
 
     # behavior
     behavior_txt = element_description[1]
-    behavior = text_to_behavior(behavior_txt, evaluator, natural_measure=natural_measure)
+    behavior = text_to_behavior(behavior_txt, natural_measure, evaluator)
 
-
-
-    return Element(_shape, natural_measure, behavior)
+    return Element(_shape, behavior)
 
 
 def assembly_to_text(assembly: Assembly) -> str:

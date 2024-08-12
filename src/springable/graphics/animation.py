@@ -13,19 +13,19 @@ from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-
 def draw_model(mdl: model.Model, save_dir=None, save_name='model', show=True, **assembly_appearance):
     aa = DEFAULT_ASSEMBLY_APPEARANCE.copy()
     aa.update(assembly_appearance)
 
     fig, ax = plt.subplots()
     ax.set_aspect('equal')
-
-    ModelDrawing(ax, mdl, aa)
     xmin, ymin, xmax, ymax = mdl.get_assembly().get_dimensional_bounds()
     assembly_span = max(xmax - xmin, ymax - ymin)
     canvas_span = 1.25 * assembly_span
     midx, midy = (xmin + xmax) / 2, (ymin + ymax) / 2
+
+    ModelDrawing(ax, mdl, aa, assembly_span=assembly_span)
+
     ax.set_xlim(midx - canvas_span / 2, midx + canvas_span / 2)
     ax.set_ylim(midy - canvas_span / 2, midy + canvas_span / 2)
     if save_dir is not None:
