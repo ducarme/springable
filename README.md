@@ -7,8 +7,7 @@
 [![Research Group](https://img.shields.io/badge/Research-AMOLF%20Soft%20Robotic%20Matter%20Group-67CD00)](https://overvelde.com/)
 [![Made with love in Amsterdam (Netherlands)](https://img.shields.io/badge/Made%20with%20%E2%9D%A4%EF%B8%8F%20in-Amsterdam%20(Netherlands)-ece4fc)](https://amolf.nl/)
 
-
-https://github.com/user-attachments/assets/a66c2c8f-b28c-4e08-a679-454dc0414530
+<video controls autoplay width="100" height="100" src="https://github.com/user-attachments/assets/a66c2c8f-b28c-4e08-a679-454dc0414530"></video>
 
 
 The Python package `springable` allows you to simulate how structures made out of springs deform when subject to forces.
