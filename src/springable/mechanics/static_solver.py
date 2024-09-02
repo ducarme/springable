@@ -268,15 +268,16 @@ class StaticSolver:
         """
         start = time.time()
         nb_steps = len(force_vector_step_list)
-
+        initial_coordinates = self._assembly.get_general_coordinates()
         equilibrium_forces = [np.zeros(self._nb_dofs)]
         equilibrium_displacements = [np.zeros(self._nb_dofs)]
         step_indices: list[int] = [0]
         try:
-            initial_ks = self._assembly.compute_structural_stiffness_matrix()
+            ks = self._assembly.compute_structural_stiffness_matrix()
+            k = self._get_reduced_stiffness_matrix(ks)
+            stiffness_matrix_eval_counter = 1
             initial_loaded_dof_indices = self._loaded_dof_indices_step_list[0]
-            equilibrium_eigval_stats = [self._compute_lowest_eigenvalues_and_count_negative_ones(initial_ks,
-                                                                                                 initial_loaded_dof_indices)]
+            equilibrium_eigval_stats = [self._compute_lowest_eigenvalues(ks, initial_loaded_dof_indices)]
         except IllDefinedShape:
             if verbose:
                 reason = '--> aborted (the shape of an element is ill-defined)\r\n'
@@ -288,8 +289,8 @@ class StaticSolver:
             return (np.array([np.nan]), np.array([np.nan]), np.array(['nan'], dtype=str),
                     np.array([np.nan]), np.array([0], dtype=int))
 
-        equilibrium_stability = [self._assess_stability(initial_ks, initial_loaded_dof_indices)]
-        stiffness_matrix_eval_counter = 1
+        equilibrium_stability = [self._assess_stability(ks, initial_loaded_dof_indices)]
+        initial_eigval_magnitude = min(np.abs(equilibrium_eigval_stats[-1][0]), 0.1)
         linear_system_solving_counter = 0
         total_nb_increment_retries = 0
         total_nb_singular_matrices_avoided = 0
@@ -300,7 +301,8 @@ class StaticSolver:
         u = np.zeros(self._nb_dofs)
         force_progress = 0.0
         current_step = None
-        previous_k = self._get_reduced_stiffness_matrix(initial_ks)
+        has_just_bifurcated = False
+
         i = 0
         try:
             for step, step_force_vector in enumerate(force_vector_step_list):
@@ -340,42 +342,35 @@ class StaticSolver:
 
                 g = self._get_reduced_vector(delta_f)
                 norm_g = np.linalg.norm(g)
-
                 while True:
                     has_increment_converged = False
 
                     # PREDICTOR PHASE FOR INCREMENT i
                     delta_u_inc = np.zeros(self._nb_free_dofs)
                     delta_lambda_inc = 0.0
-                    ks = self._assembly.compute_structural_stiffness_matrix()
-                    stiffness_matrix_eval_counter += 1
 
                     # solve linear system
-                    k = self._get_reduced_stiffness_matrix(ks)
                     if i == 0 and detect_mechanism:
                         if cond(k, p=1) > 1e8:
                             raise MechanismDetected
                     try:
                         delta_u_hat = solve(k, g, assume_a='sym')
-                        previous_k = k
                     except np.linalg.LinAlgError:
-                        k = previous_k
+                        # might happen on the first increment if detect_mechanism is False
+                        # and the initial stiffness matrix is singular
+                        k_perturbed = _perturb_singular_stiffness_matrix(k, 1e-5, show_message=show_warnings)
                         try:
-                            delta_u_hat = solve(k, g, assume_a='sym')
+                            delta_u_hat = solve(k_perturbed, g, assume_a='sym')
                         except np.linalg.LinAlgError:
-                            # might happen on the first increment if detect_mechanism is False
-                            # and the initial stiffness matrix is singular
-                            k = _perturb_singular_stiffness_matrix(k, 1e-5, show_message=show_warnings)
-                            delta_u_hat = solve(k, g, assume_a='sym')
-                            previous_k = k
+                            raise MechanismDetected
                         total_nb_singular_matrices_avoided += 1
                     linear_system_solving_counter += 1
 
                     # Root computation and selection
                     delta_lambda_ite = radius_p / np.sqrt(np.inner(delta_u_hat, delta_u_hat) + psi_p ** 2)
-                    root_choice_criteria = previous_delta_lambda_inc is None \
-                                           or np.inner(delta_u_hat, previous_delta_u_inc) + (
-                                                   psi_p ** 2) * previous_delta_lambda_inc >= 0
+                    root_choice_criteria = (previous_delta_lambda_inc is None
+                                            or np.inner(delta_u_hat, previous_delta_u_inc)
+                                            + (psi_p ** 2 * previous_delta_lambda_inc) >= 0)
                     root_sign = +1 if root_choice_criteria else -1
                     delta_lambda_ite *= root_sign
 
@@ -393,6 +388,10 @@ class StaticSolver:
                         has_increment_converged = True
                     elif np.linalg.norm(self._get_reduced_vector(r)) / norm_g < convergence_value:
                         has_increment_converged = True
+                    print(f'\ni: {i}')
+                    print(f'delta_lambda_inc: {delta_lambda_inc}')
+                    print(f'converged? {has_increment_converged}')
+
 
                     if not has_increment_converged:
                         # CORRECTOR PHASE (correcting using at most j_max iterations)
@@ -403,10 +402,10 @@ class StaticSolver:
                         rhom_lambda_inc = (1 - alpha) * delta_lambda_inc
                         for j in range(j_max):
                             ks = self._assembly.compute_structural_stiffness_matrix()
+                            k = self._get_reduced_stiffness_matrix(ks)
                             stiffness_matrix_eval_counter += 1
 
                             # solve two linear systems
-                            k = self._get_reduced_stiffness_matrix(ks)
                             if i == 0 and detect_mechanism:
                                 if cond(k, p=1) > 1e8:
                                     # this should probably never be executed, because, if there is a mechanism, it is
@@ -415,13 +414,10 @@ class StaticSolver:
                             try:
                                 delta_u_hat = solve(k, g, assume_a='sym')
                                 delta_u_bar = solve(k, -self._get_reduced_vector(r), assume_a='sym')
-                                previous_k = k
                             except np.linalg.LinAlgError:
-                                k = previous_k
-                                # previous_k should never be singular in this case,
-                                # so no need to try catching a singularity exception
-                                delta_u_hat = solve(k, g, assume_a='sym')
-                                delta_u_bar = solve(k, -self._get_reduced_vector(r), assume_a='sym')
+                                k_perturbed = _perturb_singular_stiffness_matrix(k, 1e-5, show_message=show_warnings)
+                                delta_u_hat = solve(k_perturbed, g, assume_a='sym')
+                                delta_u_bar = solve(k_perturbed, -self._get_reduced_vector(r), assume_a='sym')
                                 total_nb_singular_matrices_avoided += 1
                             linear_system_solving_counter += 2
 
@@ -449,10 +445,10 @@ class StaticSolver:
                             delta_u_ite = delta_s * delta_u_bar + delta_lambda_ite * delta_u_hat
                             delta_u_inc += delta_u_ite
                             delta_lambda_inc += delta_lambda_ite
+                            print(f'delta_lambda_inc: {delta_lambda_inc}')
                             rhom_u_inc += delta_u_ite
                             rhom_lambda_inc += delta_lambda_ite
-                            self._assembly.increment_general_coordinates(
-                                self._get_structural_displacements(delta_u_ite))
+                            self._assembly.increment_general_coordinates(self._get_structural_displacements(delta_u_ite))
                             f_int = self._assembly.compute_internal_nodal_forces()
                             f_ext += delta_lambda_ite * delta_f
                             r = f_int - f_ext
@@ -464,6 +460,64 @@ class StaticSolver:
 
                     # Preparation for the next increment
                     if has_increment_converged:
+                        ks = self._assembly.compute_structural_stiffness_matrix()
+                        k = self._get_reduced_stiffness_matrix(ks)
+                        stiffness_matrix_eval_counter += 1
+
+                        (fd_lowest_eigval,
+                         ud_lowest_eigval,
+                         fd_negative_eigval_count,
+                         ud_negative_eigval_count) = self._compute_lowest_eigenvalues(ks, loaded_dof_indices)
+                        _, _, previous_fd_negative_eigval_count, _ = equilibrium_eigval_stats[-1]
+
+                        if previous_fd_negative_eigval_count < fd_negative_eigval_count:
+                            print(f'change in negative eigval (from {previous_fd_negative_eigval_count} to {fd_negative_eigval_count})')
+                            singular_eigval, singular_mode = self._compute_singular_eigenmode(ks)
+                            if np.abs(singular_eigval) / initial_eigval_magnitude < 1e-2:
+                                if np.abs(np.inner(singular_mode, g / norm_g)) < 1e-3:  # bifurcation point
+                                    if has_just_bifurcated:
+                                        print(f'looks like bifurcation point,'
+                                              f'but has recently bifurcated, so no.')
+                                        pass
+                                    else:
+                                        print(f'bifurcation point')
+                                        print(f'eigval: {singular_eigval}')
+                                        print(f'v x f = {np.abs(np.inner(singular_mode, g / norm_g))}')
+                                        self._assembly.set_general_coordinates(initial_coordinates + equilibrium_displacements[-1])
+                                        f_ext = equilibrium_forces[-1].copy()
+
+                                        perturbation_magnitude = np.linalg.norm(equilibrium_displacements[-1]) / 100
+                                        null_vector = self._get_structural_displacements(singular_mode)
+                                        bifurcation_perturbation = perturbation_magnitude * null_vector
+
+                                        self._assembly.increment_general_coordinates(bifurcation_perturbation)
+                                        ks = self._assembly.compute_structural_stiffness_matrix()
+                                        k = self._get_reduced_stiffness_matrix(ks)
+                                        self._assembly.increment_general_coordinates(-bifurcation_perturbation)
+                                        has_just_bifurcated = True
+                                        continue
+                                else:  # limit point
+                                    print(f'limit point')
+                                    print(f'eigval: {singular_eigval}')
+                                    print(singular_mode)
+                                    print(f'v x f = {np.abs(np.inner(singular_mode, g / norm_g))}')
+                                    has_just_bifurcated = False
+                                    pass
+                            else:
+                                print(f'eigval too large to be considered a singularity. Restart increment {i} with smaller radius: {radius_p / 2}')
+                                # print(f'restart increment with smaller radius: {radius_p / 2}')
+                                # self._assembly.increment_general_coordinates(self._get_structural_displacements(-delta_u_inc))
+                                # f_ext -= delta_lambda_inc * delta_f
+                                self._assembly.set_general_coordinates(initial_coordinates + equilibrium_displacements[-1])
+                                f_ext = equilibrium_forces[-1].copy()
+                                ks = self._assembly.compute_structural_stiffness_matrix()
+                                k = self._get_reduced_stiffness_matrix(ks)
+                                radius_p /= 2.0
+                                continue
+                        else:
+                            has_just_bifurcated = False
+
+                        # VALID EQUILIBRIUM POINT
                         i += 1
                         increment_retries = 0
                         previous_delta_u_inc = delta_u_inc.copy()
@@ -475,8 +529,11 @@ class StaticSolver:
                         equilibrium_displacements.append(u.copy())
                         equilibrium_forces.append(f_ext.copy())
                         equilibrium_stability.append(stability_state)
-                        equilibrium_eigval_stats.append(
-                            self._compute_lowest_eigenvalues_and_count_negative_ones(ks, loaded_dof_indices))
+                        equilibrium_eigval_stats.append([fd_lowest_eigval,
+                                                         ud_lowest_eigval,
+                                                         fd_negative_eigval_count,
+                                                         ud_negative_eigval_count])
+
                     else:
                         increment_retries += 1
                         if increment_retries <= 5 and radius_p > 1e-14:
@@ -486,9 +543,10 @@ class StaticSolver:
                                       f"\t-> attempt {increment_retries}/{5}")
                             # Resetting structure to its previous incremental state with a smaller radius
                             total_nb_increment_retries += 1
-                            self._assembly.increment_general_coordinates(
-                                self._get_structural_displacements(-delta_u_inc))
+                            self._assembly.increment_general_coordinates(self._get_structural_displacements(-delta_u_inc))
                             f_ext -= delta_lambda_inc * delta_f
+                            ks = self._assembly.compute_structural_stiffness_matrix()
+                            k = self._get_reduced_stiffness_matrix(ks)
                             radius_p /= 2.0
                             continue  # go to the next increment
                         else:
@@ -538,7 +596,6 @@ class StaticSolver:
                                                         i, stiffness_matrix_eval_counter, linear_system_solving_counter,
                                                         total_nb_increment_retries, total_nb_singular_matrices_avoided)
 
-
         except MaxNbIterationReached:
             if verbose:
                 reason = '--> max nb of increments has been reached\r\n'
@@ -581,7 +638,7 @@ class StaticSolver:
                 np.array(equilibrium_stability, dtype=str), np.array(equilibrium_eigval_stats),
                 np.array(step_indices, dtype=int))
 
-    def _compute_lowest_eigenvalues_and_count_negative_ones(self, ks, loaded_dof_indices):
+    def _compute_lowest_eigenvalues(self, ks, loaded_dof_indices):
         # force-driven case
         k_ = np.delete(ks, self._fixed_dof_indices, axis=0)  # delete rows
         k_ = np.delete(k_, self._fixed_dof_indices, axis=1)  # delete columns
@@ -601,6 +658,14 @@ class StaticSolver:
             ud_negative_eigval_count = 0
         return fd_lowest_eigval, ud_lowest_eigval, fd_negative_eigval_count, ud_negative_eigval_count
 
+    def _compute_singular_eigenmode(self, ks):
+        # force-driven case
+        k_ = np.delete(ks, self._fixed_dof_indices, axis=0)  # delete rows
+        k_ = np.delete(k_, self._fixed_dof_indices, axis=1)  # delete columns
+        eigvals, eigvects = np.linalg.eigh(k_)
+        singular_mode_index = np.argmin(np.abs(eigvals))
+        return eigvals[singular_mode_index], eigvects[:, singular_mode_index]
+
     def _assess_stability(self, ks, loaded_dof_indices):
         try:
             k_ = np.delete(ks, self._fixed_dof_indices, axis=0)  # delete rows
@@ -608,14 +673,14 @@ class StaticSolver:
             np.linalg.cholesky(k_)
             # if no error is triggered, then matrix is positive definite
             return StaticSolver.STABLE
-        except np.linalg.linalg.LinAlgError:
+        except np.linalg.LinAlgError:
             k_ = np.delete(ks, self._fixed_dof_indices + loaded_dof_indices, axis=0)  # delete rows
             k_ = np.delete(k_, self._fixed_dof_indices + loaded_dof_indices, axis=1)  # delete columns
             try:
                 np.linalg.cholesky(k_)
                 # if no error is triggered, then matrix is positive definite
                 return StaticSolver.STABILIZABLE
-            except np.linalg.linalg.LinAlgError:
+            except np.linalg.LinAlgError:
                 return StaticSolver.UNSTABLE
 
     def _get_reduced_stiffness_matrix(self, ks):
@@ -666,7 +731,7 @@ def _print_message_with_final_solving_stats(message,
 
 def _perturb_singular_stiffness_matrix(k: np.ndarray, epsilon, show_message):
     frobenius_norm = np.linalg.norm(k, 'fro')
-    perturbation = max(epsilon * frobenius_norm, 0.0)  # epsilon * 1e-3)
+    perturbation = max(epsilon * frobenius_norm, epsilon * 1e-3)
     if show_message:
         print(f'\nStiffness matrix is exactly singular. '
               f'Applying a small perturbation ({perturbation}) '

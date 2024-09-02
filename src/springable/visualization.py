@@ -44,7 +44,7 @@ def _load_graphics_settings(graphics_settings):
     return graphics_settings
 
 
-def _load_result(_result):
+def load_result(_result):
     if isinstance(_result, str):
         _result = io.read_results(_result)
     if not isinstance(_result, static_solver.Result):
@@ -124,7 +124,7 @@ def visualize_scan_results(scan_results_dir: str, save_dir: str = '',
 
 def visualize_result(result: static_solver.Result | str, save_dir: str = '',
                      graphics_settings: list | tuple | str = None):
-    result = _load_result(result)
+    result = load_result(result)
     general_options, plot_options, animation_options, assembly_appearance = _load_graphics_settings(graphics_settings)
 
     go = DEFAULT_GENERAL_OPTIONS.copy()
@@ -144,7 +144,7 @@ def visualize_result(result: static_solver.Result | str, save_dir: str = '',
 
 
 def make_animation(result, save_dir, show=True, graphics_settings=None, **animation_options):
-    result = _load_result(result)
+    result = load_result(result)
     _, plot_options, anim_options, assembly_appearance = _load_graphics_settings(graphics_settings)
     anim_options.update(animation_options)
     animation.animate(result, save_dir, show=show,
@@ -153,7 +153,7 @@ def make_animation(result, save_dir, show=True, graphics_settings=None, **animat
 
 
 def make_force_displacement_plot(result, save_dir, show=True, graphics_settings=None, **plot_options):
-    result = _load_result(result)
+    result = load_result(result)
     _, p_options, _, _ = _load_graphics_settings(graphics_settings)
     p_options.update(plot_options)
     plot.force_displacement_curve(result, save_dir, show=show, **p_options)

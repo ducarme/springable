@@ -253,8 +253,8 @@ class ElementDrawing(Drawing):
         elif isinstance(self._element.get_shape(), (shape.DistancePointLine, shape.SquaredDistancePointSegment)):
             element_graphic0, element_graphic1, element_graphic2 = self._element_graphic
             x0, y0, x1, y1, x2, y2 = self._element.get_shape().get_nodal_coordinates()
-            element_graphic0.set_xdata(x0)
-            element_graphic0.set_ydata(y0)
+            element_graphic0.set_xdata([x0])
+            element_graphic0.set_ydata([y0])
             element_graphic1.set_xdata([x1, x2])
             element_graphic1.set_ydata([y1, y2])
             element_graphic2.set_xdata([x1, x2])

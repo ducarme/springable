@@ -153,7 +153,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                     raise ValueError(f'unknown drive mode {ao["drive_mode"]}')
             except plot.LoadingPathEmpty:
                 print(f"Cannot make the animation in {ao['drive_mode']}-driven mode, "
-                      f"because not stable points have been found under these loading conditions")
+                      f"because no stable points have been found under these loading conditions")
                 return
         else:
             frame_indices = np.round(np.linspace(0, u.shape[0] - 1, ao['nb_frames'])).astype(int)
@@ -177,7 +177,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             _model.get_assembly().set_general_coordinates(_natural_coordinates + u[i, :])
 
             # update external forces
-            # # /!\ force_amounts should not be overridden
+            # /!\ force_amounts dict should not be overridden
             if force_amounts is not None:
                 for loaded_node in force_amounts.keys():
                     force_amounts[loaded_node] = all_force_amounts[loaded_node][i]
