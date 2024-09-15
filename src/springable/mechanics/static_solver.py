@@ -290,7 +290,7 @@ class StaticSolver:
                     np.array([np.nan]), np.array([0], dtype=int))
 
         equilibrium_stability = [self._assess_stability(ks, initial_loaded_dof_indices)]
-        initial_eigval_magnitude = min(np.abs(equilibrium_eigval_stats[-1][0]), 0.1)
+        initial_eigval_magnitude = max(np.abs(equilibrium_eigval_stats[-1][0]), 0.1)
         linear_system_solving_counter = 0
         total_nb_increment_retries = 0
         total_nb_singular_matrices_avoided = 0
@@ -388,9 +388,9 @@ class StaticSolver:
                         has_increment_converged = True
                     elif np.linalg.norm(self._get_reduced_vector(r)) / norm_g < convergence_value:
                         has_increment_converged = True
-                    print(f'\ni: {i}')
-                    print(f'delta_lambda_inc: {delta_lambda_inc}')
-                    print(f'converged? {has_increment_converged}')
+                    # print(f'\ni: {i}')
+                    # print(f'delta_lambda_inc: {delta_lambda_inc}')
+                    # print(f'converged? {has_increment_converged}')
 
 
                     if not has_increment_converged:
@@ -445,7 +445,7 @@ class StaticSolver:
                             delta_u_ite = delta_s * delta_u_bar + delta_lambda_ite * delta_u_hat
                             delta_u_inc += delta_u_ite
                             delta_lambda_inc += delta_lambda_ite
-                            print(f'delta_lambda_inc: {delta_lambda_inc}')
+                            # print(f'delta_lambda_inc: {delta_lambda_inc}')
                             rhom_u_inc += delta_u_ite
                             rhom_lambda_inc += delta_lambda_ite
                             self._assembly.increment_general_coordinates(self._get_structural_displacements(delta_u_ite))
@@ -504,6 +504,8 @@ class StaticSolver:
                                     has_just_bifurcated = False
                                     pass
                             else:
+                                if radius_p < 1e-14:
+                                    raise ConvergenceError
                                 print(f'eigval too large to be considered a singularity. Restart increment {i} with smaller radius: {radius_p / 2}')
                                 # print(f'restart increment with smaller radius: {radius_p / 2}')
                                 # self._assembly.increment_general_coordinates(self._get_structural_displacements(-delta_u_inc))

@@ -1,11 +1,10 @@
 from .math_utils.bezier_curve import *
 from .math_utils.smooth_zigzag_curve import *
-from scipy.interpolate import interp1d
-from scipy.integrate import quad, solve_ivp
+from scipy.interpolate import interp1d, griddata
+from scipy.integrate import quad, solve_ivp, cumulative_trapezoid
 from scipy.optimize import minimize, LinearConstraint
 import numpy as np
 import matplotlib.pyplot as plt
-
 
 class MechanicalBehavior:
     _nb_dofs: int = None
@@ -97,11 +96,11 @@ class NaturalBehavior(UnivariateBehavior):
 
 
 class BezierBehavior(UnivariateBehavior):
-    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], sampling: int = 100):
+    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], sampling: int = 100, check_validity=True):
         super().__init__(natural_measure, u_i=u_i, f_i=f_i)
         u_coefs = np.array([0.0] + u_i)
         f_coefs = np.array([0.0] + f_i)
-        if not is_monotonic(u_coefs):
+        if check_validity and not is_monotonic(u_coefs):
             raise InvalidBehaviorParameters("The Bezier behavior does not describe a function, try Bezier2 instead.")
         t = np.linspace(0, 1, sampling)
         u = evaluate_poly(t, u_coefs)
@@ -125,7 +124,7 @@ class BezierBehavior(UnivariateBehavior):
         return self._second_der_energy(alpha - self._natural_measure),
 
     @classmethod
-    def compute_fitting_parameters(cls, force_displacement_curves: list[tuple], degree: int):
+    def compute_fitting_parameters(cls, force_displacement_curves: list[tuple], degree: int, show=False):
         umax = np.min([np.max(fd_curve[0]) for fd_curve in force_displacement_curves])
         fmax = np.min([np.max(fd_curve[1]) for fd_curve in force_displacement_curves])
         nb_samples = 500
@@ -135,8 +134,8 @@ class BezierBehavior(UnivariateBehavior):
             natural_measure = 1.0
             u_i = x[::2].tolist()
             f_i = x[1::2].tolist()
-            behavior = cls(natural_measure, u_i=u_i, f_i=f_i)
-            f_fit = behavior._first_der_energy(u_sampling)[0]
+            behavior = cls(natural_measure, u_i=u_i, f_i=f_i, check_validity=False)
+            f_fit = behavior._first_der_energy(u_sampling)
             mismatch = 0.0
             for fd_curve in force_displacement_curves:
                 u_data = fd_curve[0]
@@ -155,7 +154,8 @@ class BezierBehavior(UnivariateBehavior):
         # control point abscissas should be monotonically increasing
         constraint_matrix = np.zeros((degree - 1, 2 * degree))
         for i in range(degree - 1):
-            constraint_matrix[i, 2 * i:2 * i + 3] = [-1.0, 0.0, 1.0]
+            constraint_matrix[i, 2 * i] = -1.0
+            constraint_matrix[i, 2 * i + 2] = 1.0
         lb = np.zeros(constraint_matrix.shape[0])
         ub = np.ones(constraint_matrix.shape[0]) * np.inf
         constraints = LinearConstraint(constraint_matrix, lb, ub)
@@ -165,12 +165,24 @@ class BezierBehavior(UnivariateBehavior):
                           method='trust-constr',
                           bounds=bounds,
                           constraints=constraints,
-                          options={'verbose': 1}
+                          options={'verbose': 3}
                           )
         optimal_parameters = result.x
         u_i = optimal_parameters[::2]
         f_i = optimal_parameters[1::2]
-        return u_i.tolist(), f_i.tolist()
+        u_i = u_i.tolist()
+        f_i = f_i.tolist()
+        if show:
+            l0 = 1.0
+            bb = BezierBehavior(l0, u_i, f_i)
+            l = l0 + np.linspace(0.0, u_i[-1])
+            f, = bb.gradient_energy(l)
+            fig, ax = plt.subplots()
+            ax.plot(l - l0, f, '-o')
+            for fd_curve in force_displacement_curves:
+                ax.plot(fd_curve[0], fd_curve[1], '--')
+            plt.show()
+        return u_i, f_i
 
 
 class Bezier2Behavior(BivariateBehavior):
@@ -359,7 +371,8 @@ class Bezier2Behavior(BivariateBehavior):
         self._dk = dk_fun
         self._d2k = d2k_fun
 
-        self.plot_energy_landscape()
+        # self.plot_energy_landscape()
+        # self.calculate_pseudoseries_force_displacement_curve()
 
     def elastic_energy(self, alpha: float, t: float) -> np.ndarray:
         y = alpha - self._natural_measure
@@ -442,6 +455,130 @@ class Bezier2Behavior(BivariateBehavior):
         ax.set_zlabel('$U$')
         if make_new_fig:
             plt.show()
+
+    def calculate_pseudoseries_force_displacement_curve(self):
+        pass
+        t_vector = np.linspace(0, 1, 100)
+        eigvals_vector = np.zeros((t_vector.shape[0], 2))
+        for i, t in enumerate(t_vector):
+            h11, h12, h22 = self.hessian_energy(self.get_natural_measure() + self._a(t), t)
+            hessian_matrix = np.array([[h11, h12], [h12, h22]])
+            eigvals, eigvects = np.linalg.eigh(hessian_matrix)
+            eigvals_vector[i, :] = eigvals
+
+        f0 = cumulative_trapezoid(eigvals_vector[:, 0], t_vector, initial=0)
+        f1 = cumulative_trapezoid(eigvals_vector[:, 1], t_vector, initial=0)
+        fig, ax = plt.subplots(1, 2)
+        ax[0].plot(t_vector, eigvals_vector[:, 0], '-o')
+        ax[0].plot(t_vector, eigvals_vector[:, 1], '-o')
+        ax[1].plot(t_vector, f0, '-o')
+        ax[1].plot(t_vector, f1, '-o')
+        plt.show()
+        bb0 = BezierBehavior(1.0, *BezierBehavior.compute_fitting_parameters([(t_vector, f0)], 6, show=True))
+        bb1 = BezierBehavior(1.0, *BezierBehavior.compute_fitting_parameters([(t_vector, f1)], 6, show=True))
+        # bb0 = None
+
+        # fig, ax = plt.subplots(1, 2)
+        # ax[0].plot(t_vector, eigvals_vector[:, 0], '-o')
+        # ax[0].plot(t_vector, eigvals_vector[:, 1], '-o')
+        # ax[1].plot(t_vector, f0, '-o')
+        # ax[1].plot(t_vector, f1, '-o')
+        # plt.show()
+        return bb0, bb1
+
+    def compute_diagonal_mapping(self):
+        n = 150
+
+        tt = np.linspace(0, 1, n)
+        y, t = np.meshgrid(np.linspace(np.min(self._a(tt)), np.max(self._a(tt)), n), tt)
+        phi1 = np.zeros_like(t)  # y, t --> u
+        phi2 = np.zeros_like(t)  # y, t --> v
+
+        uu = np.linspace(-1.0, 1.0, n)
+        vv = np.linspace(0.0, 1.75, n)
+        u, v = np.meshgrid(uu, vv)
+        ksi1 = np.zeros_like(t)  # u, v --> y
+        ksi2 = np.zeros_like(t)  # u, v --> t
+
+
+
+        for i in range(n):
+            for j in range(n):
+                h11, h12, h22 = self.hessian_energy(self.get_natural_measure() + y[i,j], t[i,j])
+                rho = (h11 + h22) ** 2 - 4 * (h11 * h22 - h12**2)
+                lambda1 = (h11 + h22 - np.sqrt(rho)) / 2
+                lambda2 = (h11 + h22 + np.sqrt(rho)) / 2
+                v1 = np.array((-h12 / (h11 - lambda1), 1))
+                v2 = np.array((-h12 / (h11 - lambda2), 1))
+                nu1 = v1 / np.linalg.norm(v1)
+                nu2 = v2 / np.linalg.norm(v2)
+                p = np.array((nu1, nu2)).T
+                phi1[i,j], phi2[i,j] = p @ np.array((y[i,j], t[i,j]))
+
+        phi1_t = np.zeros_like(tt)  # y, t --> u
+        phi2_t = np.zeros_like(tt)
+        for i, ttt in enumerate(tt):
+            h11, h12, h22 = self.hessian_energy(self.get_natural_measure() + self._a(ttt), ttt)
+            rho = (h11 + h22) ** 2 - 4 * (h11 * h22 - h12**2)
+            lambda1 = (h11 + h22 - np.sqrt(rho)) / 2
+            lambda2 = (h11 + h22 + np.sqrt(rho)) / 2
+            v1 = np.array((-h12 / (h11 - lambda1), 1))
+            v2 = np.array((-h12 / (h11 - lambda2), 1))
+            nu1 = v1 / np.linalg.norm(v1)
+            nu2 = v2 / np.linalg.norm(v2)
+            p = np.array((nu1, nu2)).T
+            phi1_t[i], phi2_t[i] = p @ np.array((self._a(ttt), ttt))
+
+        # points = np.array([phi1.ravel(), phi2.ravel()]).T  # Combine U, V into pairs
+
+        # Interpolating to get the X and Y values on the (U, V) grid
+        # ksi1 = griddata(points, y.ravel(), (u, v), method='cubic')
+        # ksi2 = griddata(points, t.ravel(), (u, v), method='cubic')
+
+        # for i in range(n):
+        #     for j in range(n):
+        #         mismatch = (phi1 - u[i,j])**2 + (phi2 - v[i,j])**2
+        #         ii, jj = np.unravel_index(np.argmin(mismatch), mismatch.shape)
+        #         h11, h12, h22 = self.hessian_energy(self.get_natural_measure() + y[ii, jj], t[ii, jj])
+        #         rho = (h11 + h22) ** 2 - 4 * (h11 * h22 - h12 ** 2)
+        #         lambda1 = (h11 + h22 - np.sqrt(rho)) / 2
+        #         lambda2 = (h11 + h22 + np.sqrt(rho)) / 2
+        #         v1 = np.array((-h12 / (h11 - lambda1), 1))
+        #         v2 = np.array((-h12 / (h11 - lambda2), 1))
+        #         nu1 = v1 / np.linalg.norm(v1)
+        #         nu2 = v2 / np.linalg.norm(v2)
+        #         p = np.array((nu1, nu2)).T
+        #         ksi1[i, j], ksi2[i, j] = p.T @ np.array((u[i, j], v[i, j]))
+
+        fig = plt.figure()
+        # ax1 = fig.add_subplot(221)
+        # ax2 = fig.add_subplot(222)
+        # ax3 = fig.add_subplot(223)
+        # ax4 = fig.add_subplot(224)
+        # ax1.contourf(t, y, phi1)
+        # ax2.contourf(t, y, phi2)
+        # ax3.contourf(u, v, ksi1)
+        # ax4.contourf(u, v, ksi2)
+        # ax1.plot(tt, self._a(tt), 'r-', lw=3)
+        # ax2.plot(tt, self._a(tt), 'r-', lw=3)
+
+        # ax1 = fig.add_subplot(121, projection='3d')
+        # ax2 = fig.add_subplot(122, projection='3d')
+        ax3 = fig.add_subplot(121, projection='3d')
+        ax4 = fig.add_subplot(122, projection='3d')
+        # ax1.plot_surface(t, y, phi1, cmap='viridis')
+        # ax2.plot_surface(t, y, phi2, cmap='viridis')
+        # ax3.plot_surface(u, v, ksi1)
+        # ax4.plot_surface(u, v, ksi2)
+        ax3.plot_surface(phi1, phi2, y, alpha=0.3, cmap='viridis')
+        ax4.plot_surface(phi1, phi2, t, alpha=0.3, cmap='viridis')
+        ax3.scatter(phi1_t, phi2_t, self._a(tt), color='r')
+        ax4.scatter(phi1_t, phi2_t, tt, color='r')
+        # ax1.plot(tt, self._a(tt), 'r-', lw=3)
+        # ax2.plot(tt, self._a(tt), 'r-', lw=3)
+        plt.show()
+
+
 
 
 class IdealGas(UnivariateBehavior):
@@ -561,6 +698,348 @@ class ZigZagBehavior(UnivariateBehavior):
 
     def hessian_energy(self, alpha: float) -> tuple[float]:
         return self._generalized_stiffness_function(alpha - self._natural_measure),
+
+
+class ZigZag2Behavior(BivariateBehavior):
+
+    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], delta):
+        # checking validity of behavior
+        if not 0.0 < delta < 1.0:
+            raise InvalidBehaviorParameters(f'Parameter delta must be between 0 and 1 (current value: {delta}')
+        if len(u_i) != len(f_i):
+            raise InvalidBehaviorParameters(f'u_i and f_i must contain the same number of elements')
+        super().__init__(natural_measure, u_i=u_i, f_i=f_i, delta=delta)
+        self._cp_u = np.array([0.0] + u_i)
+        self._cp_f = np.array([0.0] + f_i)
+
+        n = len(u_i) + 1
+        self._cp_t = np.arange(n) / (n-1)
+        self._delta = delta / (n-1)
+        slopes_u, transitions_u = compute_zizag_slopes_and_transitions_from_control_points(self._cp_t, self._cp_u)
+        slopes_f, transitions_f = compute_zizag_slopes_and_transitions_from_control_points(self._cp_t, self._cp_f)
+
+        self._a = create_smooth_zigzag_function(slopes_u, transitions_u, self._delta)
+        self._b = create_smooth_zigzag_function(slopes_f, transitions_f, self._delta)
+        self._da = create_smooth_zigzag_derivative_function(slopes_u, transitions_u, self._delta)
+        self._db = create_smooth_zigzag_derivative_function(slopes_f, transitions_f, self._delta)
+        self._d2a = create_smooth_zigzag_second_derivative_function(slopes_u, transitions_u, self._delta)
+        self._d2b = create_smooth_zigzag_second_derivative_function(slopes_f, transitions_f, self._delta)
+        self._d3a = lambda t: np.zeros_like(t)
+        self._d3b = lambda t: np.zeros_like(t)
+        self._dbda = lambda t: self._db(t) / self._da(t)
+        self._d_dbda = lambda t: (self._d2b(t) * self._da(t) - self._db(t) * self._d2a(t)) / self._da(t) ** 2
+
+        def d2_dbda(t):
+            da = self._da(t)
+            db = self._db(t)
+            d2a = self._d2a(t)
+            d2b = self._d2b(t)
+            d3a = self._d3a(t)
+            d3b = self._d3b(t)
+            return (d3b * da ** 2 - db * d3a * da - 2 * d2b * da * d2a + 2 * db * d2a ** 2) / da ** 3
+
+        self._d2_dbda = d2_dbda
+
+        def int_adb(t):
+            if isinstance(t, float):
+                def adb(_t):
+                    return self._db(_t) * self._a(_t)
+
+                return quad(adb, 0, t)[0]
+            elif isinstance(t, np.ndarray):
+                def adb(_t, _):
+                    return self._db(_t) * self._a(_t)
+
+                if t.ndim == 1:
+                    return solve_ivp(fun=adb, t_span=[np.min(t), np.max(t)], y0=[0.0], t_eval=t).y[0, :]
+                # if t.ndim == 2:
+                #     int_adbdt = solve_ivp(fun=adb, t_span=[np.min(t), np.max(t)], y0=[0.0], t_eval=t[0, :]).y[0, :]
+                #     return int_adbdt.reshape(1, -1).repeat(t.shape[0], axis=0)
+                else:
+                    raise TypeError('numpy array must be 1-dimensional')
+            else:
+                raise TypeError('must be float or numpy array')
+
+        def int_bda(t):
+            if isinstance(t, float):
+                def bda(_t):
+                    return self._b(_t) * self._da(_t)
+
+                return quad(bda, 0, t)[0]
+            elif isinstance(t, np.ndarray):
+                def bda(_t, _):
+                    return self._b(_t) * self._da(_t)
+
+                if t.ndim == 1:
+                    return solve_ivp(fun=bda, t_span=[np.min(t), np.max(t)], y0=[0.0], t_eval=t).y[0, :]
+                # if t.ndim == 2:
+                #     int_bdadt = solve_ivp(fun=bda, t_span=[np.min(t), np.max(t)], y0=[0.0], t_eval=t[0, :]).y[0, :]
+                #     return int_bdadt.reshape(1, -1).repeat(t.shape[0], axis=0)
+                else:
+                    raise TypeError('numpy array must be 1-dimensional')
+            else:
+                raise TypeError('must be float or 1-dimensional numpy array')
+
+        self._int_adb = int_adb
+        self._int_bda = int_bda
+        self._hysteron_info = None
+
+        all_t = np.linspace(0, 1, 50)
+        da = self._da(all_t)
+        db = self._db(all_t)
+        db_da = db / da
+        kmax = np.max(db_da[da > 0])
+        kmin = np.min(db_da[da < 0]) if np.any(da < 0.0) else np.inf
+        delta = 0.05 * kmax
+        kstar = min(kmin - delta, kmax + delta)
+
+        if kmin - kmax > 2 * delta:
+            self._is_k_constant = True
+
+            def k_fun(t):
+                return np.ones_like(t) * kstar
+
+            dk_fun = None  # should not be used
+            d2k_fun = None  # should not be used
+
+        else:
+            self._is_k_constant = False
+
+            def k_fun(t) -> np.ndarray:
+                k_arr = np.zeros_like(t)
+                da_pos = self._da(t) >= 0
+                da_neg = self._da(t) < 0
+                k_arr[da_pos] = np.maximum(self._dbda(t[da_pos]) + delta, kstar)
+                k_arr[da_neg] = kstar
+                return k_arr
+
+            def dk_fun(t) -> np.ndarray:
+                dk_arr = np.zeros_like(t)
+                indices = np.logical_and(self._da(t) >= 0, self._dbda(t) + delta > kstar)
+                dk_arr[indices] = 1.0 * self._d_dbda(t[indices])
+                return dk_arr
+
+            def d2k_fun(t) -> np.ndarray:
+                d2k_arr = np.zeros_like(t)
+                indices = np.logical_and(self._da(t) >= 0, self._dbda(t) + delta > kstar)
+                d2k_arr[indices] = 1.0 * self._d2_dbda(t[indices])
+                return d2k_arr
+
+        self._k = k_fun
+        self._dk = dk_fun
+        self._d2k = d2k_fun
+
+        # fig_, ax = plt.subplots()
+        # tt = np.linspace(0, 1, 400)
+        # uu = self._a(tt)
+        # ff, _ = self.gradient_energy(uu+self._natural_measure, tt)
+        # ax.plot(uu, ff, 'o')
+        # ax.plot(self._cp_u, self._cp_f, '--o')
+        # plt.show()
+
+    def elastic_energy(self, alpha: float, t: float) -> np.ndarray:
+        y = alpha - self._natural_measure
+        return 0.5 * self._k(t) * (y - self._a(t)) ** 2 + y * self._b(t) - self._int_adb(t)
+
+    def gradient_energy(self, alpha: float, t: float) -> tuple[np.ndarray, np.ndarray]:
+        y = alpha - self._natural_measure
+        dvdalpha = self._k(t) * (y - self._a(t)) + self._b(t)
+        dvdt = (y - self._a(t)) * (self._db(t) - self._k(t) * self._da(t))
+        if not self._is_k_constant:
+            dvdt += 0.5 * (y - self._a(t)) ** 2 * self._dk(t)
+        return dvdalpha, dvdt
+
+    def hessian_energy(self, alpha: float, t: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        y = alpha - self._natural_measure
+        d2vdalpha2 = self._k(t)
+        d2vdalphadt = self._db(t) - self._k(t) * self._da(t)
+        d2vdt2 = (y - self._a(t)) * (self._d2b(t) - self._k(t) * self._d2a(t)) + self._da(t) * (
+                self._k(t) * self._da(t) - self._db(t))
+        if not self._is_k_constant:
+            d2vdalphadt += self._dk(t) * (y - self._a(t))
+            d2vdt2 += (y - self._a(t)) * (0.5 * self._d2k(t) * (y - self._a(t)) - 2 * self._da(t) * self._dk(t))
+        return d2vdalpha2, d2vdalphadt, d2vdt2
+
+    def get_hysteron_info(self) -> dict[str, float]:
+        if self._hysteron_info is None:
+            self._compute_hysteron_info()
+        return self._hysteron_info
+
+    def _compute_hysteron_info(self):
+        extrema = np.sort(get_extrema(self._cp_t, self._cp_u, self._delta))
+        extrema = np.hstack((-extrema[::-1], extrema))
+        nb_extrema = extrema.shape[0]
+        if nb_extrema == 0:  # not a hysteron
+            self._hysteron_info = {}
+        else:
+            critical_t = np.hstack(([-np.inf], extrema, [np.inf]))
+            branch_intervals = [(critical_t[i], critical_t[i + 1]) for i in range(nb_extrema + 1)]
+            is_branch_stable = [(i - len(branch_intervals) // 2) % 2 == 0 for i in range(len(branch_intervals))]
+            branch_ids = []
+            for i in range(len(branch_intervals)):
+                if is_branch_stable[i]:
+                    branch_id = str(abs(int((i - len(branch_intervals) // 2) / 2)))
+                else:
+                    branch_id = str(abs(int((i - len(branch_intervals) // 2) / 2))) + '-' + str(
+                        abs(int((i - len(branch_intervals) // 2) / 2)) + 1)
+                branch_ids.append(branch_id)
+            self._hysteron_info = {'nb_stable_branches': nb_extrema,
+                                   'branch_intervals': branch_intervals,
+                                   'is_branch_stable': is_branch_stable,
+                                   'branch_ids': branch_ids}
+
+    def plot_energy_landscape(self, ax=None):
+        n = 10_000
+        t = np.linspace(0, 2.0, n)
+        y = np.linspace(np.min(self._a(t)), np.max(self._a(t)), n)
+        f = np.linspace(np.min(self._b(t)), np.max(self._b(t)), n)
+        t_grid, y_grid = np.meshgrid(t, y)
+        v_grid = np.empty_like(t_grid)
+        for i in range(t_grid.shape[0]):
+            v_grid[i, :] = self.elastic_energy(y_grid[i, :], t_grid[i, :])
+        if ax is None:
+            make_new_fig = True
+            fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+        else:
+            make_new_fig = False
+
+        a = self._a(t)
+        int_bda = self._int_bda(t)
+        stable = np.logical_and(self._db(t) > 0, self._da(t) > 0)
+        stabilizable = np.logical_and(self._db(t) < 0, self._da(t) > 0)
+        unstable = self._da(t) < 0
+
+        ax.plot_surface(t_grid, y_grid, v_grid - 10 * y_grid, cmap='viridis')
+        # ax.plot(t[stable], a[stable], int_bda[stable], 'bo', label='path')
+        # ax.plot(t[stabilizable], a[stabilizable], int_bda[stabilizable], 'ko', label='path')
+        # ax.plot(t[unstable], a[unstable], int_bda[unstable], 'ro', label='path')
+        ax.set_xlabel('$t$')
+        ax.set_ylabel('$\\y$')
+        ax.set_zlabel('$U$')
+        if make_new_fig:
+            plt.show()
+
+    def calculate_pseudoseries_force_displacement_curve(self):
+        pass
+        t_vector = np.linspace(0, 1, 100)
+        eigvals_vector = np.zeros((t_vector.shape[0], 2))
+        for i, t in enumerate(t_vector):
+            h11, h12, h22 = self.hessian_energy(self.get_natural_measure() + self._a(t), t)
+            hessian_matrix = np.array([[h11, h12], [h12, h22]])
+            eigvals, eigvects = np.linalg.eigh(hessian_matrix)
+            eigvals_vector[i, :] = eigvals
+
+        f0 = cumulative_trapezoid(eigvals_vector[:, 0], t_vector, initial=0)
+        f1 = cumulative_trapezoid(eigvals_vector[:, 1], t_vector, initial=0)
+        fig, ax = plt.subplots(1, 2)
+        ax[0].plot(t_vector, eigvals_vector[:, 0], '-o')
+        ax[0].plot(t_vector, eigvals_vector[:, 1], '-o')
+        ax[1].plot(t_vector, f0, '-o')
+        ax[1].plot(t_vector, f1, '-o')
+        plt.show()
+        bb0 = BezierBehavior(1.0, *BezierBehavior.compute_fitting_parameters([(t_vector, f0)], 6, show=True))
+        bb1 = BezierBehavior(1.0, *BezierBehavior.compute_fitting_parameters([(t_vector, f1)], 6, show=True))
+        # bb0 = None
+
+        # fig, ax = plt.subplots(1, 2)
+        # ax[0].plot(t_vector, eigvals_vector[:, 0], '-o')
+        # ax[0].plot(t_vector, eigvals_vector[:, 1], '-o')
+        # ax[1].plot(t_vector, f0, '-o')
+        # ax[1].plot(t_vector, f1, '-o')
+        # plt.show()
+        return bb0, bb1
+
+    def compute_diagonal_mapping(self):
+        n = 150
+
+        tt = np.linspace(0, 1, n)
+        y, t = np.meshgrid(np.linspace(np.min(self._a(tt)), np.max(self._a(tt)), n), tt)
+        phi1 = np.zeros_like(t)  # y, t --> u
+        phi2 = np.zeros_like(t)  # y, t --> v
+
+        uu = np.linspace(-1.0, 1.0, n)
+        vv = np.linspace(0.0, 1.75, n)
+        u, v = np.meshgrid(uu, vv)
+        ksi1 = np.zeros_like(t)  # u, v --> y
+        ksi2 = np.zeros_like(t)  # u, v --> t
+
+
+
+        for i in range(n):
+            for j in range(n):
+                h11, h12, h22 = self.hessian_energy(self.get_natural_measure() + y[i,j], t[i,j])
+                rho = (h11 + h22) ** 2 - 4 * (h11 * h22 - h12**2)
+                lambda1 = (h11 + h22 - np.sqrt(rho)) / 2
+                lambda2 = (h11 + h22 + np.sqrt(rho)) / 2
+                v1 = np.array((-h12 / (h11 - lambda1), 1))
+                v2 = np.array((-h12 / (h11 - lambda2), 1))
+                nu1 = v1 / np.linalg.norm(v1)
+                nu2 = v2 / np.linalg.norm(v2)
+                p = np.array((nu1, nu2)).T
+                phi1[i,j], phi2[i,j] = p @ np.array((y[i,j], t[i,j]))
+
+        phi1_t = np.zeros_like(tt)  # y, t --> u
+        phi2_t = np.zeros_like(tt)
+        for i, ttt in enumerate(tt):
+            h11, h12, h22 = self.hessian_energy(self.get_natural_measure() + self._a(ttt), ttt)
+            rho = (h11 + h22) ** 2 - 4 * (h11 * h22 - h12**2)
+            lambda1 = (h11 + h22 - np.sqrt(rho)) / 2
+            lambda2 = (h11 + h22 + np.sqrt(rho)) / 2
+            v1 = np.array((-h12 / (h11 - lambda1), 1))
+            v2 = np.array((-h12 / (h11 - lambda2), 1))
+            nu1 = v1 / np.linalg.norm(v1)
+            nu2 = v2 / np.linalg.norm(v2)
+            p = np.array((nu1, nu2)).T
+            phi1_t[i], phi2_t[i] = p @ np.array((self._a(ttt), ttt))
+
+        # points = np.array([phi1.ravel(), phi2.ravel()]).T  # Combine U, V into pairs
+
+        # Interpolating to get the X and Y values on the (U, V) grid
+        # ksi1 = griddata(points, y.ravel(), (u, v), method='cubic')
+        # ksi2 = griddata(points, t.ravel(), (u, v), method='cubic')
+
+        # for i in range(n):
+        #     for j in range(n):
+        #         mismatch = (phi1 - u[i,j])**2 + (phi2 - v[i,j])**2
+        #         ii, jj = np.unravel_index(np.argmin(mismatch), mismatch.shape)
+        #         h11, h12, h22 = self.hessian_energy(self.get_natural_measure() + y[ii, jj], t[ii, jj])
+        #         rho = (h11 + h22) ** 2 - 4 * (h11 * h22 - h12 ** 2)
+        #         lambda1 = (h11 + h22 - np.sqrt(rho)) / 2
+        #         lambda2 = (h11 + h22 + np.sqrt(rho)) / 2
+        #         v1 = np.array((-h12 / (h11 - lambda1), 1))
+        #         v2 = np.array((-h12 / (h11 - lambda2), 1))
+        #         nu1 = v1 / np.linalg.norm(v1)
+        #         nu2 = v2 / np.linalg.norm(v2)
+        #         p = np.array((nu1, nu2)).T
+        #         ksi1[i, j], ksi2[i, j] = p.T @ np.array((u[i, j], v[i, j]))
+
+        fig = plt.figure()
+        # ax1 = fig.add_subplot(221)
+        # ax2 = fig.add_subplot(222)
+        # ax3 = fig.add_subplot(223)
+        # ax4 = fig.add_subplot(224)
+        # ax1.contourf(t, y, phi1)
+        # ax2.contourf(t, y, phi2)
+        # ax3.contourf(u, v, ksi1)
+        # ax4.contourf(u, v, ksi2)
+        # ax1.plot(tt, self._a(tt), 'r-', lw=3)
+        # ax2.plot(tt, self._a(tt), 'r-', lw=3)
+
+        # ax1 = fig.add_subplot(121, projection='3d')
+        # ax2 = fig.add_subplot(122, projection='3d')
+        ax3 = fig.add_subplot(121, projection='3d')
+        ax4 = fig.add_subplot(122, projection='3d')
+        # ax1.plot_surface(t, y, phi1, cmap='viridis')
+        # ax2.plot_surface(t, y, phi2, cmap='viridis')
+        # ax3.plot_surface(u, v, ksi1)
+        # ax4.plot_surface(u, v, ksi2)
+        ax3.plot_surface(phi1, phi2, y, alpha=0.3, cmap='viridis')
+        ax4.plot_surface(phi1, phi2, t, alpha=0.3, cmap='viridis')
+        ax3.scatter(phi1_t, phi2_t, self._a(tt), color='r')
+        ax4.scatter(phi1_t, phi2_t, tt, color='r')
+        # ax1.plot(tt, self._a(tt), 'r-', lw=3)
+        # ax2.plot(tt, self._a(tt), 'r-', lw=3)
+        plt.show()
 
 
 class ContactBehavior(UnivariateBehavior):

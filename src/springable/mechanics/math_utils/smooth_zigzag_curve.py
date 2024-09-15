@@ -15,7 +15,7 @@ def compute_zigzag_control_points(a, x):
     return np.array(cp_x), np.array(cp_y)
 
 
-def compute_zizag_slopes_and_transitions_from_control_points(cp_x, cp_y)\
+def compute_zizag_slopes_and_transitions_from_control_points(cp_x, cp_y) \
         -> tuple[list[float], list[float]]:
     a = (np.diff(cp_y) / np.diff(cp_x)).tolist()
     x = np.array(cp_x[1:-1]).tolist()
@@ -49,8 +49,12 @@ def _create_smoothing_function(a0, a1, x0, b0, delta):
     return np.polynomial.Polynomial(coefficients[::-1])
 
 
-def _create_derivative_smoothing_function(a0, a1, x0, b0, delta):
+def _create_derivative_smoothing_function(a0, a1, x0, b0, delta) -> np.polynomial.Polynomial:
     return _create_smoothing_function(a0, a1, x0, b0, delta).deriv()
+
+
+def _create_second_derivative_smoothing_function(a0, a1, x0, b0, delta):
+    return _create_smoothing_function(a0, a1, x0, b0, delta).deriv(m=2)
 
 
 def _create_all_smoothing_functions(a, x, delta, b):
@@ -61,10 +65,18 @@ def _create_all_smoothing_functions(a, x, delta, b):
     return funs
 
 
-def _create_all_derivative_smoothing_functions(a, x, delta, b):
+def _create_all_derivative_smoothing_functions(a, x, delta, b) -> list[np.polynomial.Polynomial]:
     dfuns = []
     for i in range(len(x)):
         dfun = _create_derivative_smoothing_function(a[i], a[i + 1], x[i], b[i], delta)
+        dfuns.append(dfun)
+    return dfuns
+
+
+def _create_all_second_derivative_smoothing_functions(a, x, delta, b):
+    dfuns = []
+    for i in range(len(x)):
+        dfun = _create_second_derivative_smoothing_function(a[i], a[i + 1], x[i], b[i], delta)
         dfuns.append(dfun)
     return dfuns
 
@@ -100,3 +112,38 @@ def create_smooth_zigzag_derivative_function(a, x, delta):
             der_spline_functions.append(derivative_smoothing_functions[index])
 
     return lambda u: np.piecewise(np.abs(u), [condition(np.abs(u)) for condition in conditions], der_spline_functions)
+
+
+def create_smooth_zigzag_second_derivative_function(a, x, delta):
+    b = _compute_intercepts(a, x)
+    second_derivative_smoothing_functions = _create_all_second_derivative_smoothing_functions(a, x, delta, b)
+    conditions = _create_interval_conditions(x, delta)
+
+    second_der_spline_functions = []
+    for i in range(len(conditions)):
+        index = i // 2
+        if i % 2 == 0:
+            second_der_spline_functions.append(0.0)
+        else:
+            second_der_spline_functions.append(second_derivative_smoothing_functions[index])
+
+    return lambda u: np.sign(u) * np.piecewise(np.abs(u), [condition(np.abs(u)) for condition in conditions],
+                                               second_der_spline_functions)
+
+
+def get_extrema(cp_x, cp_y, delta):
+    a, x = compute_zizag_slopes_and_transitions_from_control_points(cp_x, cp_y)
+    conditions = _create_interval_conditions(x, delta)
+    intercepts = _compute_intercepts(a, x)
+    dfs = _create_all_derivative_smoothing_functions(a, x, delta, intercepts)
+    extrema = []
+    for i in range(len(conditions)):
+        index = i // 2
+        if i % 2 == 0:
+            pass
+        else:
+            roots = dfs[index].roots()
+            real_roots = np.real(roots[np.isreal(roots)])
+            if real_roots and conditions[i](real_roots[0]):
+                extrema.append(real_roots[0])
+    return np.array(extrema)

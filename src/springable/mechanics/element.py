@@ -1,7 +1,7 @@
 import numpy as np
 from .node import Node
 from . import shape
-from .mechanical_behavior import (MechanicalBehavior)
+from .mechanical_behavior import MechanicalBehavior
 
 
 class Element:

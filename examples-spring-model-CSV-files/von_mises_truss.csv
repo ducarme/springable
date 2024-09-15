@@ -17,4 +17,4 @@ SPRINGS
 ROTATION SPRINGS
     0-1-2, hinge_stiffness
 LOADING
-    3, Y, -9.0
+    3, Y, -7.5

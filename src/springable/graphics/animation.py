@@ -65,7 +65,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             ax2 = None
 
         if extra_init is not None:
-            extra = extra_init(fig, ax1, ax2)
+            fig, ax1, ax2, extra = extra_init(fig, ax1, ax2)
 
         ax1.axis('off')
         (bounds, characteristic_length,
@@ -159,7 +159,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             frame_indices = np.round(np.linspace(0, u.shape[0] - 1, ao['nb_frames'])).astype(int)
 
         dot = None
-        if ao['side_plot_mode'] != "none":
+        if ao['side_plot_mode'] == "force_displacement_curve":
             plot.force_displacement_curve_in_ax(_result, ax2, po)
             dot = ax2.plot([deformation[0]], [force[0]],
                            'o', color=ao['animated_equilibrium_point_color'],
@@ -188,8 +188,8 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
 
             _model_drawing.update()
             if extra_update is not None:
-                extra_update(fig, ax1, ax2, extra)
-            if ao['side_plot_mode'] != 'none':
+                extra_update(i, fig, ax1, ax2, extra)
+            if ao['side_plot_mode'] == 'force_displacement_curve':
                 dot.set_xdata([deformation[i]])
                 dot.set_ydata([force[i]])
 

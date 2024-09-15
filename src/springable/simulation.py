@@ -1,5 +1,6 @@
 from .mechanics import static_solver
 from .readwrite import fileio as io
+from .readwrite.interpreting import behavior_to_text
 from .graphics.default_graphics_settings import DEFAULT_GENERAL_OPTIONS
 from .graphics import animation
 from .mechanics import model

@@ -143,11 +143,13 @@ def visualize_result(result: static_solver.Result | str, save_dir: str = '',
         print("Cannot make the graphics, because the calculated equilibrium path is unusable")
 
 
-def make_animation(result, save_dir, show=True, graphics_settings=None, **animation_options):
+def make_animation(result, save_dir, save_name: str = None, show=True,
+                   extra_init=None, extra_update=None, graphics_settings=None, **animation_options):
     result = load_result(result)
     _, plot_options, anim_options, assembly_appearance = _load_graphics_settings(graphics_settings)
     anim_options.update(animation_options)
-    animation.animate(result, save_dir, show=show,
+    animation.animate(result, save_dir, save_name=save_name, show=show,
+                      extra_init=extra_init, extra_update=extra_update,
                       plot_options=plot_options, assembly_appearance=assembly_appearance,
                       **anim_options)
 

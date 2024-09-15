@@ -114,7 +114,7 @@ class CurveInteractor:
 
         update_behavior_parameters_from_control_points(self._behavior_type, self._behavior_parameters, x, y)
         try:
-            self._behavior = self._behavior_type(**self._behavior_parameters)
+            self._behavior = self._behavior_type(1.0, **self._behavior_parameters)
         except mb.InvalidBehaviorParameters:
             self._behavior_parameters_valid = False
 
@@ -268,7 +268,7 @@ class CurveInteractor:
         update_behavior_parameters_from_control_points(self._behavior_type, self._behavior_parameters,
                                                        self.poly.xy[:, 0], self.poly.xy[:, 1])
         try:
-            self._behavior = self._behavior_type(**self._behavior_parameters)
+            self._behavior = self._behavior_type(1.0, **self._behavior_parameters)
             self._behavior_parameters_valid = True
         except mb.InvalidBehaviorParameters:
             self._behavior_parameters_valid = False
