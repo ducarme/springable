@@ -7,7 +7,7 @@ from . import shape
 class Assembly:
     """ Class representing an assembly of elements connecting nodes """
 
-    def __init__(self, nodes: set[Node], elements: set[Element], auto_node_numbering=True):
+    def __init__(self, nodes: set[Node], elements: list[Element], auto_node_numbering=True):
         """ Initializes the assembly class """
         self._nodes = nodes
         self._elements = elements
@@ -20,7 +20,7 @@ class Assembly:
                 _node.set_node_nb(node_number)
 
         # assigns a unique number to each element
-        for element_number, _element in enumerate(self._elements):
+        for element_number, _element in enumerate(elements):
             _element.set_element_nb(element_number)
 
         # creates dictionaries to keep track of the degree-of-freedom indices for each node and element
@@ -31,7 +31,7 @@ class Assembly:
 
         self._elements_internal_dof_indices = {}
         dof_counter = 2 * len(self._nodes)
-        for _element in self._elements:
+        for _element in elements:
             nb_internal_dofs = _element.get_nb_internal_dofs()
             self._elements_internal_dof_indices[_element.get_element_nb()] = [dof_counter + i
                                                                               for i in range(nb_internal_dofs)]
@@ -62,7 +62,29 @@ class Assembly:
         # print("Fixed dof indices")
         # print(self._fixed_dof_indices)
 
-    def increment_general_coordinates(self, coordinate_increments: np.ndarray):
+    def block_nodes_along_directions(self, nodes: list[Node], directions: list[str]):
+        for node, direction in zip(nodes, directions):
+            match direction:
+                case 'X':
+                    node.block_horizontally()
+                case 'Y':
+                    node.block_vertically()
+                case _:
+                    raise ValueError(f'{direction} is an unknown direction')
+        self._free_dof_indices, self._fixed_dof_indices = self._determine_free_and_fixed_dof_indices()
+
+    def release_nodes_along_directions(self, nodes: list[Node], directions: list[str]):
+        for node, direction in zip(nodes, directions):
+            match direction:
+                case 'X':
+                    node.release_horizontally()
+                case 'Y':
+                    node.release_vertically()
+                case _:
+                    raise ValueError(f'{direction} is an unknown direction')
+        self._free_dof_indices, self._fixed_dof_indices = self._determine_free_and_fixed_dof_indices()
+
+    def increment_coordinates(self, coordinate_increments: np.ndarray):
         """ Updates the values of the general coordinates by applying an increment """
         for _node in self._nodes:
             indices = self._nodes_dof_indices[_node.get_node_nb()]
@@ -72,8 +94,8 @@ class Assembly:
             if indices:
                 _element.increment_internal_coordinates(coordinate_increments[indices])
 
-    def set_general_coordinates(self, coordinates_values: np.ndarray):
-        """ Sets the values of the general coordinates """
+    def set_coordinates(self, coordinates_values: np.ndarray):
+        """ Sets the values of the nodal and internal coordinates """
         for _node in self._nodes:
             indices = self._nodes_dof_indices[_node.get_node_nb()]
             _node.set_position(coordinates_values[indices])
@@ -107,13 +129,13 @@ class Assembly:
             energy += _element.compute_energy()
         return energy
 
-    def compute_internal_nodal_forces(self) -> np.ndarray:
+    def compute_elastic_force_vector(self) -> np.ndarray:
         """ Computes the net internal forces for each degree of freedom """
-        internal_forces = np.zeros(self._nb_dofs)
+        elastic_force_vector = np.zeros(self._nb_dofs)
         for _element in self._elements:
             indices = self._elements_dof_indices[_element.get_element_nb()]
-            internal_forces[indices] += _element.compute_force_vector()
-        return internal_forces
+            elastic_force_vector[indices] += _element.compute_force_vector()
+        return elastic_force_vector
 
     def compute_structural_stiffness_matrix(self) -> np.ndarray:
         """ Computes the global stiffness matrix of the current assem structure"""
@@ -124,7 +146,7 @@ class Assembly:
             ks[np.ix_(indices, indices)] += ke
         return ks
 
-    def get_general_coordinates(self) -> np.ndarray:
+    def get_coordinates(self) -> np.ndarray:
         coordinates = np.empty(self._nb_dofs)
         for _node in self._nodes:
             indices = self._nodes_dof_indices[_node.get_node_nb()]
@@ -161,7 +183,7 @@ class Assembly:
     def get_nodes(self) -> set[Node]:
         return self._nodes
 
-    def get_elements(self) -> set[Element]:
+    def get_elements(self) -> list[Element]:
         return self._elements
 
     def _determine_free_and_fixed_dof_indices(self) -> tuple[list[int], list[int]]:

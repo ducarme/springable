@@ -3,12 +3,14 @@ generate_model_drawing = true
 show_model_drawing = true
 generate_fd_plot = true
 show_fd_plot = true
+show_custom_plot = true
 generate_animation = true
 show_animation = true
 
 # herein below the desired outputs when scanning parameters
 generate_parametric_fd_plots = true
 show_parametric_fd_plots = true
+show_parametric_custom_plots = true
 generate_all_model_drawings = false
 show_all_model_drawings = false
 generate_all_fd_plots = false
@@ -48,6 +50,8 @@ nb_negative_eigval_colormap = "plasma"
 max_nb_legend_entries_for_discrete_parameter = 4
 
 default_plot_name = "fd_curve"
+default_xlabel = "displacement"
+default_ylabel = "force"
 default_color = "#a0a0a0"
 default_marker = "o"
 default_markersize = 2.5

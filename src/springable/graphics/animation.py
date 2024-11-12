@@ -17,22 +17,23 @@ def draw_model(mdl: model.Model, save_dir=None, save_name='model', show=True, **
     aa = DEFAULT_ASSEMBLY_APPEARANCE.copy()
     aa.update(assembly_appearance)
 
-    fig, ax = plt.subplots()
-    ax.set_aspect('equal')
-    xmin, ymin, xmax, ymax = mdl.get_assembly().get_dimensional_bounds()
-    assembly_span = max(xmax - xmin, ymax - ymin)
-    canvas_span = 1.25 * assembly_span
-    midx, midy = (xmin + xmax) / 2, (ymin + ymax) / 2
+    with plt.style.context('dark_background'):
+        fig, ax = plt.subplots()
+        ax.set_aspect('equal')
+        xmin, ymin, xmax, ymax = mdl.get_assembly().get_dimensional_bounds()
+        assembly_span = max(xmax - xmin, ymax - ymin)
+        canvas_span = 1.25 * assembly_span
+        midx, midy = (xmin + xmax) / 2, (ymin + ymax) / 2
 
-    ModelDrawing(ax, mdl, aa, assembly_span=assembly_span)
+        ModelDrawing(ax, mdl, aa, assembly_span=assembly_span)
 
-    ax.set_xlim(midx - canvas_span / 2, midx + canvas_span / 2)
-    ax.set_ylim(midy - canvas_span / 2, midy + canvas_span / 2)
-    if save_dir is not None:
-        ff.save_fig(fig, save_dir, save_name, ['png', 'pdf'])
-    if show:
-        plt.show()
-    plt.close()
+        ax.set_xlim(midx - canvas_span / 2, midx + canvas_span / 2)
+        ax.set_ylim(midy - canvas_span / 2, midy + canvas_span / 2)
+        if save_dir is not None:
+            ff.save_fig(fig, save_dir, save_name, ['png', 'pdf'])
+        if show:
+            plt.show()
+        plt.close()
 
 
 def animate(_result: Result, save_dir, save_name: str = None, show=True,
@@ -85,8 +86,12 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
         _model = _result.get_model()
         u = _result.get_displacements()
         forces_after_preloading = _result.get_forces()[0]
-        _natural_coordinates = _model.get_assembly().get_general_coordinates()
-        _model.get_assembly().set_general_coordinates(_natural_coordinates + u[0, :])
+        _natural_coordinates = _model.get_assembly().get_coordinates()
+        _model.get_assembly().set_coordinates(_natural_coordinates + u[0, :])
+        blocked_nodes_directions_step_list = _model.get_blocked_nodes_directions_step_list()
+        for blocked_nodes_directions in blocked_nodes_directions_step_list:
+            _model.get_assembly().block_nodes_along_directions(*blocked_nodes_directions)
+
         if all_force_amounts is not None:
             force_amounts = {loaded_node: amounts[0] for loaded_node, amounts in all_force_amounts.items()}
         else:
@@ -174,7 +179,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
 
         def update(i):
             # update assembly
-            _model.get_assembly().set_general_coordinates(_natural_coordinates + u[i, :])
+            _model.get_assembly().set_coordinates(_natural_coordinates + u[i, :])
 
             # update external forces
             # /!\ force_amounts dict should not be overridden
@@ -207,7 +212,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                             transparent=False,
                             bbox_inches='tight')
                 visual_helpers.print_progress(frame_cnt, frame_indices.shape[0])
-            _model.get_assembly().set_general_coordinates(_natural_coordinates)
+            _model.get_assembly().set_coordinates(_natural_coordinates)
             print('\nPNG frames saved successfully')
 
         filepath = None
@@ -221,7 +226,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                 ani.save(filepath, fps=ao['fps'], dpi=ao['dpi'],
                          progress_callback=visual_helpers.print_progress)
                 print('\nGIF animation saved successfully')
-                _model.get_assembly().set_general_coordinates(_natural_coordinates)
+                _model.get_assembly().set_coordinates(_natural_coordinates)
 
             if ao['save_as_transparent_mov']:
                 format_type = 'video'
@@ -240,7 +245,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                     progress_callback=visual_helpers.print_progress
                 )
                 print('\nMOV transparent animation saved successfully')
-                _model.get_assembly().set_general_coordinates(_natural_coordinates)
+                _model.get_assembly().set_coordinates(_natural_coordinates)
             if ao['save_as_mp4']:
                 format_type = 'video'
                 fig.patch.set_visible(True)
@@ -251,7 +256,9 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                 ani.save(filepath, codec='h264', fps=ao['fps'], dpi=ao['dpi'],
                          progress_callback=visual_helpers.print_progress)
                 print('\nMP4 animation saved successfully')
-                _model.get_assembly().set_general_coordinates(_natural_coordinates)
+                _model.get_assembly().set_coordinates(_natural_coordinates)
+                for blocked_nodes_directions in blocked_nodes_directions_step_list:
+                    _model.get_assembly().release_nodes_along_directions(*blocked_nodes_directions)
             plt.close()
             if show and filepath is not None:
                 if io.is_notebook():

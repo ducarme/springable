@@ -10,9 +10,13 @@ class Element:
     def __init__(self, _shape: shape.Shape, behavior: MechanicalBehavior, element_name=None):
         self._shape = _shape
         self._behavior = behavior
-        self._t = np.zeros(self._behavior.get_nb_dofs() - 1)  # values of the internal degrees of freedom
+        self._x = np.zeros(self._behavior.get_nb_dofs() - 1)  # values of the internal degrees of freedom
         self._el_nb = None
         self._element_name = element_name
+
+        # ONLY USED FOR DYNAMIC SIMULATION
+        self._vx = np.zeros(self._behavior.get_nb_dofs() - 1)  # velocity values of the internal degrees of freedom
+
 
     def get_nodes(self) -> tuple[Node, ...]:
         return self._shape.get_nodes()
@@ -42,34 +46,45 @@ class Element:
         if self._behavior.get_nb_dofs() == 1:
             raise ValueError("The element does not have any internal degree of freedom")
         else:
-            self._t += u
+            self._x += u
 
-    def set_internal_coordinates(self, t: np.ndarray):
+    def set_internal_coordinates(self, x: np.ndarray):
         if self._behavior.get_nb_dofs() == 1:
             raise ValueError("The element does not have any internal degree of freedom")
         else:
-            self._t = t.copy()
+            self._x = x.copy()
 
     def get_internal_coordinates(self) -> np.ndarray:
         if self._behavior.get_nb_dofs() == 1:
             raise ValueError("The element does not have any internal degree of freedom")
-        return self._t
+        return self._x
+
+    def set_internal_coordinate_velocity(self, x: np.ndarray):
+        if self._behavior.get_nb_dofs() == 1:
+            raise ValueError("The element does not have any internal degree of freedom")
+        else:
+            self._vx = x.copy()
+
+    def get_internal_coordinate_velocity(self) -> np.ndarray:
+        if self._behavior.get_nb_dofs() == 1:
+            raise ValueError("The element does not have any internal degree of freedom")
+        return self._vx
 
     def compute_energy(self) -> float:
         """ Computes and returns the elastic energy currently stored in the element """
         alpha = self._shape.compute(shape.Shape.MEASURE)
-        return self._behavior.elastic_energy(alpha, *self._t)
+        return self._behavior.elastic_energy(alpha, *self._x)
 
     def compute_generalized_force(self) -> float:
         """ Computes and returns the value of the generalized force with respect to alpha (elemental reference
         system)"""
         alpha = self._shape.compute(shape.Shape.MEASURE)
-        return self._behavior.gradient_energy(alpha, *self._t)[0]
+        return self._behavior.gradient_energy(alpha, *self._x)[0]
 
     def compute_generalized_stiffness(self) -> float:
         """ Computes and returns the value of the generalized stiffness with respect to alpha """
         alpha = self._shape.compute(shape.Shape.MEASURE)
-        hessian = self._behavior.hessian_energy(alpha, *self._t)
+        hessian = self._behavior.hessian_energy(alpha, *self._x)
         if len(hessian) == 1:  # for behavior with 0 hidden variable (Univariate behavior)
             return hessian[0]
         if len(hessian) == 3:  # for behavior with 1 hidden variable (Bivariate behavior)
@@ -88,8 +103,8 @@ class Element:
             return np.linalg.det(hessian_matrix) / np.linalg.det(hessian_matrix[1:hessian_size, 1:hessian_size])
 
     def compute_force_vector(self) -> np.ndarray:
-        """ Computes and returns the gradient of the elastic energy with respect to the general coordinates (global
-        reference system)"""
+        """ Computes and returns the gradient of the elastic energy with respect to the general coordinates
+        (global reference system) """
         shape_measure, jacobian = self._shape.compute(shape.Shape.MEASURE_AND_JACOBIAN)
         alpha = shape_measure
 
@@ -100,7 +115,7 @@ class Element:
         if self._behavior.get_nb_dofs() == 2:
             n = self.get_nb_dofs()
             force_vector = np.empty(n)
-            dvdalpha, dvdt = self._behavior.gradient_energy(alpha, *self._t)
+            dvdalpha, dvdt = self._behavior.gradient_energy(alpha, *self._x)
             force_vector[:-1] = dvdalpha * jacobian
             force_vector[-1] = dvdt
             return force_vector
@@ -123,14 +138,13 @@ class Element:
             n = self.get_nb_dofs()
             stiffness_matrix = np.empty((n, n))
             alpha = shape_measure
-            dvdalpha, dvdt = self._behavior.gradient_energy(alpha, *self._t)
-            d2vdalpha2, d2vdalphadt, d2vdt2 = self._behavior.hessian_energy(alpha, *self._t)
+            dvdalpha, _ = self._behavior.gradient_energy(alpha, *self._x)
+            d2vdalpha2, d2vdalphadx, d2vdx2 = self._behavior.hessian_energy(alpha, *self._x)
             stiffness_matrix[:-1, :-1] = (d2vdalpha2 * np.outer(jacobian, jacobian)
                                           + dvdalpha * hessian)
-            stiffness_matrix[-1, -1] = d2vdt2
-            stiffness_matrix[-1, :-1] = stiffness_matrix[:-1, -1] = d2vdalphadt * jacobian
+            stiffness_matrix[-1, -1] = d2vdx2
+            stiffness_matrix[-1, :-1] = stiffness_matrix[:-1, -1] = d2vdalphadx * jacobian
             return stiffness_matrix
         else:
             raise NotImplementedError(
                 "Not implementation to compute stiffness matrix with mechanical behavior with more than 2 DOFS ")
-

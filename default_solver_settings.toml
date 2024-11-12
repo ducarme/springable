@@ -1,7 +1,9 @@
 reference_load_parameter = 0.05
 radius = 0.05
+detect_bifurcation = true
 show_warnings = false
 verbose = true
+detail_verbose = false
 i_max = 10_000  # max number of increments to reach the prescribed force
 convergence_value = 1e-6
 detect_mechanism = true

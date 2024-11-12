@@ -54,7 +54,7 @@ def load_result(_result):
 
 
 def visualize_scan_results(scan_results_dir: str, save_dir: str = '',
-                           graphics_settings: list[dict] | tuple[dict] | str = None):
+                           graphics_settings: list[dict] | tuple[dict] | str = None, postprocessing = None):
     general_options, plot_options, animation_options, assembly_appearance = _load_graphics_settings(graphics_settings)
     go = DEFAULT_GENERAL_OPTIONS.copy()
     go.update(general_options)
@@ -68,7 +68,7 @@ def visualize_scan_results(scan_results_dir: str, save_dir: str = '',
     # MAKE GRAPHICS
     if scan_parameters_one_by_one:
         par_name_to_sim_names = general_info['PARAMETER_NAME_TO_SIM_NAMES_MAPPING']
-        if go['generate_parametric_fd_plots']:
+        if go['generate_parametric_fd_plots'] or postprocessing is not None:
             _, par_name_to_par_data = io.read_parameters_from_model_file(model_path)
 
             for design_parameter_name, sim_names in par_name_to_sim_names.items():
@@ -80,6 +80,14 @@ def visualize_scan_results(scan_results_dir: str, save_dir: str = '',
                                                          par_name_to_par_data[design_parameter_name], parameter_values,
                                                          save_dir, save_name=f'fd_curve_{design_parameter_name}',
                                                          show=go['show_parametric_fd_plots'], **plot_options)
+                if postprocessing is not None:
+                    for pp in postprocessing:
+                        plot.parametric_curve(pp['postprocessing_fun'], _results(subsave_dirs), design_parameter_name,
+                                              par_name_to_par_data[design_parameter_name], parameter_values,
+                                              save_dir, save_name=f'{pp["save_name"]}_{design_parameter_name}',
+                                              xlabel=pp['xlabel'], ylabel=pp['ylabel'],
+                                              show=go['show_parametric_custom_plots'], **plot_options
+                                              )
 
     # first scanning of result folders to obtain axes limits for force-displacement plots
     min_u, max_u, min_f, max_f = [None] * 4
@@ -123,7 +131,7 @@ def visualize_scan_results(scan_results_dir: str, save_dir: str = '',
 
 
 def visualize_result(result: static_solver.Result | str, save_dir: str = '',
-                     graphics_settings: list | tuple | str = None):
+                     graphics_settings: list | tuple | str = None, postprocessing = None):
     result = load_result(result)
     general_options, plot_options, animation_options, assembly_appearance = _load_graphics_settings(graphics_settings)
 
@@ -135,6 +143,12 @@ def visualize_result(result: static_solver.Result | str, save_dir: str = '',
                                  **assembly_appearance)
         if go['generate_fd_plot']:
             plot.force_displacement_curve(result, save_dir, show=go['show_fd_plot'], **plot_options)
+
+        if postprocessing is not None:
+            for pp in postprocessing:
+                plot.curve(pp['postprocessing_fun'], result, save_dir, save_name=pp['save_name'],
+                           show=go['show_custom_plot'], xlabel=pp['xlabel'], ylabel=pp['ylabel'], **plot_options)
+
         if go['generate_animation']:
             animation.animate(result, save_dir, show=go['show_animation'],
                               plot_options=plot_options, assembly_appearance=assembly_appearance,

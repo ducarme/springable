@@ -24,8 +24,10 @@ class NodalLoad:
 
 class LoadStep:
 
-    def __init__(self, nodes: list[Node], directions: list[str], forces: list[float], max_displacements: list[float | None]):
-        self._load = []
+    def __init__(self, nodes: list[Node], directions: list[str], forces: list[float], max_displacements: list[float | None],
+                 blocked_nodes_directions: tuple[list[Node], list[str]] | None = None):
+        self._nodal_loads = []
+        self._blocked_nodes_directions = blocked_nodes_directions
         ld = {}
         for _node, _direction, _force, _max_displacement in zip(nodes, directions, forces, max_displacements):
             if (_node, _direction) not in ld:
@@ -36,10 +38,15 @@ class LoadStep:
         for node_and_dir, force_and_maxu in ld.items():
             _node, _direction = node_and_dir
             _force, _max_u = force_and_maxu
-            self._load.append(NodalLoad(_node, _direction, _force, _max_u))
+            self._nodal_loads.append(NodalLoad(_node, _direction, _force, _max_u))
 
     def get_nodal_loads(self) -> list[NodalLoad]:
-        return self._load
+        return self._nodal_loads
+
+    def get_blocked_nodes_directions(self) -> tuple[list[Node], list[str]]:
+        return self._blocked_nodes_directions
+
+
 
 
 

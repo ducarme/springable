@@ -1,10 +1,11 @@
 from .math_utils.bezier_curve import *
-from .math_utils.smooth_zigzag_curve import *
+from .math_utils import smooth_zigzag_curve as szz
 from scipy.interpolate import interp1d, griddata
 from scipy.integrate import quad, solve_ivp, cumulative_trapezoid
 from scipy.optimize import minimize, LinearConstraint
 import numpy as np
 import matplotlib.pyplot as plt
+
 
 class MechanicalBehavior:
     _nb_dofs: int = None
@@ -31,6 +32,11 @@ class MechanicalBehavior:
 
     def get_natural_measure(self):
         return self._natural_measure
+
+    def update(self, natural_measure, /, **parameters):
+        self._natural_measure = natural_measure
+        self._parameters = parameters
+        # TO BE EXTENDED IN SUBCLASSES IF NECESSARY
 
 
 class UnivariateBehavior(MechanicalBehavior):
@@ -86,32 +92,49 @@ class NaturalBehavior(UnivariateBehavior):
         super().__init__(natural_measure, k=k)
 
     def elastic_energy(self, alpha: float | np.ndarray) -> float:
-        return self._parameters['k'] * self._natural_measure * alpha * (np.log(alpha / self._natural_measure) - 1)
+        energy = self._parameters['k'] * self._natural_measure * alpha * (np.log(alpha / self._natural_measure) - 1)
+        if not np.isfinite(energy).any():
+            raise NonfiniteBehavior
+        return energy
 
     def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float]:
-        return self._parameters['k'] * self._natural_measure * np.log(alpha / self._natural_measure),
+        force = self._parameters['k'] * self._natural_measure * np.log(alpha / self._natural_measure)
+        if not np.isfinite(force).any():
+            raise NonfiniteBehavior
+        return force,
 
     def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
-        return self._parameters['k'] * self._natural_measure / alpha,
+        stiffness = self._parameters['k'] * self._natural_measure / alpha
+        print(stiffness)
+        if not np.isfinite(stiffness).any():
+            raise NonfiniteBehavior
+        return stiffness,
 
 
 class BezierBehavior(UnivariateBehavior):
-    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], sampling: int = 100, check_validity=True):
+    def __init__(self, natural_measure, u_i: list[float], f_i: list[float],
+                 sampling: int = 100, check_validity=True):
         super().__init__(natural_measure, u_i=u_i, f_i=f_i)
-        u_coefs = np.array([0.0] + u_i)
-        f_coefs = np.array([0.0] + f_i)
-        if check_validity and not is_monotonic(u_coefs):
-            raise InvalidBehaviorParameters("The Bezier behavior does not describe a function, try Bezier2 instead.")
-        t = np.linspace(0, 1, sampling)
+        self._check_validity = check_validity
+        self._sampling = sampling
+        self._make()
+
+    def _make(self):
+        u_coefs = np.array([0.0] + self._parameters['u_i'])
+        f_coefs = np.array([0.0] + self._parameters['f_i'])
+        if self._check_validity and not is_monotonic(u_coefs):
+            raise InvalidBehaviorParameters(
+                "The Bezier behavior does not describe a function, try Bezier2 instead.")
+        t = np.linspace(0, 1, self._sampling)
         u = evaluate_poly(t, u_coefs)
 
         def fdu(_t, _): return evaluate_poly(_t, f_coefs) * evaluate_derivative_poly(_t, u_coefs)
 
         energy = solve_ivp(fun=fdu, t_span=[0.0, 1.0], y0=[0.0], t_eval=t).y[0, :]
-        generalized_force = evaluate_poly(t, f_coefs)
-        generalized_stiffness = evaluate_derivative_poly(t, f_coefs) / evaluate_derivative_poly(t, u_coefs)
         self._energy = interp1d(u, energy, kind='linear', fill_value='extrapolate')
+        generalized_force = evaluate_poly(t, f_coefs)
         self._first_der_energy = interp1d(u, generalized_force, kind='linear', fill_value='extrapolate')
+        generalized_stiffness = evaluate_derivative_poly(t, f_coefs) / evaluate_derivative_poly(t, u_coefs)
         self._second_der_energy = interp1d(u, generalized_stiffness, kind='linear', fill_value='extrapolate')
 
     def elastic_energy(self, alpha: float | np.ndarray) -> float:
@@ -122,6 +145,10 @@ class BezierBehavior(UnivariateBehavior):
 
     def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
         return self._second_der_energy(alpha - self._natural_measure),
+
+    def update(self, natural_measure, /, **parameters):
+        super().update(natural_measure, **parameters)
+        self._make()
 
     @classmethod
     def compute_fitting_parameters(cls, force_displacement_curves: list[tuple], degree: int, show=False):
@@ -189,8 +216,11 @@ class Bezier2Behavior(BivariateBehavior):
 
     def __init__(self, natural_measure, u_i: list[float], f_i: list[float]):
         super().__init__(natural_measure, u_i=u_i, f_i=f_i)
-        self._a_coefs = np.array([0.0] + u_i)
-        self._b_coefs = np.array([0.0] + f_i)
+        self._make()
+
+    def _make(self):
+        self._a_coefs = np.array([0.0] + self._parameters['u_i'])
+        self._b_coefs = np.array([0.0] + self._parameters['f_i'])
 
         # checking validity of behavior
         da0 = evaluate_derivative_poly(0.0, self._a_coefs)
@@ -371,9 +401,6 @@ class Bezier2Behavior(BivariateBehavior):
         self._dk = dk_fun
         self._d2k = d2k_fun
 
-        # self.plot_energy_landscape()
-        # self.calculate_pseudoseries_force_displacement_curve()
-
     def elastic_energy(self, alpha: float, t: float) -> np.ndarray:
         y = alpha - self._natural_measure
         return 0.5 * self._k(t) * (y - self._a(t)) ** 2 + y * self._b(t) - self._int_adb(t)
@@ -396,6 +423,10 @@ class Bezier2Behavior(BivariateBehavior):
             d2vdalphadt += self._dk(t) * (y - self._a(t))
             d2vdt2 += (y - self._a(t)) * (0.5 * self._d2k(t) * (y - self._a(t)) - 2 * self._da(t) * self._dk(t))
         return d2vdalpha2, d2vdalphadt, d2vdt2
+
+    def update(self, natural_measure, /, **parameters):
+        super().update(natural_measure, **parameters)
+        self._make()
 
     def get_hysteron_info(self) -> dict[str, float]:
         if self._hysteron_info is None:
@@ -500,12 +531,10 @@ class Bezier2Behavior(BivariateBehavior):
         ksi1 = np.zeros_like(t)  # u, v --> y
         ksi2 = np.zeros_like(t)  # u, v --> t
 
-
-
         for i in range(n):
             for j in range(n):
-                h11, h12, h22 = self.hessian_energy(self.get_natural_measure() + y[i,j], t[i,j])
-                rho = (h11 + h22) ** 2 - 4 * (h11 * h22 - h12**2)
+                h11, h12, h22 = self.hessian_energy(self.get_natural_measure() + y[i, j], t[i, j])
+                rho = (h11 + h22) ** 2 - 4 * (h11 * h22 - h12 ** 2)
                 lambda1 = (h11 + h22 - np.sqrt(rho)) / 2
                 lambda2 = (h11 + h22 + np.sqrt(rho)) / 2
                 v1 = np.array((-h12 / (h11 - lambda1), 1))
@@ -513,13 +542,13 @@ class Bezier2Behavior(BivariateBehavior):
                 nu1 = v1 / np.linalg.norm(v1)
                 nu2 = v2 / np.linalg.norm(v2)
                 p = np.array((nu1, nu2)).T
-                phi1[i,j], phi2[i,j] = p @ np.array((y[i,j], t[i,j]))
+                phi1[i, j], phi2[i, j] = p @ np.array((y[i, j], t[i, j]))
 
         phi1_t = np.zeros_like(tt)  # y, t --> u
         phi2_t = np.zeros_like(tt)
         for i, ttt in enumerate(tt):
             h11, h12, h22 = self.hessian_energy(self.get_natural_measure() + self._a(ttt), ttt)
-            rho = (h11 + h22) ** 2 - 4 * (h11 * h22 - h12**2)
+            rho = (h11 + h22) ** 2 - 4 * (h11 * h22 - h12 ** 2)
             lambda1 = (h11 + h22 - np.sqrt(rho)) / 2
             lambda2 = (h11 + h22 + np.sqrt(rho)) / 2
             v1 = np.array((-h12 / (h11 - lambda1), 1))
@@ -562,12 +591,12 @@ class Bezier2Behavior(BivariateBehavior):
         # ax1.plot(tt, self._a(tt), 'r-', lw=3)
         # ax2.plot(tt, self._a(tt), 'r-', lw=3)
 
-        # ax1 = fig.add_subplot(121, projection='3d')
-        # ax2 = fig.add_subplot(122, projection='3d')
-        ax3 = fig.add_subplot(121, projection='3d')
-        ax4 = fig.add_subplot(122, projection='3d')
-        # ax1.plot_surface(t, y, phi1, cmap='viridis')
-        # ax2.plot_surface(t, y, phi2, cmap='viridis')
+        ax1 = fig.add_subplot(221, projection='3d')
+        ax2 = fig.add_subplot(222, projection='3d')
+        ax3 = fig.add_subplot(223, projection='3d')
+        ax4 = fig.add_subplot(224, projection='3d')
+        ax1.plot_surface(t, y, phi1, cmap='viridis')
+        ax2.plot_surface(t, y, phi2, cmap='viridis')
         # ax3.plot_surface(u, v, ksi1)
         # ax4.plot_surface(u, v, ksi2)
         ax3.plot_surface(phi1, phi2, y, alpha=0.3, cmap='viridis')
@@ -578,7 +607,106 @@ class Bezier2Behavior(BivariateBehavior):
         # ax2.plot(tt, self._a(tt), 'r-', lw=3)
         plt.show()
 
+    def compute_diagonal_mapping2(self):
+        n = 25
 
+        tt = np.linspace(0, 1.0, n)
+        fig, ax = plt.subplots()
+        ax.plot(tt, self._a(tt))
+        ax.plot(tt, self._b(tt))
+        plt.show()
+        y, t = np.meshgrid(np.linspace(np.min(self._a(tt)), np.max(self._a(tt)), n), tt)
+
+        nu1x = np.zeros_like(t)
+        nu1y = np.zeros_like(t)
+        nu2x = np.zeros_like(t)
+        nu2y = np.zeros_like(t)
+
+        for i in range(n):
+            for j in range(n):
+                h11, h12, h22 = self.hessian_energy(self.get_natural_measure() + y[i, j], t[i, j])
+                rho = (h11 + h22) ** 2 - 4 * (h11 * h22 - h12 ** 2)
+                lambda1 = (h11 + h22 - np.sqrt(rho)) / 2
+                lambda2 = (h11 + h22 + np.sqrt(rho)) / 2
+                v1 = np.array((-h12 / (h11 - lambda1), 1))
+                v2 = np.array((-h12 / (h11 - lambda2), 1))
+                nu1 = v1 / np.linalg.norm(v1)
+                nu2 = v2 / np.linalg.norm(v2)
+                nu1x[i, j] = nu1[0]
+                nu1y[i, j] = nu1[1]
+                nu2x[i, j] = nu2[0]
+                nu2y[i, j] = nu2[1]
+
+        fig, (ax0) = plt.subplots()
+        ax0.quiver(y, t, nu1x, nu1y, color='tab:blue')
+        ax0.quiver(y, t, nu2x, nu2y, color='tab:orange')
+        ax0.plot(self._a(tt), tt, 'r-', lw=2)
+        plt.show()
+
+        uu = np.linspace(0.0, 1.0, n)
+        vv = np.linspace(0.0, 1.5, n)
+        u, v = np.meshgrid(uu, vv)
+
+        def ode_system_uv(uv, xy, direction):
+            x, y = xy
+            h11, h12, h22 = self.hessian_energy(self.get_natural_measure() + y, x)
+            rho = (h11 + h22) ** 2 - 4 * (h11 * h22 - h12 ** 2)
+            lambda1 = (h11 + h22 - np.sqrt(rho)) / 2
+            lambda2 = (h11 + h22 + np.sqrt(rho)) / 2
+            v1 = np.array((-h12 / (h11 - lambda1), 1))
+            v2 = np.array((-h12 / (h11 - lambda2), 1))
+            nu1 = v1 / np.linalg.norm(v1)
+            nu2 = v2 / np.linalg.norm(v2)
+            if direction == 'u':
+                return nu1  # Derivative in the direction of nu1
+            elif direction == 'v':
+                return nu2  # Derivative in the direction of nu2
+
+        # Grid for u and v
+        u_vals = np.linspace(0, 2.0, 30)  # Adjust grid resolution as needed
+        v_vals = np.linspace(0, 2.0, 30)
+        U, V = np.meshgrid(u_vals, v_vals)
+
+        # Initialize arrays for X and Y over the (u, v) grid
+        X = np.zeros(U.shape)
+        Y = np.zeros(V.shape)
+
+        # Starting point at (u, v) = (0, 0)
+        x0, y0 = 0, 0
+
+        # Populate X and Y on the grid
+        for i in range(len(u_vals)):
+            print(i)
+            # Solve along u from (0, 0) to the current u, holding v = 0
+            sol_u = solve_ivp(ode_system_uv, (0, u_vals[i]), [x0, y0], args=('u',))
+            x_u, y_u = sol_u.y[:, -1]
+            for j in range(len(v_vals)):
+                # Solve along v from (0, 0) to the current v, holding u constant
+                sol_v = solve_ivp(ode_system_uv, (0, v_vals[j]), [x_u, y_u], args=('v',))
+
+                # Store the final (x, y) at (u, v) = (u_vals[i], v_vals[j])
+                X[i, j], Y[i, j] = sol_v.y[:, -1]
+
+        # Plot the surfaces
+        fig = plt.figure(figsize=(12, 6))
+
+        # X surface plot
+        ax1 = fig.add_subplot(121, projection='3d')
+        ax1.plot_surface(U, V, X, cmap='viridis')
+        ax1.set_title("X(u, v) Surface")
+        ax1.set_xlabel("u")
+        ax1.set_ylabel("v")
+        ax1.set_zlabel("x")
+
+        # Y surface plot
+        ax2 = fig.add_subplot(122, projection='3d')
+        ax2.plot_surface(U, V, Y, cmap='plasma')
+        ax2.set_title("Y(u, v) Surface")
+        ax2.set_xlabel("u")
+        ax2.set_ylabel("v")
+        ax2.set_zlabel("y")
+
+        plt.show()
 
 
 class IdealGas(UnivariateBehavior):
@@ -607,13 +735,13 @@ class IdealGas(UnivariateBehavior):
 class IsothermicGas(IdealGas):
 
     def elastic_energy(self, alpha: float | np.ndarray) -> float:
-        v0 = self._parameters['v0']
+        v0 = self._natural_measure
         v = alpha
         nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
         return nRT * (v / v0 - 1.0 - np.log(v / v0))
 
     def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float]:
-        v0 = self._parameters['v0']
+        v0 = self._natural_measure
         v = alpha
         nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
         return nRT * (v - v0) / (v * v0),
@@ -667,30 +795,20 @@ class IsentropicGas(IdealGas):
 
 class ZigZagBehavior(UnivariateBehavior):
     def __init__(self, natural_measure, a, x, delta):
+        super().__init__(natural_measure, a=a, x=x, delta=delta)
+        self._make()
+
+    def _make(self):
+        a, x, delta = self._parameters['a'], self._parameters['x'], self._parameters['delta']
         if x[0] - 0.0 < delta or (len(x) > 1 and np.min(np.diff(x)) < 2 * delta):
             raise InvalidBehaviorParameters(f'Smoothing factor {delta} is too large for the zigzag intervals provided.')
         if len(a) != len(x) + 1:
             raise InvalidBehaviorParameters(f'Expected {len(a) - 1} transitions, but only {len(x)} were provided.')
-        super().__init__(natural_measure, a=a, x=x, delta=delta)
-        self._u_i, self._f_i = compute_zigzag_control_points(a, x)
-        self._generalized_force_function = create_smooth_zigzag_function(a, x, delta)
-        self._generalized_stiffness_function = create_smooth_zigzag_derivative_function(a, x, delta)
-
-        # fig, axs = plt.subplots(3, 1)
-        # t = np.linspace(-2*x[-1], 2*x[-1], 500)
-        # axs[0].plot(t, self.elastic_energy(t))
-        # axs[1].plot(t, self.gradient_energy(t)[0])
-        # axs[2].plot(t, self.hessian_energy(t)[0])
-        # plt.show()
+        self._u_i, self._f_i = szz.compute_zigzag_control_points(a, x)
+        self._generalized_force_function = szz.create_smooth_zigzag_function(a, x, delta)
+        self._generalized_stiffness_function = szz.create_smooth_zigzag_derivative_function(a, x, delta)
 
     def elastic_energy(self, alpha: float) -> float:
-        # if isinstance(alpha, np.ndarray):
-        #     e = np.zeros_like(alpha)
-        #     for i, alpha_i in enumerate(alpha):
-        #         e[i] = self.elastic_energy(alpha_i)
-        #     return e
-        # else:
-        #     return quad(self._generalized_force_function, 0.0, alpha)[0]
         return quad(self._generalized_force_function, 0.0, alpha - self._natural_measure)[0]
 
     def gradient_energy(self, alpha: float) -> tuple[float]:
@@ -699,31 +817,39 @@ class ZigZagBehavior(UnivariateBehavior):
     def hessian_energy(self, alpha: float) -> tuple[float]:
         return self._generalized_stiffness_function(alpha - self._natural_measure),
 
+    def update(self, natural_measure, /, **parameters):
+        super().update(natural_measure, **parameters)
+        self._make()
+
 
 class ZigZag2Behavior(BivariateBehavior):
 
     def __init__(self, natural_measure, u_i: list[float], f_i: list[float], delta):
+        super().__init__(natural_measure, u_i=u_i, f_i=f_i, delta=delta)
+        self._make()
+
+    def _make(self):
+        u_i, f_i, delta = self._parameters['u_i'], self._parameters['f_i'], self._parameters['delta']
         # checking validity of behavior
         if not 0.0 < delta < 1.0:
             raise InvalidBehaviorParameters(f'Parameter delta must be between 0 and 1 (current value: {delta}')
         if len(u_i) != len(f_i):
             raise InvalidBehaviorParameters(f'u_i and f_i must contain the same number of elements')
-        super().__init__(natural_measure, u_i=u_i, f_i=f_i, delta=delta)
         self._cp_u = np.array([0.0] + u_i)
         self._cp_f = np.array([0.0] + f_i)
 
         n = len(u_i) + 1
-        self._cp_t = np.arange(n) / (n-1)
-        self._delta = delta / (n-1)
-        slopes_u, transitions_u = compute_zizag_slopes_and_transitions_from_control_points(self._cp_t, self._cp_u)
-        slopes_f, transitions_f = compute_zizag_slopes_and_transitions_from_control_points(self._cp_t, self._cp_f)
+        self._cp_t = np.arange(n) / (n - 1)
+        self._delta = delta / (n - 1)
+        slopes_u, transitions_u = szz.compute_zizag_slopes_and_transitions_from_control_points(self._cp_t, self._cp_u)
+        slopes_f, transitions_f = szz.compute_zizag_slopes_and_transitions_from_control_points(self._cp_t, self._cp_f)
 
-        self._a = create_smooth_zigzag_function(slopes_u, transitions_u, self._delta)
-        self._b = create_smooth_zigzag_function(slopes_f, transitions_f, self._delta)
-        self._da = create_smooth_zigzag_derivative_function(slopes_u, transitions_u, self._delta)
-        self._db = create_smooth_zigzag_derivative_function(slopes_f, transitions_f, self._delta)
-        self._d2a = create_smooth_zigzag_second_derivative_function(slopes_u, transitions_u, self._delta)
-        self._d2b = create_smooth_zigzag_second_derivative_function(slopes_f, transitions_f, self._delta)
+        self._a = szz.create_smooth_zigzag_function(slopes_u, transitions_u, self._delta)
+        self._b = szz.create_smooth_zigzag_function(slopes_f, transitions_f, self._delta)
+        self._da = szz.create_smooth_zigzag_derivative_function(slopes_u, transitions_u, self._delta)
+        self._db = szz.create_smooth_zigzag_derivative_function(slopes_f, transitions_f, self._delta)
+        self._d2a = szz.create_smooth_zigzag_second_derivative_function(slopes_u, transitions_u, self._delta)
+        self._d2b = szz.create_smooth_zigzag_second_derivative_function(slopes_f, transitions_f, self._delta)
         self._d3a = lambda t: np.zeros_like(t)
         self._d3b = lambda t: np.zeros_like(t)
         self._dbda = lambda t: self._db(t) / self._da(t)
@@ -830,11 +956,15 @@ class ZigZag2Behavior(BivariateBehavior):
         self._d2k = d2k_fun
 
         # fig_, ax = plt.subplots()
-        # tt = np.linspace(0, 1, 400)
-        # uu = self._a(tt)
-        # ff, _ = self.gradient_energy(uu+self._natural_measure, tt)
-        # ax.plot(uu, ff, 'o')
-        # ax.plot(self._cp_u, self._cp_f, '--o')
+        # tt = np.linspace(-1, 0, 400)
+        # k = self._k(tt)
+        # da = self._da(tt)
+        # db = self._db(tt)
+        # a = self._a(tt)
+        # b = self._b(tt)
+        # ax.plot(tt, a, 'o')
+        # # ax.plot(tt, db/da, 'o')
+        # # ax.plot(tt, k, '-o')
         # plt.show()
 
     def elastic_energy(self, alpha: float, t: float) -> np.ndarray:
@@ -859,6 +989,10 @@ class ZigZag2Behavior(BivariateBehavior):
             d2vdalphadt += self._dk(t) * (y - self._a(t))
             d2vdt2 += (y - self._a(t)) * (0.5 * self._d2k(t) * (y - self._a(t)) - 2 * self._da(t) * self._dk(t))
         return d2vdalpha2, d2vdalphadt, d2vdt2
+
+    def update(self, natural_measure, /, **parameters):
+        super().update(natural_measure, **parameters)
+        self._make()
 
     def get_hysteron_info(self) -> dict[str, float]:
         if self._hysteron_info is None:
@@ -889,7 +1023,7 @@ class ZigZag2Behavior(BivariateBehavior):
                                    'branch_ids': branch_ids}
 
     def plot_energy_landscape(self, ax=None):
-        n = 10_000
+        n = 500
         t = np.linspace(0, 2.0, n)
         y = np.linspace(np.min(self._a(t)), np.max(self._a(t)), n)
         f = np.linspace(np.min(self._b(t)), np.max(self._b(t)), n)
@@ -909,12 +1043,12 @@ class ZigZag2Behavior(BivariateBehavior):
         stabilizable = np.logical_and(self._db(t) < 0, self._da(t) > 0)
         unstable = self._da(t) < 0
 
-        ax.plot_surface(t_grid, y_grid, v_grid - 10 * y_grid, cmap='viridis')
+        ax.plot_surface(t_grid, y_grid, v_grid, cmap='viridis')
         # ax.plot(t[stable], a[stable], int_bda[stable], 'bo', label='path')
         # ax.plot(t[stabilizable], a[stabilizable], int_bda[stabilizable], 'ko', label='path')
         # ax.plot(t[unstable], a[unstable], int_bda[unstable], 'ro', label='path')
         ax.set_xlabel('$t$')
-        ax.set_ylabel('$\\y$')
+        ax.set_ylabel('$y$')
         ax.set_zlabel('$U$')
         if make_new_fig:
             plt.show()
@@ -963,12 +1097,10 @@ class ZigZag2Behavior(BivariateBehavior):
         ksi1 = np.zeros_like(t)  # u, v --> y
         ksi2 = np.zeros_like(t)  # u, v --> t
 
-
-
         for i in range(n):
             for j in range(n):
-                h11, h12, h22 = self.hessian_energy(self.get_natural_measure() + y[i,j], t[i,j])
-                rho = (h11 + h22) ** 2 - 4 * (h11 * h22 - h12**2)
+                h11, h12, h22 = self.hessian_energy(self.get_natural_measure() + y[i, j], t[i, j])
+                rho = (h11 + h22) ** 2 - 4 * (h11 * h22 - h12 ** 2)
                 lambda1 = (h11 + h22 - np.sqrt(rho)) / 2
                 lambda2 = (h11 + h22 + np.sqrt(rho)) / 2
                 v1 = np.array((-h12 / (h11 - lambda1), 1))
@@ -976,13 +1108,13 @@ class ZigZag2Behavior(BivariateBehavior):
                 nu1 = v1 / np.linalg.norm(v1)
                 nu2 = v2 / np.linalg.norm(v2)
                 p = np.array((nu1, nu2)).T
-                phi1[i,j], phi2[i,j] = p @ np.array((y[i,j], t[i,j]))
+                phi1[i, j], phi2[i, j] = p @ np.array((y[i, j], t[i, j]))
 
         phi1_t = np.zeros_like(tt)  # y, t --> u
         phi2_t = np.zeros_like(tt)
         for i, ttt in enumerate(tt):
             h11, h12, h22 = self.hessian_energy(self.get_natural_measure() + self._a(ttt), ttt)
-            rho = (h11 + h22) ** 2 - 4 * (h11 * h22 - h12**2)
+            rho = (h11 + h22) ** 2 - 4 * (h11 * h22 - h12 ** 2)
             lambda1 = (h11 + h22 - np.sqrt(rho)) / 2
             lambda2 = (h11 + h22 + np.sqrt(rho)) / 2
             v1 = np.array((-h12 / (h11 - lambda1), 1))
@@ -1054,7 +1186,7 @@ class ContactBehavior(UnivariateBehavior):
         elif 0.0 < alpha < d0:
             return 0.5 * k * (d0 ** 2 - alpha ** 2) + 2 * k * d0 * (alpha - d0) - k * d0 ** 2 * np.log(alpha / d0)
         else:
-            raise InvalidBehaviorParameters('Negative or zero value entered for a contact behavior')
+            raise NonfiniteBehavior('Negative or zero value entered for a contact behavior')
 
     def gradient_energy(self, alpha: float) -> tuple[float]:
         k = self._parameters['k']
@@ -1064,7 +1196,7 @@ class ContactBehavior(UnivariateBehavior):
         elif 0.0 < alpha < d0:
             return -k * (alpha - d0) ** 2 / alpha,
         else:
-            raise InvalidBehaviorParameters('Negative or zero value entered for a contact behavior')
+            raise NonfiniteBehavior('Negative or zero value entered for a contact behavior')
 
     def hessian_energy(self, alpha: float) -> tuple[float]:
         k = self._parameters['k']
@@ -1074,8 +1206,12 @@ class ContactBehavior(UnivariateBehavior):
         elif 0.0 < alpha < d0:
             return k * ((d0 / alpha) ** 2 - 1),
         else:
-            raise InvalidBehaviorParameters('Negative or zero value entered for a contact behavior')
+            raise NonfiniteBehavior('Negative or zero value entered for a contact behavior')
 
 
 class InvalidBehaviorParameters(Exception):
     """ raise this when one attempts to create a mechanical behavior with invalid parameters"""
+
+
+class NonfiniteBehavior(Exception):
+    """ raise this when the behavior leads to a nonfinite value of energy, force or stiffness"""

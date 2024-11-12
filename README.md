@@ -70,6 +70,7 @@ Many CSV file examples that describe spring structures are already available
 [here on GitHub](https://github.com/ducarme/springable/tree/main/examples-spring-model-CSV-files) for inspiration or to download.
 
 Next, we create a Python script (a text file saved with the extension *.py*), with the following content
+
 ```python
 """
 Python script 'my_first_simulation.py'
@@ -323,8 +324,7 @@ Example to learn how to use the package springable
 """
 import springable.simulation as ss
 
-ss.simulate_model(model_path='my_spring_model.csv',
-                  save_dir='my_simulation_result',
+ss.simulate_model(model_path='my_spring_model.csv', save_dir='my_simulation_result',
                   solver_settings_path='custom_solver_settings.toml')
 ```
 
@@ -356,8 +356,7 @@ Example to learn how to use the package springable
 """
 import springable.simulation as ss
 
-ss.simulate_model(model_path='my_spring_model.csv',
-                  save_dir='my_simulation_result',
+ss.simulate_model(model_path='my_spring_model.csv', save_dir='my_simulation_result',
                   solver_settings_path='custom_solver_settings.toml',
                   graphics_settings_path='custom_graphics_settings.toml')
 ```

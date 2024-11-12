@@ -31,7 +31,7 @@ def save_results(result: static_solver.Result, save_dir):
     io.write_results(result, save_dir)
 
 
-def simulate_model(model_path, save_dir, solver_settings_path=None, graphics_settings_path=None):
+def simulate_model(model_path, save_dir, solver_settings_path=None, graphics_settings_path=None, postprocessing=None):
     # CREATE MAIN DIRECTORY WHERE RESULT WILL BE SAVED + COPY INPUT FILES
     save_dir = io.mkdir(save_dir)
     io.copy_model_file(save_dir, model_path)
@@ -62,14 +62,17 @@ def simulate_model(model_path, save_dir, solver_settings_path=None, graphics_set
         custom_general_options['show_model_drawing'] = False
     result = solve_model(mdl, solver_settings_path)
     save_results(result, save_dir)
-    visualization.visualize_result(result, save_dir, graphics_settings=[custom_general_options,
-                                                                        custom_plot_options,
-                                                                        custom_animation_options,
-                                                                        custom_assembly_appearance])
+    visualization.visualize_result(result, save_dir,
+                                   graphics_settings=[custom_general_options,
+                                                      custom_plot_options,
+                                                      custom_animation_options,
+                                                      custom_assembly_appearance],
+                                   postprocessing=postprocessing)
+    return save_dir
 
 
 def scan_parameter_space(model_path, save_dir, scan_parameters_one_by_one=True,
-                         solver_settings_path=None, graphics_settings_path=None):
+                         solver_settings_path=None, graphics_settings_path=None, postprocessing = None):
     if solver_settings_path is not None:
         solver_settings = io.read_solver_settings_file(solver_settings_path)
     else:
@@ -182,4 +185,5 @@ def scan_parameter_space(model_path, save_dir, scan_parameters_one_by_one=True,
     visualization.visualize_scan_results(save_dir, save_dir, [custom_general_options,
                                                               custom_plot_options,
                                                               custom_animation_options,
-                                                              custom_assembly_appearance])
+                                                              custom_assembly_appearance],
+                                         postprocessing)

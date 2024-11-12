@@ -6,16 +6,17 @@ from .load import LoadStep
 
 class Model:
 
-    def __init__(self, assembly: Assembly, loading: list[LoadStep]):
+    def __init__(self, assembly: Assembly, loadsteps: list[LoadStep]):
         self._assembly = assembly
-        self._loading = loading
+        self._loadsteps = loadsteps
         self._force_vector_step_list: list[np.ndarray] = []
         self._dof_to_load_step_list = []
         self._loaded_nodes_step_list: list[set[Node]] = []
-        for _load in loading:
+        self._blocked_nodes_directions_step_list: list[tuple[list[Node], list[str]]] = []
+        for _loadstep in loadsteps:
             dof_to_load = {}
             loaded_nodes = set()
-            for nodal_load in _load.get_nodal_loads():
+            for nodal_load in _loadstep.get_nodal_loads():
                 _node = nodal_load.get_node()
                 _direction = nodal_load.get_direction()
                 _force = nodal_load.get_force()
@@ -26,6 +27,7 @@ class Model:
             self._dof_to_load_step_list.append(dof_to_load)
             self._loaded_nodes_step_list.append(loaded_nodes)
             self._force_vector_step_list.append(self._compute_step_force_vector(dof_to_load))
+            self._blocked_nodes_directions_step_list.append(_loadstep.get_blocked_nodes_directions())
 
         self._loaded_dof_indices_step_list = []
         for dof_to_load in self._dof_to_load_step_list:
@@ -40,6 +42,7 @@ class Model:
                     displacement_map[dof_index] = max_displacement
             self._max_displacement_map_step_list.append(displacement_map if displacement_map else None)
 
+
     def get_loaded_dof_indices_preloading_step_list(self):
         return self._loaded_dof_indices_step_list[:-1]
 
@@ -51,6 +54,7 @@ class Model:
 
     def get_loaded_nodes(self) -> set[Node]:
         return self._loaded_nodes_step_list[-1]
+
 
     def get_preloaded_nodes(self) -> set[Node]:
         preloaded_nodes = set()
@@ -79,8 +83,11 @@ class Model:
             step_force_vector[dof_index] = load['force']
         return step_force_vector
 
+    def get_blocked_nodes_directions_step_list(self) -> list[tuple[list[Node], list[str]]]:
+        return self._blocked_nodes_directions_step_list
+
     def get_assembly(self) -> Assembly:
         return self._assembly
 
     def get_loading(self) -> list[LoadStep]:
-        return self._loading
+        return self._loadsteps

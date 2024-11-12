@@ -216,7 +216,7 @@ def text_to_assembly(assembly_text: str, evaluator: se.SimpleEval = None) -> Ass
     reading_nodes = False
     reading_elements = False
     nodes: set[Node] = set()
-    elements: set[Element] = set()
+    elements: list[Element] = []
     current_shape_type = None
     for line in all_lines:
         if line == 'NODES':
@@ -232,7 +232,7 @@ def text_to_assembly(assembly_text: str, evaluator: se.SimpleEval = None) -> Ass
             nodes.add(text_to_node(line, evaluator))
         if reading_elements:
             element_text = current_shape_type + '\n' + line
-            elements.add(text_to_element(element_text, nodes, evaluator))
+            elements.append(text_to_element(element_text, nodes, evaluator))
     return Assembly(nodes, elements, auto_node_numbering=False)
 
 
@@ -259,10 +259,17 @@ def text_to_nodal_load(nodal_load_text: str, nodes: set[Node], evaluator: se.Sim
     return NodalLoad(_node, direction, force, max_displacement)
 
 
-def loading_to_text(loading: list[LoadStep]) -> str:
+def loading_to_text(loadsteps: list[LoadStep]) -> str:
     load_strs = []
-    for _load_step in loading:
+    for _load_step in loadsteps:
         load_str = ''
+        blocked_nodes_directions = _load_step.get_blocked_nodes_directions()
+        nodes, directions = blocked_nodes_directions
+        if nodes:
+            load_str = 'block'
+            for node, direction in zip(nodes, directions):
+                load_str += f'\n{node.get_node_nb()}, {direction}'
+
         for nodal_load in _load_step.get_nodal_loads():
             load_str += '\n' + nodal_load_to_text(nodal_load)
         load_strs.append(load_str.lstrip())
@@ -278,25 +285,40 @@ def text_to_loading(loading_text: str, nodes: set[Node], evaluator: se.SimpleEva
     directions: list[str] = []
     forces: list[float] = []
     max_displacements: list[float | None] = []
+    blocked_nodes_directions: tuple[list[Node], list[str]] = ([], [])
     lines = basic_split(loading_text, '\n')
+    reading_blocked_nodes = False
     if lines[0] != 'LOADING':
         raise ValueError('Loading section does not start with "LOADING".')
 
     for line in lines[1:]:
         if line == 'then':
-            _loading.append(LoadStep(node_list, directions, forces, max_displacements))
+            _loading.append(LoadStep(node_list, directions, forces, max_displacements, blocked_nodes_directions))
             node_list: list[Node] = []
             directions: list[str] = []
             forces: list[float] = []
             max_displacements: list[float | None] = []
+            blocked_nodes_directions: tuple[list[Node], list[str]] = ([], [])
             continue
-        nodal_load = text_to_nodal_load(line, nodes, evaluator)
-        node_list.append(nodal_load.get_node())
-        directions.append(nodal_load.get_direction())
-        forces.append(nodal_load.get_force())
-        max_displacements.append(nodal_load.get_max_displacement())
+        if line == 'block':
+            reading_blocked_nodes = True
+            continue
 
-    _loading.append(LoadStep(node_list, directions, forces, max_displacements))
+        if reading_blocked_nodes:
+            parsed_data = smart_split(line, ',')
+            if len(parsed_data) == 2:
+                blocked_nodes_directions[0].append(Assembly.get_node_from_set(nodes, int(parsed_data[0])))
+                blocked_nodes_directions[1].append(parsed_data[1])
+            else:
+                reading_blocked_nodes = False
+        if not reading_blocked_nodes:
+            nodal_load = text_to_nodal_load(line, nodes, evaluator)
+            node_list.append(nodal_load.get_node())
+            directions.append(nodal_load.get_direction())
+            forces.append(nodal_load.get_force())
+            max_displacements.append(nodal_load.get_max_displacement())
+
+    _loading.append(LoadStep(node_list, directions, forces, max_displacements, blocked_nodes_directions))
     return _loading
 
 

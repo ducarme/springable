@@ -81,7 +81,6 @@ class Segment(Shape):
 
 
 class Angle(Shape):
-
     # constant matrices used to compute the hessian of the transformation
     _d2Xdq2 = np.array([[0, 0, -1, 0, 1, 0],
                         [0, 0, 0, -1, 0, 1],
@@ -155,8 +154,6 @@ class Angle(Shape):
     def calculate_angle(x0, y0, x1, y1, x2, y2) -> float:
         cross = Angle._calculate_cross_product(x0, y0, x1, y1, x2, y2)
         dot = Angle._calculate_dot_product(x0, y0, x1, y1, x2, y2)
-        if cross == 0.0 and dot == 0.0:
-            raise ValueError("Undefined angle")
         return np.arctan2(cross, dot) % (2 * np.pi)
         # if dot > 0.0 and cross >= 0.0:
         #     angle = np.arctan(cross / dot)

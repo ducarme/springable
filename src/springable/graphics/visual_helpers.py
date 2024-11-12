@@ -154,7 +154,7 @@ def compute_requirements_for_animation(_result: Result, assembly_appearance):
     u = _result.get_displacements(include_preloading=True)
     f = _result.get_forces(include_preloading=True)
 
-    _initial_coordinates = _assembly.get_general_coordinates()
+    _initial_coordinates = _assembly.get_coordinates()
     xmin = ymin = np.inf
     xmax = ymax = -np.inf
     characteristic_lengths = []
@@ -223,7 +223,7 @@ def compute_requirements_for_animation(_result: Result, assembly_appearance):
             generalized_stiffness_highs = {dim: [] for dim in unit_dimensions}
 
             for i in range(n):
-                _assembly.set_general_coordinates(_initial_coordinates + u[start + i, :])
+                _assembly.set_coordinates(_initial_coordinates + u[start + i, :])
                 match aa['coloring_mode']:
                     case 'energy':
                         energies = []
@@ -272,7 +272,7 @@ def compute_requirements_for_animation(_result: Result, assembly_appearance):
                 xmax = max(xmax, bounds[2])
                 ymax = max(ymax, bounds[3])
                 characteristic_lengths.append(_assembly.compute_characteristic_length())
-            _assembly.set_general_coordinates(_initial_coordinates)
+            _assembly.set_coordinates(_initial_coordinates)
             assembly_scanned = True
 
             match aa['coloring_mode']:
@@ -298,14 +298,14 @@ def compute_requirements_for_animation(_result: Result, assembly_appearance):
 
     if not assembly_scanned:
         for i in range(n):
-            _assembly.set_general_coordinates(_initial_coordinates + u[i + start, :])
+            _assembly.set_coordinates(_initial_coordinates + u[i + start, :])
             bounds = _assembly.get_dimensional_bounds()
             xmin = min(xmin, bounds[0])
             ymin = min(ymin, bounds[1])
             xmax = max(xmax, bounds[2])
             ymax = max(ymax, bounds[3])
             characteristic_lengths.append(_assembly.compute_characteristic_length())
-        _assembly.set_general_coordinates(_initial_coordinates)
+        _assembly.set_coordinates(_initial_coordinates)
 
     characteristic_length = np.mean(characteristic_lengths)
 
