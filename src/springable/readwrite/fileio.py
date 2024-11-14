@@ -52,7 +52,8 @@ def read_parameters_from_model_file(model_path) -> tuple[dict[str, float | str],
                 break
             if reading_parameters:
                 parameters_text += ', '.join([row_item.strip() for row_item in row]) + '\n'
-    return text_to_parameters(parameters_text.strip())
+    parameters, design_parameter_data = text_to_parameters(parameters_text.strip())
+    return parameters, design_parameter_data
 
 
 def write_solver_parameters(solver_parameters, save_dir, save_name='solver_parameters.csv'):

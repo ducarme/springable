@@ -64,7 +64,7 @@ def update_behavior_parameters_from_control_points(behavior_type: type[mb.Mechan
         a, x = zigzag_utils.compute_zizag_slopes_and_transitions_from_control_points(x, y)
         behavior_parameters['a'] = a
         behavior_parameters['x'] = x
-    elif behavior_type in (mb.BezierBehavior, mb.Bezier2Behavior):
+    elif behavior_type in (mb.BezierBehavior, mb.Bezier2Behavior, mb.ZigZag2Behavior):
         behavior_parameters['u_i'] = list(x[1:])
         behavior_parameters['f_i'] = list(y[1:])
 
@@ -75,12 +75,12 @@ def get_control_points_from_behavior(_behavior: mb.MechanicalBehavior) -> tuple[
         x = _behavior.get_parameters()['x']
         cp_x, cp_y = zigzag_utils.compute_zigzag_control_points(a, x)
         return cp_x, cp_y
-    elif isinstance(_behavior, (mb.BezierBehavior, mb.Bezier2Behavior)):
+    elif isinstance(_behavior, (mb.BezierBehavior, mb.Bezier2Behavior, mb.ZigZag2Behavior)):
         cp_x = np.array([0.0] + _behavior.get_parameters()['u_i'])
         cp_y = np.array([0.0] + _behavior.get_parameters()['f_i'])
         return cp_x, cp_y
     else:
-        return np.array([]), np.array([])  # control points cannot be defined for behavior
+        raise NotImplementedError("Cannot define control points for that behavior")
 
 
 class CurveInteractor:
@@ -128,9 +128,10 @@ class CurveInteractor:
         self._ind = None  # the active vert
 
         # draw curve defined by control points
-        self.curve2 = None
+        # self.curve2 = None
         # self.curve3 = None
         # self.curve4 = None
+        self._curve5 = None
         if self._behavior_parameters_valid:
             if isinstance(self._behavior, mb.UnivariateBehavior):
                 span = np.max(self.poly.xy[:, 0]) - np.min(self.poly.xy[:, 0])
@@ -141,6 +142,8 @@ class CurveInteractor:
                 t = np.linspace(0, 1.1, 3000)
                 self.curve = Line2D(self._behavior._a(t), self._behavior._b(t), animated=True)
                 self.curve.set_color('tab:blue')
+                self.curve5 = Line2D(self._behavior._a(t) - t, self._behavior._b(t), animated=True)
+                self.curve5.set_color('tab:orange')
                 # self.curve2 = Line2D(t * np.max(self._behavior._a(t)), self._behavior._dbda(t),
                 #                      linestyle='', color='#a0a0a0', marker='o', markersize=2,
                 #                      markerfacecolor='#a0a0a0', animated=True)
@@ -158,6 +161,7 @@ class CurveInteractor:
         # self.ax.add_line(self.curve2)
         # self.ax.add_line(self.curve3)
         #self.ax.add_line(self.curve4)
+        self.ax.add_line(self.curve5)
 
         canvas.mpl_connect('draw_event', self.on_draw)
         canvas.mpl_connect('button_press_event', self.on_button_press)
@@ -184,6 +188,8 @@ class CurveInteractor:
         self.ax.draw_artist(self.poly)
         self.ax.draw_artist(self.line)
         self.ax.draw_artist(self.curve)
+        self.ax.draw_artist(self.curve5)
+
         # self.ax.draw_artist(self.curve2)
         # self.ax.draw_artist(self.curve3)
         #self.ax.draw_artist(self.curve4)
@@ -288,6 +294,7 @@ class CurveInteractor:
                 # self.curve2.set_data(t * np.max(self._behavior._a(t)), self._behavior._dbda(t))
                 # self.curve3.set_data(t * np.max(self._behavior._a(t)), self._behavior._k(t))
                 #self.curve4.set_data(t * np.max(self._behavior._a(t)), k_star * np.ones_like(t))
+                self.curve5.set_data(self._behavior._a(t) - t, self._behavior._b(t))
 
         else:
             self.behavior_creator_gui.update_behavior_txt(f'PARAMETERS DO NOT DEFINE A VALID '
@@ -303,6 +310,7 @@ class CurveInteractor:
         # self.ax.draw_artist(self.curve2)
         # self.ax.draw_artist(self.curve3)
         #self.ax.draw_artist(self.curve4)
+        self.ax.draw_artist(self.curve5)
         self.canvas.blit(self.ax.bbox)
 
 

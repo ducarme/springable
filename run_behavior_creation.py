@@ -1,6 +1,16 @@
-from .gui.behavior_creator import BehaviorCreatorGUI
-from .mechanics.mechanical_behavior import ZigZagBehavior, ZigZag2Behavior, BezierBehavior, Bezier2Behavior
+from src.springable.gui.behavior_creator import BehaviorCreatorGUI
+from src.springable.mechanics.mechanical_behavior import ZigZagBehavior, ZigZag2Behavior, BezierBehavior, Bezier2Behavior
 import numpy as np
+
+_u_i = np.array([
+    3.6469744295621784,
+    1.7703266451373811,
+    2.16166551961459])
+_f_i = np.array([
+    8.726919339164237,
+    -1.1127308066083579,
+    -0.9608843537414966])
+BehaviorCreatorGUI(Bezier2Behavior(1.0, _u_i.tolist(), _f_i.tolist()))
 
 # _u_i = np.array([
 #                  3.6469744295621784,
@@ -27,16 +37,3 @@ import numpy as np
 #     1.0,
 #     2.0,
 #     3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10, 11, 12])
-
-_u_i = np.array([
-    3.6469744295621784,
-    1.7703266451373811,
-    2.16166551961459])
-_f_i = np.array([
-    8.726919339164237,
-    -1.1127308066083579,
-    -0.9608843537414966])
-
-
-def start_behavior_creation():
-    BehaviorCreatorGUI(ZigZag2Behavior(1.0, _u_i.tolist(), _f_i.tolist(), delta=0.01))

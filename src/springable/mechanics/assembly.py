@@ -94,15 +94,15 @@ class Assembly:
             if indices:
                 _element.increment_internal_coordinates(coordinate_increments[indices])
 
-    def set_coordinates(self, coordinates_values: np.ndarray):
+    def set_coordinates(self, coordinates: np.ndarray):
         """ Sets the values of the nodal and internal coordinates """
         for _node in self._nodes:
             indices = self._nodes_dof_indices[_node.get_node_nb()]
-            _node.set_position(coordinates_values[indices])
+            _node.set_position(coordinates[indices])
         for _element in self._elements:
             indices = self._elements_internal_dof_indices[_element.get_element_nb()]
             if indices:
-                _element.set_internal_coordinates(coordinates_values[indices])
+                _element.set_internal_coordinates(coordinates[indices])
 
     def compute_elemental_energies(self):
         energies = {}

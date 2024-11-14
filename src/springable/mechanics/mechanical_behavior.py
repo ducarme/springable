@@ -123,6 +123,7 @@ class BezierBehavior(UnivariateBehavior):
         u_coefs = np.array([0.0] + self._parameters['u_i'])
         f_coefs = np.array([0.0] + self._parameters['f_i'])
         if self._check_validity and not is_monotonic(u_coefs):
+            print(u_coefs)
             raise InvalidBehaviorParameters(
                 "The Bezier behavior does not describe a function, try Bezier2 instead.")
         t = np.linspace(0, 1, self._sampling)
