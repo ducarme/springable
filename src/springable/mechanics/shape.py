@@ -340,7 +340,7 @@ class CompoundShape(Shape):
                 if _node not in node_local_dof_indices:
                     node_local_dof_indices[_node] = [index, index + 1]
                     index += 2
-                self._shape_local_dof_indices[_shape].extend(node_local_dof_indices[_node])
+                self._shape_local_dof_indices[_shape] += node_local_dof_indices[_node]
         super().__init__(*list(node_local_dof_indices.keys()))
 
     def get_shapes(self):
@@ -442,9 +442,6 @@ class Negative(CompoundShape):
         if output_mode == Shape.MEASURE_JACOBIAN_AND_HESSIAN:
             return -shape_metric[0], -shape_metric[1], -shape_metric[2]
 
-    def __neg__(self):
-        return self._shape
-
 
 class Path(Sum):
 
@@ -453,6 +450,7 @@ class Path(Sum):
         for i in range(len(nodes) - 1):
             segments.append(Segment(nodes[i], nodes[i + 1]))
         super().__init__(*segments)
+
 
 
 class IllDefinedShape(ValueError):

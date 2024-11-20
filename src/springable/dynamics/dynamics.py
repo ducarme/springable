@@ -196,7 +196,7 @@ class DynamicSolver:
         # set driven dofs from functions
         for driven_dof, displacement_function in self._dynamic_assembly.get_driven_dofs_functions().items():
             q[driven_dof] = self._q0[driven_dof] + displacement_function(time)
-            q[driven_dof] = self._q0[driven_dof] + displacement_function(time)
+            dqdt[driven_dof] = displacement_function(time)
 
         # update assembly accordingly
         self._dynamic_assembly.set_coordinates(q)

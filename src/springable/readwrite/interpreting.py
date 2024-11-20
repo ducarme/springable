@@ -10,7 +10,7 @@ from .keywords import usable_shapes, usable_behaviors, usable_shape_operations
 import os
 
 
-def smart_split(string, separator) -> list[str]:
+def smart_split(string, separators) -> list[str]:
     """ separate the input string when separators are encountered,
     except if those are within brackets (), {}, or []"""
     parts = []
@@ -21,13 +21,34 @@ def smart_split(string, separator) -> list[str]:
             bracket_level += 1
         elif char in '])}':
             bracket_level -= 1
-        elif char == separator and bracket_level == 0:
+        elif char in separators and bracket_level == 0:
             parts.append(''.join(current))
             current = []
             continue
         current.append(char)
     parts.append(''.join(current))
     return [part.strip() for part in parts]
+
+def parse_simple_arithmetic(string, operators='+-') -> list[str]:
+    tokens = []
+    operator_sequence = ['+']
+
+    parts = []
+    current = []
+    bracket_level = 0
+    for char in string:
+        if char in '[({':
+            bracket_level += 1
+        elif char in '])}':
+            bracket_level -= 1
+        elif char in operators and bracket_level == 0:
+            parts.append(''.join(current))
+            operator_sequence.append(char)
+            current = []
+            continue
+        current.append(char)
+    parts.append(''.join(current))
+    return [part.strip(' ()') for part in parts], operator_sequence
 
 
 def basic_split(string, separator) -> list[str]:
@@ -140,15 +161,24 @@ def shape_to_text(_shape: Shape) -> tuple[str, str]:
 
 def text_to_shape(shape_text: tuple[str, str], nodes: set[Node]) -> Shape:
     shape_type_name, shape_description = shape_text
-    try:
-        shape_type = usable_shapes.name_to_type[shape_type_name]
-    except KeyError:
-        raise NotImplementedError(f'Shape type {shape_type_name} is unknown.')
-    node_nbs = [int(node_nb) for node_nb in smart_split(shape_description, '-')]
-    shape_nodes = []
-    for node_nb in node_nbs:
-        shape_nodes.append(Assembly.get_node_from_set(nodes, node_nb))
-    return shape_type(*shape_nodes)
+    if shape_type_name.startswith('COMPOUND '):
+        core_shape_type_name = shape_type_name.removeprefix('COMPOUND').strip()
+        core_shape_descriptions, operators = parse_simple_arithmetic(shape_description, operators='+-')
+        core_shapes = [text_to_shape((core_shape_type_name, core_shape_description), nodes)
+                       for core_shape_description in core_shape_descriptions]
+        signed_shapes = [core_shapes[i] if operators[i] == '+' else -core_shapes[i]
+                         for i in range(len(core_shapes))]
+        return Sum(*signed_shapes)
+    else:
+        try:
+            shape_type = usable_shapes.name_to_type[shape_type_name]
+        except KeyError:
+            raise NotImplementedError(f'Shape type {shape_type_name} is unknown.')
+        node_nbs = [int(node_nb) for node_nb in smart_split(shape_description, '-')]
+        shape_nodes = []
+        for node_nb in node_nbs:
+            shape_nodes.append(Assembly.get_node_from_set(nodes, node_nb))
+        return shape_type(*shape_nodes)
 
 
 def element_to_text(_element: Element) -> str:

@@ -7,7 +7,8 @@ usable_shapes = KeywordMapping({shape.Segment: '',
                                 shape.Path: 'LINE',
                                 shape.Angle: 'ROTATION',
                                 shape.DistancePointLine: 'DISTANCE',
-                                shape.SquaredDistancePointSegment: 'GAP'})
+                                shape.SquaredDistancePointSegment: 'GAP',
+                                })
 
 usable_shape_operations = KeywordMapping({shape.Sum: 'SUM',
                                           shape.Negative: 'NEG'})

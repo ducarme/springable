@@ -128,15 +128,30 @@ class BezierBehavior(UnivariateBehavior):
                 "The Bezier behavior does not describe a function, try Bezier2 instead.")
         t = np.linspace(0, 1, self._sampling)
         u = evaluate_poly(t, u_coefs)
+        t_fun = interp1d(u, t, kind='linear')
+
 
         def fdu(_t, _): return evaluate_poly(_t, f_coefs) * evaluate_derivative_poly(_t, u_coefs)
 
         energy = solve_ivp(fun=fdu, t_span=[0.0, 1.0], y0=[0.0], t_eval=t).y[0, :]
-        self._energy = interp1d(u, energy, kind='linear', fill_value='extrapolate')
+        self._energy = lambda uu: ((uu < u[-1]) *  interp1d(u, energy, kind='linear',
+                                                           bounds_error=False, fill_value=0.0)(np.abs(uu))
+                                   + (np.abs(uu) >= u[-1]) * (energy[-1] + generalized_force[-1] * (np.abs(uu) - u[-1])
+                                                    + 0.5 * generalized_stiffness[-1] * (np.abs(uu) - u[-1]) ** 2))
+
+
+
         generalized_force = evaluate_poly(t, f_coefs)
-        self._first_der_energy = interp1d(u, generalized_force, kind='linear', fill_value='extrapolate')
+        self._first_der_energy = lambda uu: np.sign(uu) * interp1d(u, generalized_force, kind='linear',
+                                                                   bounds_error=False, fill_value='extrapolate')(np.abs(uu))
+
+
         generalized_stiffness = evaluate_derivative_poly(t, f_coefs) / evaluate_derivative_poly(t, u_coefs)
-        self._second_der_energy = interp1d(u, generalized_stiffness, kind='linear', fill_value='extrapolate')
+        self._second_der_energy = lambda uu: interp1d(u, generalized_stiffness, kind='linear',
+                                                      bounds_error=False, fill_value=generalized_stiffness[-1])(np.abs(uu))
+
+        self._b = lambda t: ((np.abs(t) <= 1) * np.sign(t) * evaluate_poly(np.abs(t), self._b_coefs)
+                             + (np.abs(t) > 1) * np.sign(t) * (b1 + db1 * (np.abs(t) - 1)))
 
     def elastic_energy(self, alpha: float | np.ndarray) -> float:
         return self._energy(alpha - self._natural_measure)

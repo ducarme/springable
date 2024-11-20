@@ -488,10 +488,22 @@ class StaticSolver:
                         _, _, previous_fd_negative_eigval_count, _ = equilibrium_eigval_stats[-1]
 
                         if detect_bifurcation and previous_fd_negative_eigval_count < fd_negative_eigval_count:
+                            nb_singularities = fd_negative_eigval_count - previous_fd_negative_eigval_count
                             if detail_verbose:
                                 print(f'change in negative eigval (from {previous_fd_negative_eigval_count} to {fd_negative_eigval_count})')
-                            singular_eigval, singular_mode = self._compute_singular_eigenmode(ks)
-                            if np.abs(singular_eigval) / initial_eigval_magnitude < 1e-3:
+                            singular_eigvals, singular_modes = self._compute_singular_eigenmodes(ks, nb_singularities)
+                            if np.max(np.abs(singular_eigvals)) / initial_eigval_magnitude < 1e-3:
+                                if nb_singularities == 1:
+                                    singular_eigval = singular_eigvals[0]
+                                    singular_mode = singular_modes[0]
+                                else:
+                                    singular_eigval = min(singular_eigvals)
+                                    ortho_load = _compute_vector_perpendicular_to(g / norm_g)
+                                    singular_mode = np.zeros(self._nb_free_dofs)
+                                    for sm in singular_modes:
+                                        singular_mode += np.inner(ortho_load, sm) * sm
+                                    singular_mode /= np.linalg.norm(singular_mode)
+
                                 if np.abs(np.inner(singular_mode, g / norm_g)) < 1e-3:  # bifurcation point
                                     if has_just_bifurcated:
                                         if detail_verbose:
@@ -503,8 +515,7 @@ class StaticSolver:
                                             print(f'bifurcation point')
                                             print(f'eigval: {singular_eigval}')
                                             print(f'v x f = {np.abs(np.inner(singular_mode, g / norm_g))}')
-                                        self._assembly.set_coordinates(
-                                            initial_coordinates + equilibrium_displacements[-1])
+                                        self._assembly.set_coordinates(initial_coordinates + equilibrium_displacements[-1])
                                         f_ext = equilibrium_forces[-1].copy()
 
                                         perturbation_magnitude = np.linalg.norm(equilibrium_displacements[-1]) / 100
@@ -516,21 +527,27 @@ class StaticSolver:
                                         k = self._get_reduced_stiffness_matrix(ks)
                                         self._assembly.increment_coordinates(-bifurcation_perturbation)
                                         has_just_bifurcated = True
-                                        continue
+                                        bifurcation_detected = True
                                 else:  # limit point
+                                    bifurcation_detected = False
                                     if detail_verbose:
                                         print(f'limit point')
                                         print(f'eigval: {singular_eigval}')
                                         print(singular_mode)
                                         print(f'v x f = {np.abs(np.inner(singular_mode, g / norm_g))}')
                                     has_just_bifurcated = False
-                                    pass
+                                if bifurcation_detected:
+                                    continue  # go to next increment
+                                else:  #limit point
+                                    pass # the equilibrium point does not need any special treatment,
+                                    # the equilibrium will be saved
+
                             else:
                                 if radius_p < 1e-14:
                                     raise ConvergenceError
                                 if detail_verbose:
                                     print(f'eigval too large to be considered a singularity.'
-                                          f'Restart increment {i} with smaller radius: {radius_p / 2}')
+                                          f' Restart increment {i} with smaller radius: {radius_p / 2}')
                                 # print(f'restart increment with smaller radius: {radius_p / 2}')
                                 # self._assembly.increment_general_coordinates(self._get_structural_displacements(-delta_u_inc))
                                 # f_ext -= delta_lambda_inc * delta_f
@@ -569,8 +586,8 @@ class StaticSolver:
                                       f"\t-> attempt {increment_retries}/{5}")
                             # Resetting structure to its previous incremental state with a smaller radius
                             total_nb_increment_retries += 1
-                            self._assembly.increment_coordinates(self._get_structural_displacements(-delta_u_inc))
-                            f_ext -= delta_lambda_inc * delta_f
+                            self._assembly.set_coordinates(initial_coordinates + equilibrium_displacements[-1])
+                            f_ext = equilibrium_forces[-1].copy()
                             ks = self._assembly.compute_structural_stiffness_matrix()
                             k = self._get_reduced_stiffness_matrix(ks)
                             radius_p /= 2.0
@@ -692,13 +709,15 @@ class StaticSolver:
             ud_negative_eigval_count = 0
         return fd_lowest_eigval, ud_lowest_eigval, fd_negative_eigval_count, ud_negative_eigval_count
 
-    def _compute_singular_eigenmode(self, ks):
+    def _compute_singular_eigenmodes(self, ks, nb_singularities):
         # force-driven case
         k_ = np.delete(ks, self._fixed_dof_indices, axis=0)  # delete rows
         k_ = np.delete(k_, self._fixed_dof_indices, axis=1)  # delete columns
         eigvals, eigvects = np.linalg.eigh(k_)
-        singular_mode_index = np.argmin(np.abs(eigvals))
-        return eigvals[singular_mode_index], eigvects[:, singular_mode_index]
+        sorting_indices = np.argsort(np.abs(eigvals))
+        singular_mode_indices = sorting_indices[:nb_singularities]
+        return ([eigvals[singular_mode_index] for singular_mode_index in singular_mode_indices],
+                [eigvects[:, singular_mode_index] for singular_mode_index in singular_mode_indices])
 
     def _assess_stability(self, ks, loaded_dof_indices):
         try:
@@ -772,6 +791,14 @@ def _perturb_singular_stiffness_matrix(k: np.ndarray, epsilon, show_message):
               f'on the diagonal elements')
     return k + np.eye(*k.shape) * perturbation
 
+def _compute_vector_perpendicular_to(v0):
+    idx_max = np.argmax(np.abs(v0))
+    v1 = np.zeros(v0.shape)
+    v1[idx_max] = -v0[(idx_max + 1) % len(v0)] / v0[idx_max]
+    v1[(idx_max + 1) % len(v0)] = 1
+    return v1
+
+
 
 def update_progress(title, progress, i, i_max, status, stability: str = None):
     if stability == StaticSolver.STABLE:
@@ -797,3 +824,5 @@ def update_progress(title, progress, i, i_max, status, stability: str = None):
                                                status)
     sys.stdout.write(text)
     sys.stdout.flush()
+
+
