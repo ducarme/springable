@@ -1,0 +1,50 @@
+PARAMETERS
+l, 1.0
+ks, 100.0
+krot, 2.0
+theta_soft, 40
+theta_stiff, 90
+w, 1.675
+NODES
+0, w/2*COS(0*PI/10), w/2*SIN(0*PI/10), 0, 0
+1, w/2*COS(1*PI/10), w/2*SIN(1*PI/10), 0, 0
+2, w/2*COS(2*PI/10), w/2*SIN(2*PI/10), 0, 0
+3, w/2*COS(3*PI/10), w/2*SIN(3*PI/10), 0, 0
+4, w/2*COS(4*PI/10), w/2*SIN(4*PI/10), 0, 0
+5, w/2*COS(5*PI/10), w/2*SIN(5*PI/10), 0, 0
+6, w/2*COS(6*PI/10), w/2*SIN(6*PI/10), 0, 0
+7, w/2*COS(7*PI/10), w/2*SIN(7*PI/10), 0, 0
+8, w/2*COS(8*PI/10), w/2*SIN(8*PI/10), 0, 0
+9, w/2*COS(9*PI/10), w/2*SIN(9*PI/10), 0, 0
+10, w/2*COS(10*PI/10), w/2*SIN(10*PI/10), 0, 0
+11, w/2*COS(10*PI/10), w/2*SIN(10*PI/10) - PI/10 * l, 1, 1
+12, w/2*COS(0*PI/10), w/2*SIN(0*PI/10) - PI/10 * l, 0, 1
+SPRINGS
+0-1, ks, PI/6 * l
+1-2, ks*0.99, PI/6 * l
+2-3, ks, PI/6 * l
+3-4, ks, PI/6 * l
+4-5, ks, PI/6 * l
+5-6, ks, PI/6 * l
+6-7, ks, PI/6 * l
+7-8, ks, PI/6 * l
+8-9, ks, 0.99*PI/6 * l
+9-10, ks, PI/6 * l
+0-12, ks, PI/6 * l
+10-11, ks, PI/6 * l
+ROTATION SPRINGS
+12-0-1, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+0-1-2, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+1-2-3, ZIGZAG(a=[krot*0.99;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+2-3-4, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+3-4-5, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+4-5-6, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+5-6-7, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+6-7-8, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+7-8-9, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+8-9-10, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+9-10-11, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+0-12-11, 10*krot, PI/2
+12-11-10, 10*krot, PI/2
+LOADING
+12, X, -2.5

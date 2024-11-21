@@ -17,7 +17,7 @@ def draw_model(mdl: model.Model, save_dir=None, save_name='model', show=True, **
     aa = DEFAULT_ASSEMBLY_APPEARANCE.copy()
     aa.update(assembly_appearance)
 
-    with plt.style.context('dark_background'):
+    with plt.style.context(aa['stylesheet']):
         fig, ax = plt.subplots()
         ax.set_aspect('equal')
         xmin, ymin, xmax, ymax = mdl.get_assembly().get_dimensional_bounds()
@@ -69,7 +69,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             fig, ax1, ax2, extra = extra_init(fig, ax1, ax2)
 
         ax1.axis('off')
-        (bounds, characteristic_length,
+        (bounds,
          element_color_handler,
          element_opacity_handler,
          force_color_handler,
@@ -101,7 +101,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             preforce_amounts = {loaded_node: amounts[0] for loaded_node, amounts in all_preforce_amounts.items()}
         else:
             preforce_amounts = None
-        _model_drawing = ModelDrawing(ax1, _model, aa, characteristic_length, assembly_span,
+        _model_drawing = ModelDrawing(ax1, _model, aa, None, assembly_span,
                                       element_color_handler=element_color_handler,
                                       element_opacity_handler=element_opacity_handler,
                                       force_color_handler=force_color_handler, force_amounts=force_amounts,
@@ -172,7 +172,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                            zorder=1.1)[0]
             ax2.set_xlabel('displacement')
             ax2.set_ylabel('force')
-            if ((po['show_stability_legend'] and po['color_mode'] == 'stability')
+            if ((po['show_stability_legend'] and po['color_mode'] == 'stability' and not (po['show_driven_path'] and po['driven_path_only']))
                     or (po['show_driven_path'] and po['show_driven_path_legend'] and po['drive_mode'] in (
                             'force', 'displacement'))):
                 ax2.legend(numpoints=5, markerscale=1.5)

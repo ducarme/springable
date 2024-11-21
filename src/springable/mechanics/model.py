@@ -42,7 +42,6 @@ class Model:
                     displacement_map[dof_index] = max_displacement
             self._max_displacement_map_step_list.append(displacement_map if displacement_map else None)
 
-
     def get_loaded_dof_indices_preloading_step_list(self):
         return self._loaded_dof_indices_step_list[:-1]
 
@@ -54,7 +53,6 @@ class Model:
 
     def get_loaded_nodes(self) -> set[Node]:
         return self._loaded_nodes_step_list[-1]
-
 
     def get_preloaded_nodes(self) -> set[Node]:
         preloaded_nodes = set()

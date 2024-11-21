@@ -70,6 +70,7 @@ DEFAULT_ANIMATION_OPTIONS = {
 }
 
 DEFAULT_ASSEMBLY_APPEARANCE = {
+    "stylesheet": "default",
     "coloring_mode": "generalized_force",
     "color_elements": True,
     "color_forces": False,

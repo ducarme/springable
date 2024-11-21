@@ -32,7 +32,12 @@ def read_model(model_path, parameters: dict[str, float | str] = None) -> Model:
 def write_model(_model: Model, save_dir, save_name='model'):
     model_txt = model_to_text(_model)
     lines = basic_split(model_txt, '\n')
-    rows = [smart_split(line, ',') for line in lines]
+    rows = []
+    for line in lines:
+        if line.lstrip().startswith('#') or not line.strip():
+            continue
+        rows.append(smart_split(line, ','))
+
     with open(os.path.join(save_dir, f'{save_name}.csv'), 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerows(rows)

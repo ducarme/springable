@@ -1,6 +1,7 @@
 reference_load_parameter = 0.05
 radius = 0.05
-detect_bifurcation = true
+detect_critical_points = true
+bifurcate_at_simple_bifurcations = false  # only has an effect if 'detect_critical_points' is enabled
 show_warnings = false
 verbose = true
 detail_verbose = false

@@ -436,7 +436,7 @@ class Negative(CompoundShape):
     def compute(self, output_mode) -> float | tuple[float, np.ndarray] | tuple[float, np.ndarray, np.ndarray]:
         shape_metric = self._shape.compute(output_mode)
         if output_mode == Shape.MEASURE:
-            return -shape_metric[0]
+            return -shape_metric
         if output_mode == Shape.MEASURE_AND_JACOBIAN:
             return -shape_metric[0], -shape_metric[1]
         if output_mode == Shape.MEASURE_JACOBIAN_AND_HESSIAN:
@@ -450,6 +450,20 @@ class Path(Sum):
         for i in range(len(nodes) - 1):
             segments.append(Segment(nodes[i], nodes[i + 1]))
         super().__init__(*segments)
+
+
+class HoleyArea(Sum):
+    def __init__(self, *areas: Area):
+        signed_areas = [areas[i] if i == 0 else -areas[i] for i in range(len(areas))]
+        super().__init__(*signed_areas)
+        self._bulk_area = areas[0]
+        self._holes = tuple(areas[1:])
+
+    def get_bulk_area(self) -> Area:
+        return self._bulk_area
+
+    def get_holes(self) -> tuple[Area]:
+        return self._holes
 
 
 

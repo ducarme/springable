@@ -4,10 +4,12 @@ from ..mechanics.mechanical_behavior import BivariateBehavior
 from ..mechanics.assembly import Assembly
 from ..mechanics.model import Model
 from ..mechanics import shape
-from .visual_helpers import compute_zigzag_line, compute_arc_line
+from .visual_helpers import compute_zigzag_line, compute_arc_line, compute_pathpatch_vertices
 from scipy.interpolate import interp1d
 from matplotlib.colors import to_rgba
 import matplotlib.pyplot as plt
+import matplotlib.path
+import matplotlib.patches
 import numpy as np
 
 
@@ -74,15 +76,18 @@ class ShapeDrawing(Drawing):
         return self._hysteron_label_position
 
 
+# Here in below, core drawing classes for basic shapes
+
 class SegmentDrawing(ShapeDrawing):
 
-    def __init__(self, segment: shape.Segment, width: float, is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: dict):
+    def __init__(self, segment: shape.Segment, width: float, is_hysteron, ax: plt.Axes, color: str, opacity: float,
+                 aa: dict):
         super().__init__(segment, width, is_hysteron, ax, color, opacity, aa)
-        x0, y0, x1, y1 = segment.get_nodal_coordinates()
+        x0, y0, x1, y1 = self._shape.get_nodal_coordinates()
         x_coords, y_coords = compute_zigzag_line((x0, y0), (x1, y1), 8 + 2 * self._aa['nb_spring_coils'],
                                                  self._size * self._aa['spring_width_scaling'])
         self._graphics = self._ax.plot(x_coords, y_coords, lw=self._aa['spring_linewidth'],
-                                color=self._color, alpha=self._opacity, zorder=0.1)[0]
+                                       color=self._color, alpha=self._opacity, zorder=0.1)[0]
         self._hysteron_label_position = ((x0 + x1) / 2, (y0 + y1) / 2) if self._is_hysteron else None
 
     def update(self, color: str, opacity: float):
@@ -102,7 +107,8 @@ class SegmentDrawing(ShapeDrawing):
 
 class AngleDrawing(ShapeDrawing):
 
-    def _make(self):
+    def __init__(self, _angle: shape.Angle, radius, is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: dict):
+        super().__init__(_angle, radius, is_hysteron, ax, color, opacity, aa)
         x0, y0, x1, y1, x2, y2 = self._shape.get_nodal_coordinates()
         center = (x1, y1)
         angle = shape.Angle.calculate_angle(x0, y0, x1, y1, x2, y2)
@@ -110,17 +116,16 @@ class AngleDrawing(ShapeDrawing):
         start_angle = end_angle - angle
         x_coords, y_coords = compute_arc_line(center, self._size * self._aa['rotation_spring_radius_scaling'],
                                               start_angle, end_angle)
-        graphic = self._ax.plot(x_coords, y_coords, lw=self._aa['rotation_spring_linewidth'],
-                                color=self._color, alpha=self._opacity, zorder=0)[0]
+        self._graphics = self._ax.plot(x_coords, y_coords, lw=self._aa['rotation_spring_linewidth'],
+                                       color=self._color, alpha=self._opacity, zorder=0)[0]
         if self._is_hysteron:
             mid_angle = (start_angle + end_angle) / 2
-            hysteron_label_position = (
+            self._hysteron_label_position = (
                 center[0] + self._size * self._aa['rotation_spring_radius_scaling'] * np.cos(mid_angle),
                 center[0] + self._size * self._aa['rotation_spring_radius_scaling'] * np.sin(mid_angle)
             )
         else:
-            hysteron_label_position = None
-        return graphic, hysteron_label_position
+            self._hysteron_label_position = None
 
     def update(self, color: str, opacity: float):
         super().update(color, opacity)
@@ -150,14 +155,11 @@ class AngleDrawing(ShapeDrawing):
 class AreaDrawing(ShapeDrawing):
     def __init__(self, area: shape.Area, is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: dict):
         super().__init__(area, None, is_hysteron, ax, color, opacity, aa)
-
-    def _make(self):
         coordinates = self._shape.get_nodal_coordinates()
         x, y = coordinates[::2], coordinates[1::2]
         zorder = np.min(x) / np.abs(np.max(x) - np.min(x))
-        graphic = self._ax.fill(x, y, color=self._color, alpha=self._opacity, zorder=zorder)[0]
-        hysteron_label_position = (np.mean(x), np.mean(y)) if self._is_hysteron else None
-        return graphic, hysteron_label_position
+        self._graphics = self._ax.fill(x, y, color=self._color, alpha=self._opacity, zorder=zorder)[0]
+        self._hysteron_label_position = (np.mean(x), np.mean(y)) if self._is_hysteron else None
 
     def update(self, color: str, opacity: float):
         super().update(color, opacity)
@@ -174,8 +176,6 @@ class AreaDrawing(ShapeDrawing):
 class PathDrawing(ShapeDrawing):
     def __init__(self, path: shape.Path, is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: dict):
         super().__init__(path, None, is_hysteron, ax, color, opacity, aa)
-
-    def _make(self):
         coordinates = self._shape.get_nodal_coordinates()
         x, y = coordinates[::2], coordinates[1::2]
         lengths = [0.0]
@@ -188,9 +188,8 @@ class PathDrawing(ShapeDrawing):
                                  color=self._color, alpha=self._opacity, zorder=0)[0]
         graphic1 = self._ax.plot(xx, yy, ls='', markersize=self._aa['line_spring_linewidth'] * 0.4,
                                  marker='o', color='#CECECE', zorder=0.1)[0]
-        graphic = (graphic0, graphic1)
-        hysteron_label_position = (np.mean(x), np.mean(y)) if self._is_hysteron else None
-        return graphic, hysteron_label_position
+        self._graphics = (graphic0, graphic1)
+        self._hysteron_label_position = (np.mean(x), np.mean(y)) if self._is_hysteron else None
 
     def update(self, color, opacity):
         super().update(color, opacity)
@@ -219,9 +218,6 @@ class DistanceDrawing(ShapeDrawing):
     def __init__(self, dist: shape.DistancePointLine | shape.SquaredDistancePointSegment,
                  is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: dict):
         super().__init__(dist, None, is_hysteron, ax, color, opacity, aa)
-
-    def _make(self):
-        node0, _, _ = self._shape.get_nodes()
         x0, y0, x1, y1, x2, y2 = self._shape.get_nodal_coordinates()
         graphic0 = self._ax.plot(x0, y0, zorder=2.1, marker='.', markersize=self._aa['node_size'] / 2.0,
                                  alpha=self._opacity, color=self._color)[0]
@@ -229,9 +225,8 @@ class DistanceDrawing(ShapeDrawing):
                                  alpha=self._opacity, color=self._color, zorder=0)[0]
         graphic2 = self._ax.plot([x1, x2], [y1, y2], lw=0.75,
                                  color=self._aa['distance_spring_line_default_color'], zorder=0)[0]
-        graphic = (graphic0, graphic1, graphic2)
-        hysteron_label_position = ((x1 + x2) / 2, (y1 + y2) / 2) if self._is_hysteron else None
-        return graphic, hysteron_label_position
+        self._graphics = (graphic0, graphic1, graphic2)
+        self._hysteron_label_position = ((x1 + x2) / 2, (y1 + y2) / 2) if self._is_hysteron else None
 
     def update(self, color, opacity):
         super().update(color, opacity)
@@ -249,26 +244,83 @@ class DistanceDrawing(ShapeDrawing):
         if opacity is not None:
             graphic0.set_alpha(opacity)
             graphic1.set_alpha(opacity)
+        if self._is_hysteron:
+            self._hysteron_label_position = ((x1 + x2) / 2, (y1 + y2) / 2)
 
 
-class CompoundAreaDrawing(ShapeDrawing):
-    def __init__(self, _sum: shape.Sum,
+class HoleyAreaDrawing(ShapeDrawing):
+    def __init__(self, holey_area: shape.HoleyArea,
                  is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: dict):
-        super().__init__(_sum, None, is_hysteron, ax, color, opacity, aa)
+        super().__init__(holey_area, None, is_hysteron, ax, color, opacity, aa)
+        self._bulk = holey_area.get_bulk_area()
+        self._holes = holey_area.get_holes()
 
-    def _make(self):
-        graphics = []
-        for area in self._shape.get_shapes():
-            area = AreaDrawing(area, self._is_hysteron, self._ax, self._color, self._opacity, self._aa)
-            graphics.append(area.get_graphics())
+        bulk_coords = np.array([[node.get_x(), node.get_y()] for node in self._bulk.get_nodes()]).T
+        holes_coords = [np.array([[node.get_x(), node.get_y()] for node in hole.get_nodes()]).T
+                        for hole in self._holes]
+        polys = [bulk_coords] + holes_coords
+        vertices, codes = compute_pathpatch_vertices(polys)
+        self._patch = matplotlib.patches.PathPatch(matplotlib.path.Path(vertices, codes),
+                                                   fill=True, color=color, alpha=opacity)
+        self._ax.add_patch(self._patch)
+        self._hysteron_label_position = ((np.mean(bulk_coords[0, :]), np.mean(bulk_coords[1, :]))
+                                         if self._is_hysteron else None)
+
+    def update(self, color, opacity):
+        super().update(color, opacity)
+        bulk_coords = np.array([[node.get_x(), node.get_y()] for node in self._bulk.get_nodes()]).T
+        holes_coords = [np.array([[node.get_x(), node.get_y()] for node in hole.get_nodes()]).T
+                        for hole in self._holes]
+        polys = [bulk_coords] + holes_coords
+        vertices, _ = compute_pathpatch_vertices(polys, compute_code=False)
+        self._patch.get_path().vertices[:] = vertices
+
+        if color is not None:
+            self._patch.set_color(color)
+        if opacity is not None:
+            self._patch.set_alpha(opacity)
+        if self._is_hysteron:
+            self._hysteron_label_position = (np.mean(bulk_coords[0, :]), np.mean(bulk_coords[1, :]))
+
+
+class CompoundDrawing(ShapeDrawing):
+    """ Class to draw shapes that are (eventually) made of sub-shapes that can be drawn
+    (that is, belonging to the dictionary DRAWABLE_SHAPES """
+
+    DRAWABLE_SHAPES = {shape.Segment: SegmentDrawing,
+                       shape.Angle: AngleDrawing,
+                       shape.Area: AreaDrawing,
+                       shape.HoleyArea: HoleyAreaDrawing,
+                       shape.Path: PathDrawing,
+                       shape.DistancePointLine: DistanceDrawing,
+                       shape.SquaredDistancePointSegment: DistanceDrawing
+                       }
+
+    def __init__(self, cs: shape.CompoundShape,
+                 is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: dict):
+        super().__init__(cs, None, is_hysteron, ax, color, opacity, aa)
+        self._drawings = []
+        for subshape in cs.get_shapes():
+            if type(subshape) in CompoundDrawing.DRAWABLE_SHAPES:
+                drawing_type = CompoundDrawing.DRAWABLE_SHAPES[type(subshape)]
+                drawing = drawing_type(subshape, False, self._ax, self._color, self._opacity, self._aa)
+            else:
+                drawing = CompoundDrawing(subshape, False, self._ax, self._color, self._opacity, self._aa)
+            self._drawings.append(drawing)
 
         if self._is_hysteron:
             coord = self._shape.get_nodal_coordinates()
-            hysteron_label_position = np.mean(coord[::2]), np.mean(coord[1::2])
+            self._hysteron_label_position = np.mean(coord[::2]), np.mean(coord[1::2])
         else:
-            hysteron_label_position = None
+            self._hysteron_label_position = None
 
-        return graphics, hysteron_label_position
+    def update(self, color, opacity):
+        super().update(color, opacity)
+        for drawing in self._drawings:
+            drawing.update(color, opacity)
+        if self._is_hysteron:
+            coord = self._shape.get_nodal_coordinates()
+            self._hysteron_label_position = np.mean(coord[::2]), np.mean(coord[1::2])
 
 
 class ElementDrawing(Drawing):
@@ -329,10 +381,10 @@ class ElementDrawing(Drawing):
             opacity = opacity if opacity is not None else self._aa['distance_spring_line_default_opacity']
             shape_drawing = DistanceDrawing(self._element.get_shape(), self._is_hysteron,
                                             self._ax, color, opacity, self._aa)
-        elif isinstance(self._element.get_shape(), shape.Sum):
+        elif isinstance(self._element.get_shape(), shape.HoleyArea):
             color = color if color is not None else self._aa['distance_spring_line_default_color']
             opacity = opacity if opacity is not None else self._aa['distance_spring_line_default_opacity']
-            shape_drawing = SumDrawing(self._element.get_shape(), self._is_hysteron,
+            shape_drawing = HoleyAreaDrawing(self._element.get_shape(), self._is_hysteron,
                                        self._ax, color, opacity, self._aa)
         else:
             raise NotImplementedError('Cannot draw element because no implementation of how to draw its shape')

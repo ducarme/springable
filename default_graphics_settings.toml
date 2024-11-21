@@ -103,6 +103,7 @@ animated_equilibrium_point_color = "#ff0000"
 animated_equilibrium_point_size= 10
 
 [assembly_appearance]
+stylesheet = "default"  # only used when drawing the model, not used for the animation
 coloring_mode = "generalized_force"
 # "none", "energy", "generalized_force", "generalized_stiffness"
 color_elements = true

@@ -6,7 +6,7 @@ from ..mechanics.assembly import Assembly
 from ..mechanics.load import NodalLoad, LoadStep
 from ..mechanics.model import Model
 from . import simpleeval as se
-from .keywords import usable_shapes, usable_behaviors, usable_shape_operations
+from .keywords import usable_shapes, usable_behaviors
 import os
 
 
@@ -29,8 +29,8 @@ def smart_split(string, separators) -> list[str]:
     parts.append(''.join(current))
     return [part.strip() for part in parts]
 
-def parse_simple_arithmetic(string, operators='+-') -> list[str]:
-    tokens = []
+
+def parse_simple_arithmetic(string, operators='+-') -> tuple[list[str], list[str]]:
     operator_sequence = ['+']
 
     parts = []
@@ -136,19 +136,21 @@ def text_to_behavior(text: str, natural_measure, evaluator: se.SimpleEval = None
 def _determine_usable_shape_type_name(_shape):
     if type(_shape) in usable_shapes.keys():
         return usable_shapes.type_to_name[type(_shape)]
-    elif type(_shape) in usable_shape_operations.keys():
-        return _determine_usable_shape_type_name(_shape.get_shapes()[0])
+    elif isinstance(_shape, HoleyArea):
+        return 'AREA'
     else:
         raise NotImplementedError(f'Cannot associate a name to shape type {type(_shape)}')
 
 
 def _determine_shape_description(_shape: Shape):
+    if isinstance(_shape, HoleyArea):
+        bulk = _shape.get_bulk_area()
+        holes = _shape.get_holes()
+        areas = (bulk,) + holes
+        area_shape_descriptions = [f'({_determine_shape_description(area)})' for area in areas]
+        return '-'.join(area_shape_descriptions)
     if type(_shape) in usable_shapes.keys():
         return '-'.join([str(_node.get_node_nb()) for _node in _shape.get_nodes()])
-    if type(_shape) in usable_shape_operations.keys():
-        return (usable_shape_operations.type_to_name[type(_shape)] + '('
-                + '; '.join([_determine_shape_description(subshape) for subshape in _shape.get_shapes()])
-                + ')')
     else:
         raise NotImplementedError(f'Cannot associate a description to shape type {type(_shape)}')
 
@@ -161,24 +163,29 @@ def shape_to_text(_shape: Shape) -> tuple[str, str]:
 
 def text_to_shape(shape_text: tuple[str, str], nodes: set[Node]) -> Shape:
     shape_type_name, shape_description = shape_text
-    if shape_type_name.startswith('COMPOUND '):
-        core_shape_type_name = shape_type_name.removeprefix('COMPOUND').strip()
-        core_shape_descriptions, operators = parse_simple_arithmetic(shape_description, operators='+-')
-        core_shapes = [text_to_shape((core_shape_type_name, core_shape_description), nodes)
-                       for core_shape_description in core_shape_descriptions]
-        signed_shapes = [core_shapes[i] if operators[i] == '+' else -core_shapes[i]
-                         for i in range(len(core_shapes))]
-        return Sum(*signed_shapes)
-    else:
-        try:
-            shape_type = usable_shapes.name_to_type[shape_type_name]
-        except KeyError:
-            raise NotImplementedError(f'Shape type {shape_type_name} is unknown.')
-        node_nbs = [int(node_nb) for node_nb in smart_split(shape_description, '-')]
-        shape_nodes = []
-        for node_nb in node_nbs:
-            shape_nodes.append(Assembly.get_node_from_set(nodes, node_nb))
-        return shape_type(*shape_nodes)
+    # if shape_type_name.startswith('COMPOUND '):
+    #     core_shape_type_name = shape_type_name.removeprefix('COMPOUND').strip()
+    #     core_shape_descriptions, operators = parse_simple_arithmetic(shape_description, operators='+-')
+    #     core_shapes = [text_to_shape((core_shape_type_name, core_shape_description), nodes)
+    #                    for core_shape_description in core_shape_descriptions]
+    #     signed_shapes = [core_shapes[i] if operators[i] == '+' else -core_shapes[i]
+    #                      for i in range(len(core_shapes))]
+    #     return Sum(*signed_shapes)
+    if shape_type_name == 'AREA':
+        if shape_description.startswith('('):
+            core_area_descriptions, _ = parse_simple_arithmetic(shape_description, operators='-')
+            core_areas = [text_to_shape(('AREA', core_area_description), nodes)
+                          for core_area_description in core_area_descriptions]
+            return HoleyArea(*core_areas)
+    try:
+        shape_type = usable_shapes.name_to_type[shape_type_name]
+    except KeyError:
+        raise NotImplementedError(f'Shape type {shape_type_name} is unknown.')
+    node_nbs = [int(node_nb) for node_nb in smart_split(shape_description, '-')]
+    shape_nodes = []
+    for node_nb in node_nbs:
+        shape_nodes.append(Assembly.get_node_from_set(nodes, node_nb))
+    return shape_type(*shape_nodes)
 
 
 def element_to_text(_element: Element) -> str:
@@ -320,7 +327,6 @@ def text_to_loading(loading_text: str, nodes: set[Node], evaluator: se.SimpleEva
     reading_blocked_nodes = False
     if lines[0] != 'LOADING':
         raise ValueError('Loading section does not start with "LOADING".')
-
     for line in lines[1:]:
         if line == 'then':
             _loading.append(LoadStep(node_list, directions, forces, max_displacements, blocked_nodes_directions))
@@ -347,7 +353,6 @@ def text_to_loading(loading_text: str, nodes: set[Node], evaluator: se.SimpleEva
             directions.append(nodal_load.get_direction())
             forces.append(nodal_load.get_force())
             max_displacements.append(nodal_load.get_max_displacement())
-
     _loading.append(LoadStep(node_list, directions, forces, max_displacements, blocked_nodes_directions))
     return _loading
 
@@ -361,12 +366,14 @@ def model_to_text(_model: Model) -> str:
 def text_to_model(model_text: str, evaluator: se.SimpleEval = None) -> Model:
     if evaluator is None:
         evaluator = se.SimpleEval()
-    parts = basic_split(model_text, 'LOADING\n')
+    parts = basic_split(model_text, 'LOADING')
     if len(parts) < 2:
-        raise ValueError('Cannot find the "LOADING" section')
-    assembly_text, loading_text = parts
+        assembly_text = parts[0]
+        loading_text = ''
+    else:
+        assembly_text, loading_text = parts[0], parts[1]
     assem = text_to_assembly(assembly_text, evaluator)
-    ldg = text_to_loading('LOADING\n' + loading_text, assem.get_nodes(), evaluator)
+    ldg = text_to_loading(('LOADING\n' + loading_text).strip(), assem.get_nodes(), evaluator)
     return Model(assem, ldg)
 
 
