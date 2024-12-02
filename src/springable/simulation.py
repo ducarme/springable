@@ -54,17 +54,21 @@ def simulate_model(model_path, save_dir, solver_settings_path=None, graphics_set
     general_options.update(custom_general_options)
 
     if general_options['generate_model_drawing']:
+        if general_options['show_model_drawing']:
+            print("Model is drawn in new window. Close the window to continue with the simulation...")
         animation.draw_model(mdl, save_dir, show=general_options['show_model_drawing'], **custom_assembly_appearance)
         custom_general_options['generate_model_drawing'] = False
         custom_general_options['show_model_drawing'] = False
     result = solve_model(mdl, solver_settings_path)
     save_results(result, save_dir)
+    print(f"Simulation results have been saved in {save_dir}.")
     visualization.visualize_result(result, save_dir,
                                    graphics_settings=[custom_general_options,
                                                       custom_plot_options,
                                                       custom_animation_options,
                                                       custom_assembly_appearance],
                                    postprocessing=postprocessing)
+
     return save_dir
 
 

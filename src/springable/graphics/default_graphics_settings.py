@@ -80,6 +80,8 @@ DEFAULT_ASSEMBLY_APPEARANCE = {
     "hysteron_state_bg_color": "#E0E0E0",
     "hysteron_state_txt_color": "#101010",
     "show_forces": True,
+    "hide_low_preloading_forces": False,
+    "low_preloading_force_threshold": 0.0,
     "force_vector_scaling": 1.0,
     "nb_spring_coils": 4,
     "spring_linewidth": 3,

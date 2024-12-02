@@ -579,7 +579,8 @@ class ModelDrawing(Drawing):
         final_force_vector = _model.get_force_vector()
         for loaded_node in self._loaded_nodes:
             final_force = final_force_vector[self._node_to_dof_indices[loaded_node]]
-            direction = final_force / np.linalg.norm(final_force)
+            final_force_norm = np.linalg.norm(final_force)
+            direction = final_force / final_force_norm
             if np.isnan(direction).any():
                 direction = None
             self._force_directions[loaded_node] = direction
@@ -587,8 +588,10 @@ class ModelDrawing(Drawing):
         self._preforce_directions = {}
         for preloaded_node in self._preloaded_nodes:
             initial_force = self._initial_force_vector[self._node_to_dof_indices[preloaded_node]]
-            direction = initial_force / np.linalg.norm(initial_force)
-            if np.isnan(direction).any():
+            initial_force_norm  = np.linalg.norm(initial_force)
+            direction = initial_force / initial_force_norm
+            if np.isnan(direction).any() or (self._aa['hide_low_preloading_forces']
+                                             and initial_force_norm < self._aa['low_preloading_force_threshold']):
                 direction = None
             self._preforce_directions[preloaded_node] = direction
 

@@ -17,7 +17,6 @@ class Element:
         # ONLY USED FOR DYNAMIC SIMULATION
         self._vx = np.zeros(self._behavior.get_nb_dofs() - 1)  # velocity values of the internal degrees of freedom
 
-
     def get_nodes(self) -> tuple[Node, ...]:
         return self._shape.get_nodes()
 

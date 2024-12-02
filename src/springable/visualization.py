@@ -137,22 +137,38 @@ def visualize_result(result: static_solver.Result | str, save_dir: str = '',
 
     go = DEFAULT_GENERAL_OPTIONS.copy()
     go.update(general_options)
+    print(f"Post-processing starts...")
     try:
+        at_least_one = False
         if go['generate_model_drawing']:
+            at_least_one = True
+            if go['show_model_drawing']:
+                print("Spring model is drawn in a new window. Close the window to continue...")
             animation.draw_model(result.get_model(), save_dir, 'model', show=go['show_model_drawing'],
                                  **assembly_appearance)
         if go['generate_fd_plot']:
+            at_least_one = True
+            if go['show_fd_plot']:
+                print("Force-displacement curve is drawn in a new window. Close the window to continue...")
             plot.force_displacement_curve(result, save_dir, show=go['show_fd_plot'], **plot_options)
 
         if postprocessing is not None:
             for pp in postprocessing:
+                at_least_one = True
+                if go['show_custom_plot']:
+                    print(f"Custom '{pp['save_name']}' plot is drawn in a new window. Close the window to continue...")
                 plot.curve(pp['postprocessing_fun'], result, save_dir, save_name=pp['save_name'],
                            show=go['show_custom_plot'], xlabel=pp['xlabel'], ylabel=pp['ylabel'], **plot_options)
 
         if go['generate_animation']:
+            at_least_one = True
             animation.animate(result, save_dir, show=go['show_animation'],
                               plot_options=plot_options, assembly_appearance=assembly_appearance,
                               **animation_options)
+        if at_least_one:
+            print(f"Post-processed results have been saved in {save_dir}.")
+        else:
+            print("Nothing has been post-processed, as no post-processed output has been requested.")
     except static_solver.UnusableSolution:
         print("Cannot make the graphics, because the calculated equilibrium path is unusable")
 

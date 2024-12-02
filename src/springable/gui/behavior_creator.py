@@ -48,7 +48,7 @@ def mu_minus(s, k_star, delta, epsilon):
 
 def k_star_fun(delta_k, epsilon_k, k_max, delta, epsilon):
     c = k_max + delta + epsilon - 0.25 / epsilon_k * (k_max + delta + epsilon) / (delta + epsilon) * (
-                delta + epsilon + epsilon_k)**2
+            delta + epsilon + epsilon_k) ** 2
     return ((delta_k < delta + epsilon - epsilon_k) * delta_k * (k_max + delta + epsilon) / (delta + epsilon)
             + (np.abs(delta_k - (delta + epsilon)) < epsilon_k) *
             (0.5 / epsilon_k * (k_max + delta + epsilon) / (delta + epsilon)
@@ -142,17 +142,17 @@ class CurveInteractor:
                 t = np.linspace(0, 1.1, 3000)
                 self.curve = Line2D(self._behavior._a(t), self._behavior._b(t), animated=True)
                 self.curve.set_color('tab:blue')
-                #self.curve5 = Line2D(self._behavior._a(t) - t, self._behavior._b(t), animated=True)
-                #self.curve5.set_color('tab:orange')
+                # self.curve5 = Line2D(self._behavior._a(t) - t, self._behavior._b(t), animated=True)
+                # self.curve5.set_color('tab:orange')
                 # self.curve2 = Line2D(t * np.max(self._behavior._a(t)), self._behavior._dbda(t),
                 #                      linestyle='', color='#a0a0a0', marker='o', markersize=2,
                 #                      markerfacecolor='#a0a0a0', animated=True)
                 # self.curve3 = Line2D(t * np.max(self._behavior._a(t)), self._behavior._k(t),
                 #                      linestyle='', color='r', marker='o', markersize=2,
                 #                      markerfacecolor='r', animated=True)
-                #self.curve4 = Line2D(t * np.max(self._behavior._a(t)), k_star * np.ones_like(t),
-                                     #linestyle='', color='g', marker='o', markersize=2,
-                                     #markerfacecolor='g', animated=True)
+                # self.curve4 = Line2D(t * np.max(self._behavior._a(t)), k_star * np.ones_like(t),
+                # linestyle='', color='g', marker='o', markersize=2,
+                # markerfacecolor='g', animated=True)
             else:
                 self.curve = Line2D([], [], animated=True)
                 self.curve.set_color('salmon')
@@ -160,7 +160,7 @@ class CurveInteractor:
         self.ax.add_line(self.curve)
         # self.ax.add_line(self.curve2)
         # self.ax.add_line(self.curve3)
-        #self.ax.add_line(self.curve4)
+        # self.ax.add_line(self.curve4)
         # self.ax.add_line(self.curve5)
 
         canvas.mpl_connect('draw_event', self.on_draw)
@@ -192,7 +192,7 @@ class CurveInteractor:
 
         # self.ax.draw_artist(self.curve2)
         # self.ax.draw_artist(self.curve3)
-        #self.ax.draw_artist(self.curve4)
+        # self.ax.draw_artist(self.curve4)
         # do not need to blit here, this will fire before the screen is
         # updated
 
@@ -293,7 +293,7 @@ class CurveInteractor:
                 self.curve.set_data(self._behavior._a(t), self._behavior._b(t))
                 # self.curve2.set_data(t * np.max(self._behavior._a(t)), self._behavior._dbda(t))
                 # self.curve3.set_data(t * np.max(self._behavior._a(t)), self._behavior._k(t))
-                #self.curve4.set_data(t * np.max(self._behavior._a(t)), k_star * np.ones_like(t))
+                # self.curve4.set_data(t * np.max(self._behavior._a(t)), k_star * np.ones_like(t))
                 # self.curve5.set_data(self._behavior._a(t) - t, self._behavior._b(t))
 
         else:
@@ -309,7 +309,7 @@ class CurveInteractor:
         self.ax.draw_artist(self.curve)
         # self.ax.draw_artist(self.curve2)
         # self.ax.draw_artist(self.curve3)
-        #self.ax.draw_artist(self.curve4)
+        # self.ax.draw_artist(self.curve4)
         # self.ax.draw_artist(self.curve5)
         self.canvas.blit(self.ax.bbox)
 
@@ -393,10 +393,9 @@ class BehaviorCreatorGUI:
         self.el_ax.set_zlim((0, 45))
         self._fig.canvas.draw_idle()
 
-
     def enable_copy_button(self):
         if not self._is_copy_button_enabled:
-            print('enable')
+            # print('enable')
             self._copy_button_cid = self._copy_button.on_clicked(self.copy_behavior_txt)
             self._copy_button.ax.set_facecolor('white')  # Reset the color to indicate it's enabled
             self._copy_button.label.set_color('black')
@@ -404,7 +403,7 @@ class BehaviorCreatorGUI:
 
     def disable_copy_button(self):
         if self._is_copy_button_enabled:
-            print('disable')
+            # print('disable')
             self._copy_button.disconnect(self._copy_button_cid)
             self._copy_button.ax.set_facecolor('lightgray')  # Change the color to indicate it's disabled
             self._copy_button.label.set_color('gray')
@@ -412,7 +411,7 @@ class BehaviorCreatorGUI:
             self._is_copy_button_enabled = False
 
     def copy_behavior_txt(self, event):
-        print('copy click')
+        # print('copy click')
         pyperclip.copy(interpreting.behavior_to_text(self.curve_interactor.get_behavior()))
 
     def set_alpha_min(self, txt):
@@ -454,7 +453,6 @@ class BehaviorCreatorGUI:
     @staticmethod
     def color_according_to_validity(txt_box, txt):
         try:
-            float(txt)
             txt_box.label.set_color('k')
         except ValueError:
             txt_box.label.set_color('red')
