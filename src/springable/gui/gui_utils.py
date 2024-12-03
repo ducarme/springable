@@ -6,7 +6,7 @@ _BORDERWIDTH = 2
 _RELIEF = 'groove'
 
 
-def value_to_text(val, fmt='.4E', parameter_name='Value'):
+def value_to_text(val, fmt='.3E', parameter_name='Value'):
     return f"{parameter_name}={val:{fmt}}"
 
 
@@ -33,31 +33,31 @@ def make_update_value_text_function(parameter_name, slider_value_lbl):
     return update_value_text
 
 
-def slider_panel(root, parameter_name, initial_val, low, high, command):
-    panel = ttk.Frame(root, padding=_PADDING)
+def slider_panel(root, parameter_name, initial_val, low, high, command, row):
+    # panel = ttk.Frame(root, padding=_PADDING)
     # panel['borderwidth'] = _BORDERWIDTH
     # panel['relief'] = _RELIEF
     low_limit_var = tk.StringVar(value=str(low))
     high_limit_var = tk.StringVar(value=str(high))
 
-    low_limit_entry = ttk.Entry(panel, textvariable=low_limit_var, width=6)
-    high_limit_entry = ttk.Entry(panel, textvariable=high_limit_var, width=6)
-    slider_value_lbl = ttk.Label(panel, text=value_to_text(initial_val, parameter_name=parameter_name))
-    slider = ttk.Scale(panel, orient=tk.HORIZONTAL, length=120, from_=low, to=high, value=initial_val,
+    low_limit_entry = ttk.Entry(root, textvariable=low_limit_var, width=6)
+    high_limit_entry = ttk.Entry(root, textvariable=high_limit_var, width=6)
+    slider_value_lbl = ttk.Label(root, text=value_to_text(initial_val, parameter_name=parameter_name))
+    slider = ttk.Scale(root, orient=tk.HORIZONTAL, length=120, from_=low, to=high, value=initial_val,
                        command=lambda val: [make_update_value_text_function(parameter_name, slider_value_lbl)(val),
                                             command(float(val))])
-    error_lbl = ttk.Label(panel, text="", foreground="red")
+    error_lbl = ttk.Label(root, text="", foreground="red")
     validate_and_update_limits = make_validate_and_update_function(low_limit_var, high_limit_var, slider, error_lbl)
     low_limit_entry.bind("<KeyRelease>", validate_and_update_limits)
     high_limit_entry.bind("<KeyRelease>", validate_and_update_limits)
 
     # placement
-    slider_value_lbl.grid(column=0, row=0, padx=5)
-    low_limit_entry.grid(column=1, row=0)
-    high_limit_entry.grid(column=3, row=0)
-    slider.grid(column=2, row=0)
-    error_lbl.grid(column=1, row=1, columnspan=3)
-    return panel, slider
+    slider_value_lbl.grid(column=0, row=row, sticky='W')
+    low_limit_entry.grid(column=1, row=row)
+    high_limit_entry.grid(column=3, row=row)
+    slider.grid(column=2, row=row)
+    error_lbl.grid(column=1, row=row+1, columnspan=3)
+    return slider
 
 
 def natural_panel(root, low, high, slider_command):

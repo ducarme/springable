@@ -1,30 +1,28 @@
 import tkinter as tk
 import tkinter.ttk as ttk
-import inspect
 from .gui_utils import slider_panel
 from .gui_event_handler import GUIEventHandler
-from ..readwrite.keywords import usable_behaviors
 from .default_behaviors import DEFAULT_BEHAVIORS
 
 
 class BehaviorNotebook:
 
     def __init__(self, parent, handler):
+        self.handler: GUIEventHandler = handler
         tab_menu = ttk.Notebook(parent)
         tab_plus = ttk.Frame(tab_menu)
         tab_menu.add(tab_plus, text='+')
         self._tab_menu = tab_menu
         self._tab_plus = tab_plus
-        self._tabs = dict()
+        self._tabs: dict[BehaviorTab, str] = dict()
         self._tab_menu.bind("<<NotebookTabChanged>>", self.on_tab_selected)
-        self.handler: GUIEventHandler = handler
 
     def on_tab_selected(self, event):
         selected_tab = self._tab_menu.select()
         if self._tab_menu.tab(selected_tab)["text"] == "+":
             self.add_behavior_tab()
 
-    def on_button_clicked(self):
+    def on_remove_button_clicked(self):
         self.remove_selected_behavior_tab()
 
     def add_behavior_tab(self):
@@ -39,9 +37,12 @@ class BehaviorNotebook:
                 i += 1
 
         # send event to the handler
-        self.handler.add_behavior(new_behavior_tab.get_name(),
-                                  new_behavior_tab.get_behavior_type(),
-                                  new_behavior_tab.get_parameters())
+        self.handler.add_behavior(new_behavior_tab.get_name(), new_behavior_tab.get_behavior_type(),
+                                  new_behavior_tab.get_parameters(), new_behavior_tab.get_natural_measure())
+
+        displayed_b_text = self.handler.get_behavior_text(tab_name,
+                                                          new_behavior_tab.get_specify_natural_measure_state())
+        new_behavior_tab.set_behavior_text(displayed_b_text)
 
     def remove_selected_behavior_tab(self):
         selected_tab_id = self._tab_menu.select()
@@ -76,12 +77,12 @@ class BehaviorNotebook:
 class BehaviorTab:
 
     def __init__(self, behavior_notebook: BehaviorNotebook, name):
-        self._currently_displayed_par_pnl: ttk.Frame | None = None
+        self._currently_displayed_alpha_par_pnl: ttk.Frame | None = None
         self._behavior_notebook = behavior_notebook
         tab_menu = self._behavior_notebook.get_tab_menu()
         self.tab = ttk.Frame(tab_menu)
         self._name = name
-        self._parameter_panels = dict()
+        self.alpha_and_parameter_panels: dict[str, tuple[ttk.Frame, dict[str, ttk.Scale], ttk.Scale]] = dict()
 
         self._behavior_type_var = tk.StringVar()
         behavior_type_menu = ttk.Combobox(self.tab, textvariable=self._behavior_type_var)
@@ -91,56 +92,124 @@ class BehaviorTab:
         behavior_type_menu.state(["readonly"])
         behavior_type_menu.bind('<<ComboboxSelected>>', self.on_behavior_type_menu_change)
 
-        chk = ttk.Checkbutton(self.tab, text='specify alpha0', onvalue='ON', offvalue='OFF')
-        self.add_parameter_panel()
-        self._remove_btn = ttk.Button(self.tab, text='Remove behavior',
-                                      command=self._behavior_notebook.on_button_clicked)
+        self._behavior_text_var = tk.StringVar(value="...")
+        behavior_text_entry = ttk.Entry(self.tab, textvariable=self._behavior_text_var, width=60)
+        behavior_text_entry.state(['readonly'])
 
-        behavior_type_menu.grid(column=0, row=0)
-        chk.grid(column=0, row=1)
-        self._remove_btn.grid(column=0, row=3)
+        alpha_and_parameters_panel = ttk.Frame(self.tab)
+        start_row = 0
+        parameter_sliders = self.add_parameter_sliders_to_panel(alpha_and_parameters_panel, start_row)
+        start_row = len(parameter_sliders) * 2
+        alpha0 = DEFAULT_BEHAVIORS[self._behavior_type_var.get()].get_natural_measure()
+        alpha0_slider = slider_panel(alpha_and_parameters_panel, 'alpha0', alpha0,
+                                           min(alpha0 / 2, alpha0 * 3 / 2),
+                                           max(alpha0 * 3 / 2, alpha0 / 2),
+                                           self.update_natural_measure, row=start_row)
+        self.alpha_and_parameter_panels[self._behavior_type_var.get()] = (alpha_and_parameters_panel,
+                                                                          parameter_sliders, alpha0_slider)
+        self._currently_displayed_alpha_par_pnl = alpha_and_parameters_panel
+
+        self._remove_btn = ttk.Button(self.tab, text='Remove behavior',
+                                      command=self._behavior_notebook.on_remove_button_clicked)
+
+        save_pnl = ttk.Frame(self.tab)
+        self._save_btn = ttk.Button(save_pnl, text='Save behavior',
+                                    command=self._on_save_button_clicked)
+
+        self._specify_natural_measure_var = tk.BooleanVar(value=True)
+        self._specify_natural_measure_btn = ttk.Checkbutton(save_pnl,
+                                                            text='specify alpha 0',
+                                                            variable=self._specify_natural_measure_var,
+                                                            onvalue=True, offvalue=False,
+                                                            command=self.on_specify_natural_measure_clicked)
+        self._save_btn.grid(column=0, row=0, sticky='W')
+        self._specify_natural_measure_btn.grid(column=1, row=0, sticky='W')
+
+        behavior_type_menu.grid(column=0, row=0, sticky='NW')
+        self._remove_btn.grid(column=0, row=1, sticky='NW')
+        alpha_and_parameters_panel.grid(column=0, row=2)
+        behavior_text_entry.grid(column=0, row=3)
+        save_pnl.grid(column=0, row=4, sticky='W', pady=5)
+
 
         # Add new tab to the notebook
         tab_menu.insert(len(tab_menu.tabs()) - 1, self.tab, text=name)
         tab_menu.select(self.tab)  # Focus the newly created tab
 
     def update_parameters(self, val, par_name):
-        self._behavior_notebook.handler.update_behavior_parameters(self.get_name(), {par_name: val})
+        self._behavior_notebook.handler.update_behavior_parameters(self._name, {par_name: val})
+        displayed_b_text = self._behavior_notebook.handler.get_behavior_text(self._name,
+                                                                             self._specify_natural_measure_var.get())
+        self.set_behavior_text(displayed_b_text)
 
-    def get_parameters(self):
-        current_parameter_panel, sliders = self._parameter_panels[self.get_behavior_type()]
-        return {k: v.get() for k, v in sliders.items()}
+    def update_natural_measure(self, val):
+        self._behavior_notebook.handler.update_behavior_natural_measure(self.get_name(), val)
+        displayed_b_text = self._behavior_notebook.handler.get_behavior_text(self._name,
+                                                                             self._specify_natural_measure_var.get())
+        self.set_behavior_text(displayed_b_text)
 
-    def add_parameter_panel(self):
+    def get_parameters(self) -> dict:
+        _, parameter_sliders, _ = self.alpha_and_parameter_panels[self.get_behavior_type()]
+        return {k: v.get() for k, v in parameter_sliders.items()}
+
+    def get_natural_measure(self) -> float | None:
+        _, _, alpha0_slider = self.alpha_and_parameter_panels[self.get_behavior_type()]
+        return alpha0_slider.get()
+
+    def add_parameter_sliders_to_panel(self, pnl: ttk.Frame, start_row=0) -> dict[str, ttk.Scale]:
         behavior_type_name = self._behavior_type_var.get()
         behavior_parameters = DEFAULT_BEHAVIORS[behavior_type_name].get_parameters()
-        pnl = ttk.Frame(self.tab)
-        self._parameter_panels[behavior_type_name] = (pnl, {})
-        j = 0
+        j = start_row
+        sliders: dict[str, ttk.Scale] = {}
         for par_name, par_val in behavior_parameters.items():
             if isinstance(par_val, (int, float)):
                 span = max(abs(float(par_val)), 1e-5)
-                sp, slider = slider_panel(pnl,
-                                          par_name, par_val, par_val-span/2, par_val+span/2,
-                                          lambda val, par_name_=par_name: self.update_parameters(val, par_name_))
-                self._parameter_panels[behavior_type_name][1][par_name] = slider
-                sp.grid(row=j, column=0)
-                j += 1
-        pnl.grid(row=2, column=0)
-
-        self._currently_displayed_par_pnl = pnl
+                slider = slider_panel(pnl,
+                                      par_name, par_val, par_val - span / 2, par_val + span / 2,
+                                      lambda val, par_name_=par_name: self.update_parameters(val, par_name_), row=j)
+                sliders[par_name] = slider
+                j += 2
+        return sliders
 
     def on_behavior_type_menu_change(self, event):
         new_behavior_type = self._behavior_type_var.get()
-        self._currently_displayed_par_pnl.grid_remove()
-        if new_behavior_type in self._parameter_panels:
+        self._currently_displayed_alpha_par_pnl.grid_remove()
+        if new_behavior_type in self.alpha_and_parameter_panels:
             print('that behavior panel already exists, lets make it visible')
-            self._currently_displayed_par_pnl = self._parameter_panels[new_behavior_type][0]
-            self._currently_displayed_par_pnl.grid()
+            self._currently_displayed_alpha_par_pnl = self.alpha_and_parameter_panels[new_behavior_type][0]
+            self._currently_displayed_alpha_par_pnl.grid()
         else:
             print('that behavior panel did not already existed, a fresh one is made')
-            self.add_parameter_panel()
-        self._behavior_notebook.handler.change_behavior_type(self._name, new_behavior_type)
+            alpha_and_parameters_panel = ttk.Frame(self.tab)
+            start_row = 0
+            parameter_sliders = self.add_parameter_sliders_to_panel(alpha_and_parameters_panel, start_row)
+            start_row = len(parameter_sliders) * 2
+            alpha0 = DEFAULT_BEHAVIORS[self._behavior_type_var.get()].get_natural_measure()
+            alpha0_slider = slider_panel(alpha_and_parameters_panel, 'alpha0', alpha0,
+                                               alpha0 / 2,
+                                               max(alpha0 * 3 / 2, 1.0),
+                                               self.update_natural_measure, row=start_row)
+            self.alpha_and_parameter_panels[self._behavior_type_var.get()] = (alpha_and_parameters_panel,
+                                                                              parameter_sliders, alpha0_slider)
+            alpha_and_parameters_panel.grid(column=0, row=2)
+            self._currently_displayed_alpha_par_pnl = alpha_and_parameters_panel
+
+        self._behavior_notebook.handler.change_behavior_type(self._name, new_behavior_type, self.get_parameters(),
+                                                             self.get_natural_measure())
+        displayed_b_text = self._behavior_notebook.handler.get_behavior_text(self._name,
+                                                                             self._specify_natural_measure_var.get())
+        self.set_behavior_text(displayed_b_text)
+
+    def on_specify_natural_measure_clicked(self):
+        text = self._behavior_notebook.handler.get_behavior_text(self._name, self._specify_natural_measure_var.get())
+        self.set_behavior_text(text)
+
+    def get_specify_natural_measure_state(self) -> bool:
+        return self._specify_natural_measure_var.get()
+
+
+    def _on_save_button_clicked(self):
+        print('save button')
 
     def get_remove_button(self):
         return self._remove_btn
@@ -150,3 +219,6 @@ class BehaviorTab:
 
     def get_behavior_type(self):
         return self._behavior_type_var.get()
+
+    def set_behavior_text(self, behavior_text: str):
+        return self._behavior_text_var.set(behavior_text)

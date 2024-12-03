@@ -76,8 +76,9 @@ def text_to_node(text, evaluator: se.SimpleEval = None) -> Node:
     return Node(x, y, fixed_horizontally, fixed_vertically, node_nb)
 
 
-def behavior_to_text(_behavior: MechanicalBehavior, fmt='') -> str:
-    if isinstance(_behavior, LinearBehavior):
+def behavior_to_text(_behavior: MechanicalBehavior, fmt='',
+                     full_name=False, specify_natural_measure=True) -> str:
+    if isinstance(_behavior, LinearBehavior) and not full_name:
         text = str(_behavior.get_spring_constant())
     else:
         text = usable_behaviors.type_to_name[type(_behavior)]
@@ -87,49 +88,64 @@ def behavior_to_text(_behavior: MechanicalBehavior, fmt='') -> str:
                            for par_name, par_val in _behavior.get_parameters().items()])
         text += ')'
 
-    natural_measure = _behavior.get_natural_measure()
-    if natural_measure is not None:
-        text += f', {natural_measure}'
+    if specify_natural_measure:
+        natural_measure = _behavior.get_natural_measure()
+        if natural_measure is not None:
+            text += f', {natural_measure:{fmt}}'
     return text
 
 
-def text_to_behavior(text: str, natural_measure, evaluator: se.SimpleEval = None, ) -> MechanicalBehavior:
+def text_to_behavior(behavior_text: str, evaluator: se.SimpleEval = None,
+                     natural_measure: float | None = None) -> MechanicalBehavior:
+    """ if no natural measure is specified in the behavior_text, the natural_measure argument will be used
+    (except if this happens when the natural_measure argument is None,
+    in which case an UnknownNaturalMeasure exception is raised) """
     if evaluator is None:
         evaluator = se.SimpleEval()
+
+    parsed_behavior_txt = smart_split(behavior_text, ',')
+    if len(parsed_behavior_txt) > 1:
+        core_behavior_txt, natural_measure_txt = parsed_behavior_txt
+        natural_measure = evaluator.eval(natural_measure_txt)
+    else:
+        core_behavior_txt = parsed_behavior_txt[0]
+
+    if core_behavior_txt.startswith('FROMFILE(') and core_behavior_txt.endswith(')'):
+        parameters_txt = core_behavior_txt.removeprefix('FROMFILE(')
+        parameters_txt = parameters_txt.removesuffix(')')
+        path = smart_split(parameters_txt, ';')
+        behavior_text_path = os.path.join(*path)
+        with open(behavior_text_path) as fr:
+            line = fr.readline()
+        return text_to_behavior(line, evaluator, natural_measure)
+
+    if natural_measure is None:
+        if (core_behavior_txt.startswith(usable_behaviors.type_to_name[ContactBehavior] + '(')
+                and core_behavior_txt.endswith(')')):
+            natural_measure = 0.0
+        else:
+            raise UnknownNaturalMeasure
+
     for behavior_type, behavior_name in usable_behaviors.type_to_name.items():
-        if text.startswith(behavior_name + '(') and text.endswith(')'):
-            parameters_txt = text.removeprefix(behavior_name + '(')
+        if core_behavior_txt.startswith(behavior_name + '(') and core_behavior_txt.endswith(')'):
+            parameters_txt = core_behavior_txt.removeprefix(behavior_name + '(')
             parameters_txt = parameters_txt.removesuffix(')')
-            if parameters_txt.startswith('UNIT(') and parameters_txt.endswith(')'):
-                parameters_txt = parameters_txt.removeprefix('UNIT(')
-                parameters_txt = parameters_txt.removesuffix(')')
-                unit_library_lbl, unit_name_lbl = smart_split(parameters_txt, ';')
-                unit_library = evaluator.eval(unit_library_lbl)
-                unit_name = evaluator.eval(unit_name_lbl)
-                behavior_text_path = os.path.join(unit_library, unit_name, behavior_name.lower() + '_model.txt')
-                with open(behavior_text_path) as fr:
-                    line = fr.readline()
-                return text_to_behavior(line, natural_measure, evaluator)
-            else:
-                parameters = {}
-                for parameter_txt in smart_split(parameters_txt, ';'):
-                    par_name = smart_split(parameter_txt, '=')[0]
-                    par_val_txt = smart_split(parameter_txt, '=')[1]
-                    if par_val_txt.startswith('[') and par_val_txt.endswith(']'):
-                        par_val = []
-                        par_val_txt = par_val_txt.removeprefix('[')
-                        par_val_txt = par_val_txt.removesuffix(']')
-                        for par_comp_txt in smart_split(par_val_txt, ';'):
-                            par_val.append(evaluator.eval(par_comp_txt.strip()))
-                    else:
-                        par_val = evaluator.eval(par_val_txt)
-                    parameters[par_name] = par_val
-            if behavior_type == ContactBehavior:
-                return behavior_type(**parameters)
-            else:
-                return behavior_type(natural_measure, **parameters)
+            parameters = {}
+            for parameter_txt in smart_split(parameters_txt, ';'):
+                par_name = smart_split(parameter_txt, '=')[0]
+                par_val_txt = smart_split(parameter_txt, '=')[1]
+                if par_val_txt.startswith('[') and par_val_txt.endswith(']'):
+                    par_val = []
+                    par_val_txt = par_val_txt.removeprefix('[')
+                    par_val_txt = par_val_txt.removesuffix(']')
+                    for par_comp_txt in smart_split(par_val_txt, ';'):
+                        par_val.append(evaluator.eval(par_comp_txt.strip()))
+                else:
+                    par_val = evaluator.eval(par_val_txt)
+                parameters[par_name] = par_val
+            return behavior_type(natural_measure, **parameters)
     else:  # the behavior does not match any name --> linear behavior
-        spring_constant = evaluator.eval(text.strip())
+        spring_constant = evaluator.eval(behavior_text.strip())
         return LinearBehavior(natural_measure, spring_constant)
 
 
@@ -202,22 +218,20 @@ def text_to_element(element_txt: str,
                     nodes: set[Node], evaluator: se.SimpleEval = None) -> Element:
     if evaluator is None:
         evaluator = se.SimpleEval()
+
     # shape
     shape_type_text, to_parse = basic_split(element_txt, '\n')
     element_description = smart_split(to_parse, ',')
     shape_description = element_description[0]
     _shape = text_to_shape((shape_type_text.removesuffix('SPRING').rstrip(), shape_description), nodes)
 
-    # natural_measure
-    if len(element_description) > 2:
-        natural_measure = evaluator.eval(element_description[2])
-    else:
-        natural_measure = _shape.compute(output_mode=Shape.MEASURE)
-
     # behavior
-    behavior_txt = element_description[1]
-    behavior = text_to_behavior(behavior_txt, natural_measure, evaluator)
-
+    behavior_txt = ', '.join(element_description[1:])
+    try:
+        behavior = text_to_behavior(behavior_txt, evaluator)
+    except UnknownNaturalMeasure:
+        natural_measure = _shape.compute(output_mode=Shape.MEASURE)
+        behavior = text_to_behavior(behavior_txt, evaluator, natural_measure)
     return Element(_shape, behavior)
 
 
@@ -443,3 +457,7 @@ def text_to_parameters(parameters_text: str) -> tuple[dict[str, float | str], di
                                                              'is numeric parameter': is_numeric_parameter,
                                                              'is range parameter': False}
     return parameters, design_parameter_data
+
+
+class UnknownNaturalMeasure(Exception):
+    """ raise this when the natural measure is unknown """

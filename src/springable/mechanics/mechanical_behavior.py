@@ -33,9 +33,10 @@ class MechanicalBehavior:
     def get_natural_measure(self):
         return self._natural_measure
 
-    def update(self, natural_measure, /, **parameters):
-        self._natural_measure = natural_measure
-        self._parameters = parameters
+    def update(self, natural_measure=None, /, **parameters):
+        if natural_measure is not None:
+            self._natural_measure = natural_measure
+        self._parameters.update(parameters)
         # TO BE EXTENDED IN SUBCLASSES IF NECESSARY
 
 
@@ -128,27 +129,25 @@ class BezierBehavior(UnivariateBehavior):
                 "The Bezier behavior does not describe a function, try Bezier2 instead.")
         t = np.linspace(0, 1, self._sampling)
         u = evaluate_poly(t, u_coefs)
-        t_fun = interp1d(u, t, kind='linear')
-
 
         def fdu(_t, _): return evaluate_poly(_t, f_coefs) * evaluate_derivative_poly(_t, u_coefs)
 
         energy = solve_ivp(fun=fdu, t_span=[0.0, 1.0], y0=[0.0], t_eval=t).y[0, :]
-        self._energy = lambda uu: ((uu < u[-1]) *  interp1d(u, energy, kind='linear',
+        self._energy = lambda uu: ((uu < u[-1]) * interp1d(u, energy, kind='linear',
                                                            bounds_error=False, fill_value=0.0)(np.abs(uu))
                                    + (np.abs(uu) >= u[-1]) * (energy[-1] + generalized_force[-1] * (np.abs(uu) - u[-1])
-                                                    + 0.5 * generalized_stiffness[-1] * (np.abs(uu) - u[-1]) ** 2))
-
-
+                                                              + 0.5 * generalized_stiffness[-1] * (
+                                                                          np.abs(uu) - u[-1]) ** 2))
 
         generalized_force = evaluate_poly(t, f_coefs)
         self._first_der_energy = lambda uu: np.sign(uu) * interp1d(u, generalized_force, kind='linear',
-                                                                   bounds_error=False, fill_value='extrapolate')(np.abs(uu))
-
+                                                                   bounds_error=False, fill_value='extrapolate')(
+            np.abs(uu))
 
         generalized_stiffness = evaluate_derivative_poly(t, f_coefs) / evaluate_derivative_poly(t, u_coefs)
         self._second_der_energy = lambda uu: interp1d(u, generalized_stiffness, kind='linear',
-                                                      bounds_error=False, fill_value=generalized_stiffness[-1])(np.abs(uu))
+                                                      bounds_error=False, fill_value=generalized_stiffness[-1])(
+            np.abs(uu))
 
     def elastic_energy(self, alpha: float | np.ndarray) -> float:
         return self._energy(alpha - self._natural_measure)
@@ -159,9 +158,10 @@ class BezierBehavior(UnivariateBehavior):
     def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
         return self._second_der_energy(alpha - self._natural_measure),
 
-    def update(self, natural_measure, /, **parameters):
+    def update(self, natural_measure=None, /, **parameters):
         super().update(natural_measure, **parameters)
-        self._make()
+        if parameters:
+            self._make()
 
     @classmethod
     def compute_fitting_parameters(cls, force_displacement_curves: list[tuple], degree: int, show=False):
@@ -437,9 +437,10 @@ class Bezier2Behavior(BivariateBehavior):
             d2vdt2 += (y - self._a(t)) * (0.5 * self._d2k(t) * (y - self._a(t)) - 2 * self._da(t) * self._dk(t))
         return d2vdalpha2, d2vdalphadt, d2vdt2
 
-    def update(self, natural_measure, /, **parameters):
+    def update(self, natural_measure=None, /, **parameters):
         super().update(natural_measure, **parameters)
-        self._make()
+        if parameters:
+            self._make()
 
     def get_hysteron_info(self) -> dict[str, float]:
         if self._hysteron_info is None:
@@ -578,9 +579,10 @@ class ZigZagBehavior(UnivariateBehavior):
     def hessian_energy(self, alpha: float) -> tuple[float]:
         return self._generalized_stiffness_function(alpha - self._natural_measure),
 
-    def update(self, natural_measure, /, **parameters):
+    def update(self, natural_measure=None, /, **parameters):
         super().update(natural_measure, **parameters)
-        self._make()
+        if parameters:
+            self._make()
 
 
 class ZigZag2Behavior(BivariateBehavior):
@@ -751,9 +753,10 @@ class ZigZag2Behavior(BivariateBehavior):
             d2vdt2 += (y - self._a(t)) * (0.5 * self._d2k(t) * (y - self._a(t)) - 2 * self._da(t) * self._dk(t))
         return d2vdalpha2, d2vdalphadt, d2vdt2
 
-    def update(self, natural_measure, /, **parameters):
+    def update(self, natural_measure=None, /, **parameters):
         super().update(natural_measure, **parameters)
-        self._make()
+        if parameters:
+            self._make()
 
     def get_hysteron_info(self) -> dict[str, float]:
         if self._hysteron_info is None:
@@ -816,36 +819,39 @@ class ZigZag2Behavior(BivariateBehavior):
 
 
 class ContactBehavior(UnivariateBehavior):
-    def __init__(self, k, d0):
-        super().__init__(None, d0=d0, k=k)
+    def __init__(self, natural_measure, k, d0):
+        super().__init__(natural_measure, d0=d0, k=k)
 
     def elastic_energy(self, alpha: float) -> float:
+        dalpha = alpha - self._natural_measure
         k = self._parameters['k']
         d0 = self._parameters['d0']
-        if alpha >= d0:
+        if dalpha >= d0:
             return 0.0
-        elif 0.0 < alpha < d0:
-            return 0.5 * k * (d0 ** 2 - alpha ** 2) + 2 * k * d0 * (alpha - d0) - k * d0 ** 2 * np.log(alpha / d0)
+        elif 0.0 < dalpha < d0:
+            return 0.5 * k * (d0 ** 2 - dalpha ** 2) + 2 * k * d0 * (dalpha - d0) - k * d0 ** 2 * np.log(dalpha / d0)
         else:
             raise NonfiniteBehavior('Negative or zero value entered for a contact behavior')
 
     def gradient_energy(self, alpha: float) -> tuple[float]:
+        dalpha = alpha - self._natural_measure
         k = self._parameters['k']
         d0 = self._parameters['d0']
-        if alpha >= d0:
+        if dalpha >= d0:
             return 0.0,
-        elif 0.0 < alpha < d0:
-            return -k * (alpha - d0) ** 2 / alpha,
+        elif 0.0 < dalpha < d0:
+            return -k * (dalpha - d0) ** 2 / dalpha,
         else:
             raise NonfiniteBehavior('Negative or zero value entered for a contact behavior')
 
     def hessian_energy(self, alpha: float) -> tuple[float]:
+        dalpha = alpha - self._natural_measure
         k = self._parameters['k']
         d0 = self._parameters['d0']
-        if alpha >= d0:
+        if dalpha >= d0:
             return 0.0,
-        elif 0.0 < alpha < d0:
-            return k * ((d0 / alpha) ** 2 - 1),
+        elif 0.0 < dalpha < d0:
+            return k * ((d0 / dalpha) ** 2 - 1),
         else:
             raise NonfiniteBehavior('Negative or zero value entered for a contact behavior')
 

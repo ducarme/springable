@@ -599,7 +599,6 @@ class StaticSolver:
                                                          ud_lowest_eigval,
                                                          fd_negative_eigval_count,
                                                          ud_negative_eigval_count])
-
                     else:
                         increment_retries += 1
                         if increment_retries <= 5 and radius_p > 1e-14:

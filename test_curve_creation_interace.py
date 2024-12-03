@@ -21,8 +21,8 @@ fig = Figure(figsize=(5, 4), dpi=100)
 t = np.arange(0, 3, .01)
 ax = fig.add_subplot()
 line, = ax.plot(t, 2 * np.sin(2 * np.pi * t))
-ax.set_xlabel("t")
-ax.set_ylabel("f")
+ax.set_xlabel("$\\Delta \\alpha$")
+ax.set_ylabel("$\\nabla{\\alpha} U$")
 
 canvas = FigureCanvasTkAgg(fig, master=drawing_frame)  # A tk.DrawingArea.
 canvas.draw()
@@ -34,7 +34,9 @@ drawing_frame.grid(column=0, row=0, columnspan=3, rowspan=2)
 toolbar.pack(side=tk.BOTTOM, fill=tk.X)
 canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-bn = BehaviorNotebook(content, GUIEventHandler())
+handler = GUIEventHandler()
+bn = BehaviorNotebook(content, handler)
+handler.connect_to_notebook(bn)
 bn.get_tab_menu().grid(column=3, row=0, sticky='N')
 
 # root.bind("<Key>", handle_keypress)
