@@ -13,10 +13,6 @@ import time
 from .model import Model
 from .node import Node
 from .shape import IllDefinedShape
-from .mechanical_behavior import NonfiniteBehavior
-
-
-# warnings.filterwarnings("ignore")
 
 
 class Result:
@@ -244,13 +240,17 @@ class StaticSolver:
             coordinates = initial_coordinates.copy()
             coordinates[self._free_dof_indices] = free_coordinates
             self._assembly.set_coordinates(coordinates)
-            return self._assembly.compute_elastic_energy()
+            energy = self._assembly.compute_elastic_energy()
+            if not np.isfinite(energy):
+                raise NonfiniteMechanicalQuantity
+            return energy
 
         def gradient_elastic_energy(free_coordinates):
             coordinates = initial_coordinates.copy()
             coordinates[self._free_dof_indices] = free_coordinates
             self._assembly.set_coordinates(coordinates)
-            return self._assembly.compute_elastic_force_vector()[self._free_dof_indices]
+            force_vector = self._get_reduced_vector(self._assembly.compute_elastic_force_vector())
+            return force_vector
 
         def hessian_elastic_energy(free_coordinates):
             coordinates = initial_coordinates.copy()
@@ -267,7 +267,8 @@ class StaticSolver:
             natural_coordinates[self._free_dof_indices] = result.x
             natural_coordinates[self._fixed_dof_indices] = initial_coordinates[self._fixed_dof_indices]
             self._assembly.set_coordinates(natural_coordinates)
-        except IllDefinedShape:
+        except IllDefinedShape | NonfiniteMechanicalQuantity:
+            print('Could not guide the assembly to its natural configuration')
             self._assembly.set_coordinates(initial_coordinates)
 
     @ignore_warnings(LinAlgWarning)
@@ -529,7 +530,7 @@ class StaticSolver:
                                                 print(f'eigval: {singular_eigval}')
                                                 print(f'v x f = {np.abs(np.inner(singular_mode, g / norm_g))}')
 
-                                            if multiplicity == 1 and bifurcate_at_simple_bifurcations:
+                                            if multiplicity == 1 and bifurcate_at_simple_bifurcations and nb_bifurcation_points_detected == 2:
                                                 # one bifurcates to the "buckled" branch
                                                 self._assembly.set_coordinates(
                                                     initial_coordinates + equilibrium_displacements[-1])
@@ -699,7 +700,7 @@ class StaticSolver:
                                                         i, stiffness_matrix_eval_counter, linear_system_solving_counter,
                                                         total_nb_increment_retries, total_nb_singular_matrices_avoided,
                                                         nb_limit_points_detected, nb_bifurcation_points_detected)
-        except NonfiniteBehavior:
+        except NonfiniteMechanicalQuantity:
             if verbose:
                 reason = '--> aborted (the mechanical behavior of an element has produced a nonfinite value)\r\n'
                 update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max, reason,
@@ -770,11 +771,15 @@ class StaticSolver:
     def _get_reduced_stiffness_matrix(self, ks):
         k = np.delete(ks, self._fixed_dof_indices, axis=0)  # delete rows
         k = np.delete(k, self._fixed_dof_indices, axis=1)  # delete columns
+        if not np.isfinite(k).all():
+            raise NonfiniteMechanicalQuantity
         return k
 
     def _get_reduced_vector(self, vs):
         """ Returns the vector without the entries for the fixed dofs """
         v = np.delete(vs, self._fixed_dof_indices)
+        if not np.isfinite(v).all():
+            raise NonfiniteMechanicalQuantity
         return v
 
     def _get_structural_displacements(self, u):
@@ -797,6 +802,10 @@ class MaxNbIterationReached(Exception):
 
 class MaxDisplacementReached(Exception):
     """ raise this when the max displacement is reached """
+
+class NonfiniteMechanicalQuantity(Exception):
+    """ raise this when the reduced force vector or the reduced stiffness matrix have nonfinite components
+    or when the energy is nonfinite"""
 
 
 def _print_message_with_final_solving_stats(message,

@@ -94,21 +94,15 @@ class NaturalBehavior(UnivariateBehavior):
 
     def elastic_energy(self, alpha: float | np.ndarray) -> float:
         energy = self._parameters['k'] * self._natural_measure * alpha * (np.log(alpha / self._natural_measure) - 1)
-        if not np.isfinite(energy).any():
-            raise NonfiniteBehavior
         return energy
 
     def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float]:
         force = self._parameters['k'] * self._natural_measure * np.log(alpha / self._natural_measure)
-        if not np.isfinite(force).any():
-            raise NonfiniteBehavior
         return force,
 
     def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
         stiffness = self._parameters['k'] * self._natural_measure / alpha
         print(stiffness)
-        if not np.isfinite(stiffness).any():
-            raise NonfiniteBehavior
         return stiffness,
 
 
@@ -137,7 +131,7 @@ class BezierBehavior(UnivariateBehavior):
                                                            bounds_error=False, fill_value=0.0)(np.abs(uu))
                                    + (np.abs(uu) >= u[-1]) * (energy[-1] + generalized_force[-1] * (np.abs(uu) - u[-1])
                                                               + 0.5 * generalized_stiffness[-1] * (
-                                                                          np.abs(uu) - u[-1]) ** 2))
+                                                                      np.abs(uu) - u[-1]) ** 2))
 
         generalized_force = evaluate_poly(t, f_coefs)
         self._first_der_energy = lambda uu: np.sign(uu) * interp1d(u, generalized_force, kind='linear',
@@ -497,19 +491,31 @@ class IdealGas(UnivariateBehavior):
 class IsothermicGas(IdealGas):
 
     def elastic_energy(self, alpha: float | np.ndarray) -> float:
-        v0 = self._natural_measure
         v = alpha
+        v0 = self._natural_measure
+        if v < 0:
+            return np.nan
         nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
         return nRT * (v / v0 - 1.0 - np.log(v / v0))
 
-    def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float]:
-        v0 = self._natural_measure
+    def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float | np.ndarray]:
+        if isinstance(alpha, np.ndarray):
+            g = np.empty_like(alpha)
+            for i, alpha_i in enumerate(alpha):
+                g[i] = self.gradient_energy(alpha_i)[0]
+            return g,
+
         v = alpha
+        v0 = self._natural_measure
+        if v < 0:
+            return np.nan,
         nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
         return nRT * (v - v0) / (v * v0),
 
     def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
         v = alpha
+        if v < 0:
+            return np.nan,
         nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
         return nRT / v ** 2,
 
@@ -537,13 +543,23 @@ class IsentropicGas(IdealGas):
         v0 = self._natural_measure
         gamma = self._parameters['gamma']
         v = alpha
+        if v < 0:
+            return np.nan
         nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
         return nRT0 * (v / v0 - 1) + nRT0 / (gamma - 1) * ((v0 / v) ** (gamma - 1) - 1)
 
-    def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float]:
+    def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float | np.ndarray]:
+        if isinstance(alpha, np.ndarray):
+            g = np.empty_like(alpha)
+            for i, alpha_i in enumerate(alpha):
+                g[i] = self.gradient_energy(alpha_i)[0]
+            return g,
+
         v0 = self._natural_measure
         gamma = self._parameters['gamma']
         v = alpha
+        if v < 0:
+            return np.nan,
         nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
         return nRT0 * (1 / v0 - 1 / v * (v0 / v) ** (gamma - 1)),
 
@@ -551,6 +567,8 @@ class IsentropicGas(IdealGas):
         v0 = self._natural_measure
         gamma = self._parameters['gamma']
         v = alpha
+        if v < 0:
+            return np.nan,
         nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
         return nRT0 * gamma / v ** 2 * (v0 / v) ** (gamma - 1),
 
@@ -831,9 +849,15 @@ class ContactBehavior(UnivariateBehavior):
         elif 0.0 < dalpha < d0:
             return 0.5 * k * (d0 ** 2 - dalpha ** 2) + 2 * k * d0 * (dalpha - d0) - k * d0 ** 2 * np.log(dalpha / d0)
         else:
-            raise NonfiniteBehavior('Negative or zero value entered for a contact behavior')
+            return +np.inf
 
-    def gradient_energy(self, alpha: float) -> tuple[float]:
+    def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float | np.ndarray]:
+        if isinstance(alpha, np.ndarray):
+            g = np.empty_like(alpha)
+            for i, alpha_i in enumerate(alpha):
+                g[i] = self.gradient_energy(alpha_i)[0]
+            return g,
+
         dalpha = alpha - self._natural_measure
         k = self._parameters['k']
         d0 = self._parameters['d0']
@@ -842,7 +866,7 @@ class ContactBehavior(UnivariateBehavior):
         elif 0.0 < dalpha < d0:
             return -k * (dalpha - d0) ** 2 / dalpha,
         else:
-            raise NonfiniteBehavior('Negative or zero value entered for a contact behavior')
+            return -np.inf,
 
     def hessian_energy(self, alpha: float) -> tuple[float]:
         dalpha = alpha - self._natural_measure
@@ -853,12 +877,8 @@ class ContactBehavior(UnivariateBehavior):
         elif 0.0 < dalpha < d0:
             return k * ((d0 / dalpha) ** 2 - 1),
         else:
-            raise NonfiniteBehavior('Negative or zero value entered for a contact behavior')
+            return +np.inf,
 
 
 class InvalidBehaviorParameters(Exception):
     """ raise this when one attempts to create a mechanical behavior with invalid parameters"""
-
-
-class NonfiniteBehavior(Exception):
-    """ raise this when the behavior leads to a nonfinite value of energy, force or stiffness"""

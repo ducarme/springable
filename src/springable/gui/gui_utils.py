@@ -34,7 +34,7 @@ def make_update_value_text_function(parameter_name, slider_value_lbl):
 
 
 def slider_panel(root, parameter_name, initial_val, low, high, command, row):
-    # panel = ttk.Frame(root, padding=_PADDING)
+    # panel = ttk.Frame(window, padding=_PADDING)
     # panel['borderwidth'] = _BORDERWIDTH
     # panel['relief'] = _RELIEF
     low_limit_var = tk.StringVar(value=str(low))
@@ -45,7 +45,7 @@ def slider_panel(root, parameter_name, initial_val, low, high, command, row):
     slider_value_lbl = ttk.Label(root, text=value_to_text(initial_val, parameter_name=parameter_name))
     slider = ttk.Scale(root, orient=tk.HORIZONTAL, length=120, from_=low, to=high, value=initial_val,
                        command=lambda val: [make_update_value_text_function(parameter_name, slider_value_lbl)(val),
-                                            command(float(val))])
+                                            command()])
     error_lbl = ttk.Label(root, text="", foreground="red")
     validate_and_update_limits = make_validate_and_update_function(low_limit_var, high_limit_var, slider, error_lbl)
     low_limit_entry.bind("<KeyRelease>", validate_and_update_limits)

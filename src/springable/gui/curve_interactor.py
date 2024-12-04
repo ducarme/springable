@@ -2,9 +2,108 @@ import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.lines import Line2D
 from matplotlib.patches import Polygon
-from ..mechanics import mechanical_behavior as mb
+from .gui_event_handler import GUIEventHandler
+from ..mechanics.mechanical_behavior import MechanicalBehavior
 from ..readwrite import interpreting
 from ..readwrite.keywords import usable_behaviors
+import tkinter as tk
+import tkinter.ttk as ttk
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
+                                               NavigationToolbar2Tk)
+from matplotlib.figure import Figure
+from matplotlib.axes import Axes
+
+
+class DrawingSpace:
+    def __init__(self, drawing_frame: ttk.Frame):
+        fig = Figure(figsize=(5, 4))
+        self._bg = None
+        self.ax = fig.add_subplot()
+        self.ax.spines['top'].set_position('center')
+        self.ax.spines['right'].set_position('center')
+        # self.ax.spines['right'].set_color('none')
+        # self.ax.spines['top'].set_color('none')
+        # self.ax.xaxis.set_ticks_position('bottom')
+        # self.ax.yaxis.set_ticks_position('left')
+
+        self.ax.set_xlabel("$\\Delta \\alpha$")
+        self.ax.set_ylabel("$\\nabla{\\alpha} U$")
+        self.canvas = FigureCanvasTkAgg(fig, master=drawing_frame)  # A tk.DrawingArea.
+        toolbar = NavigationToolbar2Tk(self.canvas, drawing_frame, pack_toolbar=False)
+        toolbar.update()
+
+        toolbar.pack(side=tk.BOTTOM, fill=tk.X)
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        self.curves: dict[str, Line2D] = {}
+        self.curve_interactors: dict[str, CurveInteractor] = {}
+        self.cid = self.canvas.mpl_connect("draw_event", self.on_draw)
+
+    def add_curve(self, name: str, u, f, is_controllable: bool):
+        if not is_controllable:
+            self.curves[name], = self.ax.plot(u, f, animated=True)
+            self._update()
+
+    def remove_curve(self, name):
+        self.curves[name].remove()
+        try:
+            self.curves.pop(name)
+        except KeyError:
+            pass
+        self._update()
+
+    def update_curve(self, name: str, u, f):
+        self.curves[name].set_data(u, f)
+        self._update()
+
+    def set_focus(self, name):
+        pass
+
+    def _send_cp_update_event(self, name):
+        pass
+
+    def on_draw(self, event):
+        if event is not None:
+            if event.canvas != self.canvas:
+                raise RuntimeError
+        self._bg = self.canvas.copy_from_bbox(self.canvas.figure.bbox)
+        self._draw_animated()
+
+    def _draw_animated(self):
+        fig = self.canvas.figure
+        for line in self.curves.values():
+            fig.draw_artist(line)
+
+    def _update(self):
+        fig = self.canvas.figure
+        if self._bg is None:
+            self.on_draw(None)
+        else:
+            self.canvas.restore_region(self._bg)
+            self._draw_animated()
+            self.canvas.blit(fig.bbox)
+        self.canvas.flush_events()
+
+
+# class UpdatableCurve:
+#
+#     def __init__(self, u, f, ax: Axes, canvas: FigureCanvasTkAgg):
+#         self.background = None
+#         self.ax = ax
+#         self.canvas = canvas
+#         self.curve = Line2D(u, f, animated=True)
+#         self.ax.add_line(self.curve)
+#         self.canvas.mpl_connect('draw_event', self._on_draw)
+#
+#     def update_curve(self, u, f):
+#         self.curve.set_data(u, f)
+#         self.canvas.restore_region(self.background)
+#         self.ax.draw_artist(self.curve)
+#         self.canvas.blit(self.ax.bbox)
+#
+#     def _on_draw(self, event):
+#         self.background = self.canvas.copy_from_bbox(self.ax.bbox)
+#         self.ax.draw_artist(self.curve)
 
 
 class CurveInteractor:
@@ -20,14 +119,15 @@ class CurveInteractor:
     show_vertices = True
     epsilon = 10  # max pixel distance to count as a vertex hit
 
-    def __init__(self, ax, poly: Polygon,
-                 _behavior: mb.MechanicalBehavior, gui=None):
+    def __init__(self, ax, poly: Polygon, name, handler: GUIEventHandler):
         if poly.figure is None:
             raise RuntimeError('You must first add the polygon to a figure '
                                'or canvas before defining the interactor')
         self.ax = ax
-        canvas = poly.figure.canvas
         self.poly = poly
+        self.name = name
+        self.handler = handler
+        self.canvas = self.poly.figure.canvas
         self.poly.set_visible(False)
         x, y = zip(*self.poly.xy)
 
@@ -69,12 +169,11 @@ class CurveInteractor:
 
         self.ax.add_line(self.curve)
 
-        canvas.mpl_connect('draw_event', self.on_draw)
-        canvas.mpl_connect('button_press_event', self.on_button_press)
-        canvas.mpl_connect('key_press_event', self.on_key_press)
-        canvas.mpl_connect('button_release_event', self.on_button_release)
-        canvas.mpl_connect('motion_notify_event', self.on_mouse_move)
-        self.canvas = canvas
+        self.canvas.mpl_connect('draw_event', self.on_draw)
+        self.canvas.mpl_connect('button_press_event', self.on_button_press)
+        self.canvas.mpl_connect('key_press_event', self.on_key_press)
+        self.canvas.mpl_connect('button_release_event', self.on_button_release)
+        self.canvas.mpl_connect('motion_notify_event', self.on_mouse_move)
 
         self.behavior_creator_gui = gui
         if self._behavior_parameters_valid:
