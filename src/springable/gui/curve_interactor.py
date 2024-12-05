@@ -15,12 +15,15 @@ from matplotlib.axes import Axes
 
 
 class DrawingSpace:
-    def __init__(self, drawing_frame: ttk.Frame):
+    def __init__(self, drawing_frame: ttk.Frame, handler: GUIEventHandler):
+        self.handler = handler
         fig = Figure(figsize=(5, 4))
         self._bg = None
         self.ax = fig.add_subplot()
         self.ax.spines['top'].set_position('center')
         self.ax.spines['right'].set_position('center')
+        self.ax.set_xlim((-5, 5))
+        self.ax.set_ylim((-5, 5))
         # self.ax.spines['right'].set_color('none')
         # self.ax.spines['top'].set_color('none')
         # self.ax.xaxis.set_ticks_position('bottom')
@@ -37,12 +40,17 @@ class DrawingSpace:
 
         self.curves: dict[str, Line2D] = {}
         self.curve_interactors: dict[str, CurveInteractor] = {}
+        self._active_curve_interactor: CurveInteractor | None = None
         self.cid = self.canvas.mpl_connect("draw_event", self.on_draw)
 
-    def add_curve(self, name: str, u, f, is_controllable: bool):
+    def add_curve(self, name: str, u, f, is_controllable: bool, cp_x=None, cp_y=None):
         if not is_controllable:
             self.curves[name], = self.ax.plot(u, f, animated=True)
-            self._update()
+        else:
+            self.curves[name], = self.ax.plot(u, f, animated=True)
+            self.curve_interactors[name] = CurveInteractor(self.ax, cp_x, cp_y, name, self, self.handler)
+            self._active_curve_interactor = self.curve_interactors[name]
+        self.update()
 
     def remove_curve(self, name):
         self.curves[name].remove()
@@ -50,11 +58,11 @@ class DrawingSpace:
             self.curves.pop(name)
         except KeyError:
             pass
-        self._update()
+        self.update()
 
     def update_curve(self, name: str, u, f):
         self.curves[name].set_data(u, f)
-        self._update()
+        self.update()
 
     def set_focus(self, name):
         pass
@@ -73,8 +81,11 @@ class DrawingSpace:
         fig = self.canvas.figure
         for line in self.curves.values():
             fig.draw_artist(line)
+        if self._active_curve_interactor is not None:
+            fig.draw_artist(self._active_curve_interactor.get_poly())
+            fig.draw_artist(self._active_curve_interactor.get_line())
 
-    def _update(self):
+    def update(self):
         fig = self.canvas.figure
         if self._bg is None:
             self.on_draw(None)
@@ -84,26 +95,8 @@ class DrawingSpace:
             self.canvas.blit(fig.bbox)
         self.canvas.flush_events()
 
-
-# class UpdatableCurve:
-#
-#     def __init__(self, u, f, ax: Axes, canvas: FigureCanvasTkAgg):
-#         self.background = None
-#         self.ax = ax
-#         self.canvas = canvas
-#         self.curve = Line2D(u, f, animated=True)
-#         self.ax.add_line(self.curve)
-#         self.canvas.mpl_connect('draw_event', self._on_draw)
-#
-#     def update_curve(self, u, f):
-#         self.curve.set_data(u, f)
-#         self.canvas.restore_region(self.background)
-#         self.ax.draw_artist(self.curve)
-#         self.canvas.blit(self.ax.bbox)
-#
-#     def _on_draw(self, event):
-#         self.background = self.canvas.copy_from_bbox(self.ax.bbox)
-#         self.ax.draw_artist(self.curve)
+    def get_control_points(self, name):
+        return self.curve_interactors[name].get_control_points()
 
 
 class CurveInteractor:
@@ -119,30 +112,16 @@ class CurveInteractor:
     show_vertices = True
     epsilon = 10  # max pixel distance to count as a vertex hit
 
-    def __init__(self, ax, poly: Polygon, name, handler: GUIEventHandler):
-        if poly.figure is None:
-            raise RuntimeError('You must first add the polygon to a figure '
-                               'or canvas before defining the interactor')
+    def __init__(self, ax, cp_x, cp_y, name, drawing_space: DrawingSpace, handler: GUIEventHandler):
         self.ax = ax
-        self.poly = poly
+        self.poly = Polygon(np.column_stack([cp_x, cp_y]), animated=True, closed=False)
+        self.ax.add_patch(self.poly)
         self.name = name
+        self.ds = drawing_space
         self.handler = handler
         self.canvas = self.poly.figure.canvas
         self.poly.set_visible(False)
         x, y = zip(*self.poly.xy)
-
-        # self._behavior = _behavior
-        # self._behavior_type = type(_behavior)
-        # self._natural_measure = _behavior.get_natural_measure()
-        # self._behavior_parameters = _behavior.get_parameters()
-        # self._behavior_parameters_valid = True
-        #
-        #
-        # update_behavior_parameters_from_control_points(self._behavior_type, self._behavior_parameters, x, y)
-        # try:
-        #     self._behavior = self._behavior_type(self._natural_measure, **self._behavior_parameters)
-        # except mb.InvalidBehaviorParameters:
-        #     self._behavior_parameters_valid = False
 
         # draw line that connect control points
         self.line = Line2D(x, y, linestyle='--', color='#CECECE', lw=3,
@@ -152,48 +131,16 @@ class CurveInteractor:
         self.cid = self.poly.add_callback(self.poly_changed)
         self._ind = None  # the active vert
 
-        # draw curve defined by control points
-        if self._behavior_parameters_valid:
-            if isinstance(self._behavior, mb.UnivariateBehavior):
-                span = np.max(self.poly.xy[:, 0]) - np.min(self.poly.xy[:, 0])
-                t = np.linspace(np.min(self.poly.xy[:, 0]), np.max(self.poly.xy[:, 0]) + 0.2 * span, 250)
-                self.curve = Line2D(t, self._behavior.gradient_energy(t)[0], animated=True)
-                self.curve.set_color('tab:blue')
-            elif isinstance(self._behavior, mb.BivariateBehavior):
-                t = np.linspace(0, 1.1, 3000)
-                self.curve = Line2D(self._behavior._a(t), self._behavior._b(t), animated=True)
-                self.curve.set_color('tab:blue')
-            else:
-                self.curve = Line2D([], [], animated=True)
-                self.curve.set_color('salmon')
-
-        self.ax.add_line(self.curve)
-
-        self.canvas.mpl_connect('draw_event', self.on_draw)
         self.canvas.mpl_connect('button_press_event', self.on_button_press)
         self.canvas.mpl_connect('key_press_event', self.on_key_press)
         self.canvas.mpl_connect('button_release_event', self.on_button_release)
         self.canvas.mpl_connect('motion_notify_event', self.on_mouse_move)
 
-        self.behavior_creator_gui = gui
-        if self._behavior_parameters_valid:
-            self.behavior_creator_gui.update_behavior_txt(interpreting.behavior_to_text(self._behavior, fmt='.2E'))
-            self.behavior_creator_gui.enable_copy_button()
-        else:
-            self.behavior_creator_gui.update_behavior_txt(f'PARAMETERS DO NOT DEFINE A VALID '
-                                                          f'{usable_behaviors.type_to_name[self._behavior_type]} BEHAVIOR')
-            self.behavior_creator_gui.disable_copy_button()
+    def get_line(self):
+        return self.line
 
-    def get_behavior(self):
-        return self._behavior
-
-    def on_draw(self, event):
-        self.background = self.canvas.copy_from_bbox(self.ax.bbox)
-        self.ax.draw_artist(self.poly)
-        self.ax.draw_artist(self.line)
-        self.ax.draw_artist(self.curve)
-        # do not need to blit here, this will fire before the screen is
-        # updated
+    def get_poly(self):
+        return self.poly
 
     def poly_changed(self, poly):
         """This method is called whenever the pathpatch object is called."""
@@ -263,51 +210,18 @@ class CurveInteractor:
         if event.button != 1:
             return
         x, y = event.xdata, event.ydata
-
+        print(f'update {self.name} because of mouse move')
         self.poly.xy[self._ind] = x, y
+        self.line.set_data(zip(*self.poly.xy))
+        self.handler.update_behavior_parameter_from_control_points(self.name)
+
 
         # draw line
-        self.line.set_data(zip(*self.poly.xy))
+        # self.ds.update()
 
-        # update behavior parameters
-        update_behavior_parameters_from_control_points(self._behavior_type, self._behavior_parameters,
-                                                       self.poly.xy[:, 0], self.poly.xy[:, 1])
-        try:
-            self._behavior = self._behavior_type(1.0, **self._behavior_parameters)
-            self._behavior_parameters_valid = True
-        except mb.InvalidBehaviorParameters:
-            self._behavior_parameters_valid = False
+    def get_control_points(self):
+        cp_x, cp_y = zip(*self.poly.xy)
+        cp_x = np.array(cp_x)
+        cp_y = np.array(cp_y)
+        return cp_x, cp_y
 
-        if self._behavior_parameters_valid:
-            self.behavior_creator_gui.update_behavior_txt(interpreting.behavior_to_text(self._behavior, fmt='.2E'))
-            # self.behavior_creator_gui.update_energy_landscape(self._behavior)
-            self.behavior_creator_gui.enable_copy_button()
-            self.curve.set_color('tab:blue')
-            if isinstance(self._behavior, mb.UnivariateBehavior):
-                span = np.max(self.poly.xy[:, 0]) - np.min(self.poly.xy[:, 0])
-                t = np.linspace(np.min(self.poly.xy[:, 0]), np.max(self.poly.xy[:, 0]) + 0.2 * span, 250)
-                self.curve.set_data(t, self._behavior.gradient_energy(t)[0])
-            elif isinstance(self._behavior, mb.BivariateBehavior):
-                t = np.linspace(0, 1.1, 1000)
-                self.curve.set_data(self._behavior._a(t), self._behavior._b(t))
-                # self.curve2.set_data(t * np.max(self._behavior._a(t)), self._behavior._dbda(t))
-                # self.curve3.set_data(t * np.max(self._behavior._a(t)), self._behavior._k(t))
-                # self.curve4.set_data(t * np.max(self._behavior._a(t)), k_star * np.ones_like(t))
-                # self.curve5.set_data(self._behavior._a(t) - t, self._behavior._b(t))
-
-        else:
-            self.behavior_creator_gui.update_behavior_txt(f'PARAMETERS DO NOT DEFINE A VALID '
-                                                          f'{usable_behaviors.type_to_name[self._behavior_type]} BEHAVIOR')
-            self.behavior_creator_gui.disable_copy_button()
-            self.curve.set_color('salmon')
-
-        # update canvas
-        self.canvas.restore_region(self.background)
-        self.ax.draw_artist(self.poly)
-        self.ax.draw_artist(self.line)
-        self.ax.draw_artist(self.curve)
-        # self.ax.draw_artist(self.curve2)
-        # self.ax.draw_artist(self.curve3)
-        # self.ax.draw_artist(self.curve4)
-        # self.ax.draw_artist(self.curve5)
-        self.canvas.blit(self.ax.bbox)

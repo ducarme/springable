@@ -26,7 +26,7 @@ drawing_frame.grid(column=0, row=0, columnspan=3, rowspan=2)
 notebook_frame = ttk.Frame(main_frame)
 notebook_frame.grid(column=3, row=0, sticky='N')
 
-ds = DrawingSpace(drawing_frame)
+ds = DrawingSpace(drawing_frame, handler)
 handler.connect_to_drawing_space(ds)
 
 bn = BehaviorNotebook(notebook_frame, handler)

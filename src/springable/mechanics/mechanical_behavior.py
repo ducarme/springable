@@ -114,6 +114,18 @@ class BezierBehavior(UnivariateBehavior):
         self._sampling = sampling
         self._make()
 
+    def get_control_points(self) -> tuple[np.ndarray, np.ndarray]:
+        cp_x = np.array([0.0] + self._parameters['u_i'])
+        cp_y = np.array([0.0] + self._parameters['f_i'])
+        return cp_x, cp_y
+
+    def update_from_control_points(self, cp_x, cp_y):
+        u_i = cp_x[1:].tolist()
+        f_i = cp_y[1:].tolist()
+        self.update(u_i=u_i, f_i=f_i)
+
+
+
     def _make(self):
         u_coefs = np.array([0.0] + self._parameters['u_i'])
         f_coefs = np.array([0.0] + self._parameters['f_i'])
@@ -408,6 +420,16 @@ class Bezier2Behavior(BivariateBehavior):
         self._dk = dk_fun
         self._d2k = d2k_fun
 
+    def get_control_points(self) -> tuple[np.ndarray, np.ndarray]:
+        cp_x = np.array([0.0] + self._parameters['u_i'])
+        cp_y = np.array([0.0] + self._parameters['f_i'])
+        return cp_x, cp_y
+
+    def update_from_control_points(self, cp_x, cp_y):
+        u_i = cp_x[1:].tolist()
+        f_i = cp_y[1:].tolist()
+        self.update(u_i=u_i, f_i=f_i)
+
     def elastic_energy(self, alpha: float, t: float) -> np.ndarray:
         y = alpha - self._natural_measure
         return 0.5 * self._k(t) * (y - self._a(t)) ** 2 + y * self._b(t) - self._int_adb(t)
@@ -588,6 +610,13 @@ class ZigZagBehavior(UnivariateBehavior):
         self._generalized_force_function = szz.create_smooth_zigzag_function(a, x, delta)
         self._generalized_stiffness_function = szz.create_smooth_zigzag_derivative_function(a, x, delta)
 
+    def get_control_points(self) -> tuple[np.ndarray, np.ndarray]:
+        return self._u_i, self._f_i
+
+    def update_from_control_points(self, cp_x, cp_y):
+        a, x = szz.compute_zizag_slopes_and_transitions_from_control_points(cp_x, cp_y)
+        self.update(a=a, x=x)
+
     def elastic_energy(self, alpha: float) -> float:
         return quad(self._generalized_force_function, 0.0, alpha - self._natural_measure)[0]
 
@@ -747,6 +776,14 @@ class ZigZag2Behavior(BivariateBehavior):
         # # ax.plot(tt, db/da, 'o')
         # # ax.plot(tt, k, '-o')
         # plt.show()
+
+    def get_control_points(self) -> tuple[np.ndarray, np.ndarray]:
+        return self._cp_u, self._cp_f
+
+    def update_from_control_points(self, cp_x, cp_y):
+        u_i = cp_x[1:].tolist()
+        f_i = cp_y[1:].tolist()
+        self.update(u_i=u_i, f_i=f_i)
 
     def elastic_energy(self, alpha: float, t: float) -> np.ndarray:
         y = alpha - self._natural_measure

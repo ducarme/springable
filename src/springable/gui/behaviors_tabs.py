@@ -111,7 +111,7 @@ class BehaviorTab:
         self._behavior_type_var = tk.StringVar()
         behavior_type_menu = ttk.Combobox(self.tab, textvariable=self._behavior_type_var)
         behavior_type_menu['values'] = list(DEFAULT_BEHAVIORS.keys())
-        behavior_type_menu.current(0)
+        behavior_type_menu.current(2)
 
         behavior_type_menu.state(["readonly"])
         behavior_type_menu.bind('<<ComboboxSelected>>', self.on_behavior_type_menu_change)
@@ -161,7 +161,7 @@ class BehaviorTab:
 
     def _update_parameter(self, parameter_name):
         # send event to notify handler that a parameter has been changed
-        self._handler.update_behavior_parameters(self._name, parameter_name)
+        self._handler.update_behavior_parameter(self._name, parameter_name)
 
         # update widgets based on info updated by handler
         displayed_text = self._handler.get_behavior_text(self._name, self._specify_natural_measure_var.get())
