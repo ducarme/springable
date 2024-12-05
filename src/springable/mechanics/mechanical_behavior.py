@@ -39,6 +39,12 @@ class MechanicalBehavior:
         self._parameters.update(parameters)
         # TO BE EXTENDED IN SUBCLASSES IF NECESSARY
 
+    def copy(self):
+        parameters = self.get_parameters()
+        copied_parameters = {k: (v.copy() if isinstance(v, list) else v)
+                             for k, v in parameters.items()}
+        return type(self)(self._natural_measure, **copied_parameters)
+
 
 class UnivariateBehavior(MechanicalBehavior):
     _nb_dofs = 1
@@ -650,7 +656,7 @@ class ZigZag2Behavior(BivariateBehavior):
 
         n = len(u_i) + 1
         self._cp_t = np.arange(n) / (n - 1)
-        self._delta = delta / (n - 1)
+        self._delta = delta / (2*(n - 1))
         slopes_u, transitions_u = szz.compute_zizag_slopes_and_transitions_from_control_points(self._cp_t, self._cp_u)
         slopes_f, transitions_f = szz.compute_zizag_slopes_and_transitions_from_control_points(self._cp_t, self._cp_f)
 

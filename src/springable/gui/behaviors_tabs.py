@@ -19,9 +19,15 @@ class BehaviorNotebook:
         self._tab_menu.grid(column=0, row=0)
 
     def on_tab_selected(self, event):
-        selected_tab = self._tab_menu.select()
-        if self._tab_menu.tab(selected_tab)["text"] == "+":
+        selected_tab_id = self._tab_menu.select()
+        if self._tab_menu.tab(selected_tab_id)["text"] == "+":
             self.add_behavior_tab()
+        else:
+            selected_tab = self._tab_menu.nametowidget(selected_tab_id)
+            for tab in self._tabs.keys():
+                if tab.tab is selected_tab:
+                    self.handler.switch_focus(self._tabs[tab])
+                    break
 
     def on_remove_button_clicked(self):
         self.remove_selected_behavior_tab()
@@ -48,16 +54,22 @@ class BehaviorNotebook:
         selected_tab_id = self._tab_menu.select()
         selected_tab = self._tab_menu.nametowidget(selected_tab_id)
 
-        # destroy the children widget of the selected tab
-        for widget in selected_tab.winfo_children():
-            widget.destroy()
-
         # remove the selected tab for the dictionary of tabs (and gets its name)
         tab_name = None
         for tab in self._tabs.keys():
             if tab.tab is selected_tab:
                 tab_name = self._tabs.pop(tab)
                 break
+
+
+        # send event to the handler before any start at removing the tab,
+        # which might start the creation of a new tab and lead to errors
+        self.handler.remove_behavior(tab_name)
+
+
+        # destroy the children widget of the selected tab
+        for widget in selected_tab.winfo_children():
+            widget.destroy()
 
         # sets the focus/selection to another tab when the last tab was selected to be removed
         selected_tab_index = self._tab_menu.index(selected_tab_id)
@@ -67,8 +79,7 @@ class BehaviorNotebook:
         # remove the tab from the notebook/tab menu
         self._tab_menu.forget(selected_tab_id)
 
-        # send event to the handler
-        self.handler.remove_behavior(tab_name)
+
 
     def get_tab_menu(self):
         return self._tab_menu
@@ -97,6 +108,19 @@ class BehaviorNotebook:
                 return tab.get_parameter(par_name)
         raise ValueError("Unknown name")
 
+    def get_specify_natural_measure_state(self, tab_name) -> bool:
+        for tab, name in self._tabs.items():
+            if name == tab_name:
+                return tab.get_specify_natural_measure_state()
+        raise ValueError("Unknown name")
+
+    def set_behavior_text(self, tab_name: str, text: str):
+        for tab, name in self._tabs.items():
+            if name == tab_name:
+                return tab.set_behavior_text(text)
+        raise ValueError("Unknown name")
+
+
 
 class BehaviorTab:
 
@@ -111,7 +135,7 @@ class BehaviorTab:
         self._behavior_type_var = tk.StringVar()
         behavior_type_menu = ttk.Combobox(self.tab, textvariable=self._behavior_type_var)
         behavior_type_menu['values'] = list(DEFAULT_BEHAVIORS.keys())
-        behavior_type_menu.current(2)
+        behavior_type_menu.current(5)
 
         behavior_type_menu.state(["readonly"])
         behavior_type_menu.bind('<<ComboboxSelected>>', self.on_behavior_type_menu_change)
@@ -124,7 +148,7 @@ class BehaviorTab:
         start_row = 0
         parameter_sliders = self._add_parameter_sliders_to_panel(alpha_and_parameters_panel, start_row)
         start_row = len(parameter_sliders) * 2
-        alpha0 = DEFAULT_BEHAVIORS[self._behavior_type_var.get()].get_natural_measure()
+        alpha0 = DEFAULT_BEHAVIORS[self._behavior_type_var.get()].copy().get_natural_measure()
         alpha0_slider = slider_panel(alpha_and_parameters_panel, 'alpha0', alpha0,
                                      min(alpha0 / 2, alpha0 * 3 / 2),
                                      max(alpha0 * 3 / 2, alpha0 / 2),
@@ -192,7 +216,7 @@ class BehaviorTab:
 
     def _add_parameter_sliders_to_panel(self, pnl: ttk.Frame, start_row=0) -> dict[str, ttk.Scale]:
         behavior_type_name = self._behavior_type_var.get()
-        behavior_parameters = DEFAULT_BEHAVIORS[behavior_type_name].get_parameters()
+        behavior_parameters = DEFAULT_BEHAVIORS[behavior_type_name].copy().get_parameters()
         j = start_row
         sliders: dict[str, ttk.Scale] = {}
         for par_name, par_val in behavior_parameters.items():
@@ -218,7 +242,7 @@ class BehaviorTab:
             start_row = 0
             parameter_sliders = self._add_parameter_sliders_to_panel(alpha_and_parameters_panel, start_row)
             start_row = len(parameter_sliders) * 2
-            alpha0 = DEFAULT_BEHAVIORS[self._behavior_type_var.get()].get_natural_measure()
+            alpha0 = DEFAULT_BEHAVIORS[self._behavior_type_var.get()].copy().get_natural_measure()
             alpha0_slider = slider_panel(alpha_and_parameters_panel, 'alpha0', alpha0,
                                          alpha0 / 2,
                                          max(alpha0 * 3 / 2, 1.0),

@@ -44,18 +44,42 @@ class DrawingSpace:
         self.cid = self.canvas.mpl_connect("draw_event", self.on_draw)
 
     def add_curve(self, name: str, u, f, is_controllable: bool, cp_x=None, cp_y=None):
+        if self._active_curve_interactor is not None:
+            self._active_curve_interactor.disconnect()
         if not is_controllable:
-            self.curves[name], = self.ax.plot(u, f, animated=True)
+            self.curves[name], = self.ax.plot(u, f, animated=True, lw=1.5)
         else:
-            self.curves[name], = self.ax.plot(u, f, animated=True)
+            self.curves[name], = self.ax.plot(u, f, animated=True, lw=1.5)
             self.curve_interactors[name] = CurveInteractor(self.ax, cp_x, cp_y, name, self, self.handler)
             self._active_curve_interactor = self.curve_interactors[name]
+        self.update()
+
+    def switch_to_curve(self, name: str):
+        if self._active_curve_interactor is not None:
+            self._active_curve_interactor.disconnect()
+            self._active_curve_interactor = None
+        if name in self.curve_interactors.keys():
+            self._active_curve_interactor = self.curve_interactors[name]
+            self._active_curve_interactor.reconnect()
+            self._active_curve_interactor.ensure_interactor_is_visible()
+        for curve in self.curves.values():
+            curve.set_linewidth(1.5)
+        self.curves[name].set_linewidth(2.5)
         self.update()
 
     def remove_curve(self, name):
         self.curves[name].remove()
         try:
             self.curves.pop(name)
+        except KeyError:
+            pass
+        try:
+            curve_interactor = self.curve_interactors.pop(name)
+            curve_interactor.disconnect()
+            curve_interactor.get_poly().remove()
+            curve_interactor.get_line().remove()
+            self._active_curve_interactor = None
+            del curve_interactor
         except KeyError:
             pass
         self.update()
@@ -95,8 +119,11 @@ class DrawingSpace:
             self.canvas.blit(fig.bbox)
         self.canvas.flush_events()
 
-    def get_control_points(self, name):
-        return self.curve_interactors[name].get_control_points()
+    def get_control_points(self, name) -> tuple[np.ndarray, np.ndarray] | None:
+        if name in self.curve_interactors.keys():
+            return self.curve_interactors[name].get_control_points()
+        else:
+            return None
 
 
 class CurveInteractor:
@@ -119,22 +146,34 @@ class CurveInteractor:
         self.name = name
         self.ds = drawing_space
         self.handler = handler
-        self.canvas = self.poly.figure.canvas
+        self.canvas = drawing_space.canvas #self.poly.figure.canvas
         self.poly.set_visible(False)
         x, y = zip(*self.poly.xy)
 
         # draw line that connect control points
-        self.line = Line2D(x, y, linestyle='--', color='#CECECE', lw=3,
-                           marker='o', markersize=10, markerfacecolor='tab:green',
+        self.line = Line2D(x, y, linestyle=(0, (1, 0.75)), color='k', lw=2, alpha=0.75,
+                           marker='o', markersize=10, markerfacecolor='tab:green', markeredgewidth=2,
                            animated=True)
         self.ax.add_line(self.line)
         self.cid = self.poly.add_callback(self.poly_changed)
         self._ind = None  # the active vert
 
-        self.canvas.mpl_connect('button_press_event', self.on_button_press)
-        self.canvas.mpl_connect('key_press_event', self.on_key_press)
-        self.canvas.mpl_connect('button_release_event', self.on_button_release)
-        self.canvas.mpl_connect('motion_notify_event', self.on_mouse_move)
+        self.cid_btn_pressed = self.canvas.mpl_connect('button_press_event', self.on_button_press)
+        self.cid_key_pressed = self.canvas.mpl_connect('key_press_event', self.on_key_press)
+        self.cid_btn_released = self.canvas.mpl_connect('button_release_event', self.on_button_release)
+        self.cid_mouse_moved = self.canvas.mpl_connect('motion_notify_event', self.on_mouse_move)
+
+    def disconnect(self):
+        self.canvas.mpl_disconnect(self.cid_btn_pressed)
+        self.canvas.mpl_disconnect(self.cid_key_pressed)
+        self.canvas.mpl_disconnect(self.cid_btn_released)
+        self.canvas.mpl_disconnect(self.cid_mouse_moved)
+
+    def reconnect(self):
+        self.cid_btn_pressed = self.canvas.mpl_connect('button_press_event', self.on_button_press)
+        self.cid_key_pressed = self.canvas.mpl_connect('key_press_event', self.on_key_press)
+        self.cid_btn_released = self.canvas.mpl_connect('button_release_event', self.on_button_release)
+        self.cid_mouse_moved = self.canvas.mpl_connect('motion_notify_event', self.on_mouse_move)
 
     def get_line(self):
         return self.line
@@ -176,6 +215,8 @@ class CurveInteractor:
         if event.button != 1:
             return
         self._ind = self.get_ind_under_point(event)
+        if self._ind is not None and self._ind != 0:
+            self.canvas.get_tk_widget().config(cursor="dot")
 
     def on_button_release(self, event):
         """Callback for mouse button releases."""
@@ -184,6 +225,7 @@ class CurveInteractor:
         if event.button != 1:
             return
         self._ind = None
+        self.canvas.get_tk_widget().config(cursor="arrow")
 
     def on_key_press(self, event):
         """Callback for key presses."""
@@ -197,8 +239,24 @@ class CurveInteractor:
         if self.line.stale:
             self.canvas.draw_idle()
 
+    def ensure_interactor_is_visible(self):
+        self.show_vertices = True
+        self.line.set_visible(self.show_vertices)
+        if self.line.stale:
+            self.canvas.draw_idle()
+
+
     def on_mouse_move(self, event):
         """Callback for mouse movements."""
+        if self._ind is None:
+            ind = self.get_ind_under_point(event)
+            if ind is not None and ind != 0:
+                self.canvas.get_tk_widget().config(cursor="hand1")
+            elif ind == 0:
+                self.canvas.get_tk_widget().config(cursor="X_cursor")
+            else:
+                self.canvas.get_tk_widget().config(cursor="arrow")
+
         if not self.show_vertices:
             return
         if self._ind is None:
@@ -210,18 +268,12 @@ class CurveInteractor:
         if event.button != 1:
             return
         x, y = event.xdata, event.ydata
-        print(f'update {self.name} because of mouse move')
         self.poly.xy[self._ind] = x, y
         self.line.set_data(zip(*self.poly.xy))
         self.handler.update_behavior_parameter_from_control_points(self.name)
-
-
-        # draw line
-        # self.ds.update()
 
     def get_control_points(self):
         cp_x, cp_y = zip(*self.poly.xy)
         cp_x = np.array(cp_x)
         cp_y = np.array(cp_y)
         return cp_x, cp_y
-

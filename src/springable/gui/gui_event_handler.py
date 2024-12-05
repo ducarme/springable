@@ -13,6 +13,9 @@ class BehaviorInfo:
     behavior_natural_measure: float
 
 
+print_messages = True
+
+
 class GUIEventHandler:
     def __init__(self):
         self._behaviors: dict[str, MechanicalBehavior] = {}
@@ -20,8 +23,9 @@ class GUIEventHandler:
         self._drawing_space = None
 
     def print_behaviors(self):
-        for name, behavior in self._behaviors.items():
-            print(f'{name}: {behavior_to_text(behavior, fmt='.2E', full_name=True, specify_natural_measure=True)}')
+        if print_messages:
+            for name, behavior in self._behaviors.items():
+                print(f'{name}: {behavior_to_text(behavior, fmt='.2E', full_name=True, specify_natural_measure=True)}')
 
     def connect_to_notebook(self, behavior_notebook):
         self._behavior_notebook = behavior_notebook
@@ -30,8 +34,9 @@ class GUIEventHandler:
         self._drawing_space = drawing_space
 
     def remove_behavior(self, tab_name):
-        print(f'Notebook GUI sent event to handler to handle the removal of the behavior named {tab_name}')
-        # to implement
+        if print_messages:
+            print(f'Notebook GUI sent event to handler to handle the removal of the behavior named {tab_name}')
+
         try:
             self._behaviors.pop(tab_name)
         except KeyError:
@@ -39,13 +44,19 @@ class GUIEventHandler:
         self._drawing_space.remove_curve(tab_name)
         self.print_behaviors()
 
+    def switch_focus(self, tab_name):
+        if print_messages:
+            print(f'Notebook GUI sent event to handler to handle a focus switch to behavior named {tab_name}')
+        self._drawing_space.switch_to_curve(tab_name)
+
     def add_behavior(self, tab_name):
-        print(f'Notebook GUI sent event to handler to handle the addition of a new behavior named {tab_name}')
+        if print_messages:
+            print(f'Notebook GUI sent event to handler to handle the addition of a new behavior named {tab_name}')
 
         behavior_type_name = self._behavior_notebook.get_behavior_type(tab_name)
         natural_measure = self._behavior_notebook.get_natural_measure(tab_name)
         notebook_parameters = self._behavior_notebook.get_behavior_parameters(tab_name)
-        behavior = DEFAULT_BEHAVIORS[behavior_type_name]
+        behavior = DEFAULT_BEHAVIORS[behavior_type_name].copy()
         self._behaviors[tab_name] = behavior
         behavior.update(natural_measure, **notebook_parameters)
         if isinstance(behavior, (BezierBehavior, Bezier2Behavior, ZigZagBehavior, ZigZag2Behavior)):
@@ -56,8 +67,8 @@ class GUIEventHandler:
                 u = np.linspace(umin, umax, nb_samples)
                 f = behavior.gradient_energy(natural_measure + u)[0]
             elif isinstance(behavior, BivariateBehavior):
-                nb_samples = 100
-                t = np.linspace(0, 1, nb_samples)
+                nb_samples = 200
+                t = np.linspace(-1.25, 1.25, nb_samples)
                 u = behavior._a(t)
                 f = behavior._b(t)
             self._drawing_space.add_curve(tab_name, u, f, True, cp_x, cp_y)
@@ -67,10 +78,6 @@ class GUIEventHandler:
             u = np.linspace(umin, umax, nb_samples)
             f = behavior.gradient_energy(natural_measure + u)[0]
             self._drawing_space.add_curve(tab_name, u, f, False)
-
-
-
-
 
         #
         # # if control points were already defined, those will be used;
@@ -82,17 +89,20 @@ class GUIEventHandler:
         behavior_parameters = notebook_parameters | curve_interactor_parameters
         behavior_type: type[MechanicalBehavior] = usable_behaviors.name_to_type[behavior_type_name]
 
-
-
         self.print_behaviors()
 
     def change_behavior_type(self, tab_name):
-        print(f'Notebook GUI sent event to handler to handle'
-              f'the change of behavior type of the behavior named {tab_name}')
+        if print_messages:
+            print(f'Notebook GUI sent event to handler to handle'
+                  f'the change of behavior type of the behavior named {tab_name}')
 
         new_behavior_type_name = self._behavior_notebook.get_behavior_type(tab_name)
         natural_measure = self._behavior_notebook.get_natural_measure(tab_name)
         notebook_parameters = self._behavior_notebook.get_behavior_parameters(tab_name)
+
+        previous_control_points = self._drawing_space.get_control_points(tab_name)
+        if previous_control_points is not None:
+            pass
 
         curve_interactor_parameters = {}
         behavior_parameters = notebook_parameters | curve_interactor_parameters
@@ -108,23 +118,36 @@ class GUIEventHandler:
         self.print_behaviors()
 
     def update_behavior_parameter(self, tab_name, parameter_name):
-        print(f'Notebook GUI sent event to handler to handle the update of '
-              f'the parameter {parameter_name} of the behavior named {tab_name}')
-
+        if print_messages:
+            print(f'Notebook GUI sent event to handler to handle the update of '
+                  f'the parameter {parameter_name} of the behavior named {tab_name}')
+        behavior = self._behaviors[tab_name]
         par_val = self._behavior_notebook.get_behavior_parameter(tab_name, parameter_name)
-        self._behaviors[tab_name].update(**{parameter_name: par_val})
+        behavior.update(**{parameter_name: par_val})
+        natural_measure = behavior.get_natural_measure()
 
-        natural_measure = self._behaviors[tab_name].get_natural_measure()
-        umin, umax = -5., 5
-        nb_samples = 100
-        u = np.linspace(umin, umax, nb_samples)
-        f = self._behaviors[tab_name].gradient_energy(natural_measure + u)[0]
-        self._drawing_space.update_curve(tab_name, u, f)
+        if isinstance(behavior, (BezierBehavior, Bezier2Behavior, ZigZagBehavior, ZigZag2Behavior)):
+            cp_x, cp_y = self._drawing_space.get_control_points(tab_name)
+            behavior.update_from_control_points(cp_x, cp_y)
+            if isinstance(behavior, UnivariateBehavior):
+                umin, umax = -5., 5
+                nb_samples = 100
+                u = np.linspace(umin, umax, nb_samples)
+                f = behavior.gradient_energy(natural_measure + u)[0]
+            elif isinstance(behavior, BivariateBehavior):
+                nb_samples = 200
+                t = np.linspace(-1.25, 1.25, nb_samples)
+                u = behavior._a(t)
+                f = behavior._b(t)
+            else:
+                raise ValueError
+            self._drawing_space.update_curve(tab_name, u, f)
         self.print_behaviors()
         # to be extended
 
     def update_behavior_parameter_from_control_points(self, name):
-        print(f'Drawing space GUI sent event to handler to handle the update of the behavior named {name}')
+        if print_messages:
+            print(f'Drawing space GUI sent event to handler to handle the update of the behavior named {name}')
         behavior = self._behaviors[name]
         natural_measure = self._behaviors[name].get_natural_measure()
 
@@ -137,18 +160,21 @@ class GUIEventHandler:
                 u = np.linspace(umin, umax, nb_samples)
                 f = behavior.gradient_energy(natural_measure + u)[0]
             elif isinstance(behavior, BivariateBehavior):
-                nb_samples = 100
-                t = np.linspace(0, 1, nb_samples)
+                nb_samples = 200
+                t = np.linspace(-1.25, 1.25, nb_samples)
                 u = behavior._a(t)
                 f = behavior._b(t)
             else:
                 raise ValueError
             self._drawing_space.update_curve(name, u, f)
+            specify_natural_measure: bool = self._behavior_notebook.get_specify_natural_measure_state(name)
+            self._behavior_notebook.set_behavior_text(name, self.get_behavior_text(name, specify_natural_measure))
         self.print_behaviors()
 
     def update_behavior_natural_measure(self, tab_name):
-        print(f'Notebook GUI sent event to handler to handle the update of '
-              f'the natural measure of the behavior named {tab_name}')
+        if print_messages:
+            print(f'Notebook GUI sent event to handler to handle the update of '
+                  f'the natural measure of the behavior named {tab_name}')
         natural_measure = self._behavior_notebook.get_natural_measure(tab_name)
         self._behaviors[tab_name].update(natural_measure)
         umin, umax = -5., 5
