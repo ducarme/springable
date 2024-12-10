@@ -1,10 +1,6 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 
-_PADDING = (3, 3, 12, 12)
-_BORDERWIDTH = 2
-_RELIEF = 'groove'
-
 
 def value_to_text(val, fmt='.3E', parameter_name='Value'):
     return f"{parameter_name}={val:{fmt}}"
@@ -34,9 +30,6 @@ def make_update_value_text_function(parameter_name, slider_value_lbl):
 
 
 def slider_panel(root, parameter_name, initial_val, low, high, command, row):
-    # panel = ttk.Frame(window, padding=_PADDING)
-    # panel['borderwidth'] = _BORDERWIDTH
-    # panel['relief'] = _RELIEF
     low_limit_var = tk.StringVar(value=str(low))
     high_limit_var = tk.StringVar(value=str(high))
 
@@ -56,14 +49,75 @@ def slider_panel(root, parameter_name, initial_val, low, high, command, row):
     low_limit_entry.grid(column=1, row=row)
     high_limit_entry.grid(column=3, row=row)
     slider.grid(column=2, row=row)
-    error_lbl.grid(column=1, row=row+1, columnspan=3)
+    error_lbl.grid(column=1, row=row + 1, columnspan=3)
     return slider
 
 
-def natural_panel(root, low, high, slider_command):
-    panel = ttk.Frame(root, padding=_PADDING)
-    panel['borderwidth'] = _BORDERWIDTH
-    panel['relief'] = _RELIEF
-    slider = ttk.Scale(panel, orient=tk.HORIZONTAL, length=100, from_=low, to=high, command=slider_command)
-    slider.grid(column=0, row=0)
-    return panel
+class Tooltip:
+    def __init__(self, widget, text_var, movable=False):
+        self.widget = widget
+        self.text_var = text_var
+        self.tooltip = None
+
+        # Bind events to the widget
+        self.widget.bind("<Enter>", self.show_tooltip)
+        if movable:
+            self.widget.bind("<Motion>", self.move_tooltip)
+        self.widget.bind("<Leave>", self.hide_tooltip)
+
+    def show_tooltip(self, event):
+        if not self.tooltip:
+            # Create a Toplevel window for the tooltip
+            self.tooltip = tk.Toplevel(self.widget)
+            self.tooltip.wm_overrideredirect(True)  # Remove window decorations
+            self.tooltip.attributes("-topmost", True)  # Always on top
+
+            # Create a Label inside the Toplevel for the text
+            label = tk.Label(
+                self.tooltip,
+                text=self.text_var.get(),
+                bg="lightyellow",
+                fg="black",
+                relief="solid",
+                borderwidth=1,
+                padx=5,
+                pady=2
+            )
+            label.pack()
+
+        # Position the tooltip
+        self.move_tooltip(event)
+
+    def move_tooltip(self, event):
+        if self.tooltip:
+            # Update the tooltip text dynamically
+            self.tooltip.children["!label"].config(text=self.text_var.get())
+            # Position the Toplevel near the cursor
+            x = event.x_root + 5
+            y = event.y_root + 5
+            self.tooltip.geometry(f"+{x}+{y}")
+
+    def hide_tooltip(self, event):
+        if self.tooltip:
+            self.tooltip.destroy()
+            self.tooltip = None
+
+
+def show_popup(root: tk.Tk, message, duration):
+    popup = tk.Toplevel(root)
+    popup.wm_overrideredirect(True)  # Remove window decorations
+    popup.attributes("-topmost", True)  # Ensure it stays on top
+
+    popup.attributes("-alpha", 0.5)
+    label = tk.Label(popup, text=message, bg="white", fg="black",
+                     font=("Helvetica", 30, "bold"), relief="flat", padx=10, pady=5)
+    label.pack()
+
+    # Position the popup in the center of the main window
+    root.update_idletasks()  # Ensure geometry updates
+    x = root.winfo_x() + (root.winfo_width() // 2) - (popup.winfo_reqwidth() // 2)
+    y = root.winfo_y() + (root.winfo_height() // 2) - (popup.winfo_reqheight() // 2)
+    popup.geometry(f"+{x}+{y}")
+
+    # Destroy the popup after `duration` milliseconds
+    popup.after(duration, popup.destroy)

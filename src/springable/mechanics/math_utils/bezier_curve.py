@@ -17,6 +17,20 @@ def evaluate_poly(t: float | np.ndarray, coefs: np.ndarray) -> float | np.ndarra
     return beta[0]
 
 
+def elevate_order(coefs: np.array) -> np.ndarray:
+    n = coefs.shape[0] - 1
+    new_coefs = np.empty(n + 2)
+    w = np.append(coefs, 0.0)
+    for i in range(n + 2):
+        wi_1 = 0.0 if i == 0 else w[i-1]
+        new_coefs[i] = ((n + 1 - i) * w[i] + i * wi_1) / (n + 1)
+    return new_coefs
+
+
+def lower_order(coefs: np.ndarray) -> np.ndarray:
+    return coefs[:-1]
+
+
 def get_monomial_coefs(coefs: np.ndarray):
     """ returns the coefficient for each power.
     Element at index -1 is the independent term, element at index -2 is the linear term, etc"""

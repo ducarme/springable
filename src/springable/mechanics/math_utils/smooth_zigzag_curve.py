@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def compute_zigzag_control_points(a, x):
+def compute_zigzag_control_points(a, x, extra=1.0):
     cp_x = [0.0]
     cp_y = [0.0]
     for i in range(len(x)):
@@ -9,7 +9,6 @@ def compute_zigzag_control_points(a, x):
         last_y = cp_y[-1]
         cp_x.append(x[i])
         cp_y.append(last_y + a[i] * (x[i] - last_x))
-    extra = 1.0 * cp_x[-1]
     cp_x.append(cp_x[-1] + extra)
     cp_y.append(cp_y[-1] + a[-1] * extra)
     return np.array(cp_x), np.array(cp_y)

@@ -114,10 +114,10 @@ class NaturalBehavior(UnivariateBehavior):
 
 class BezierBehavior(UnivariateBehavior):
     def __init__(self, natural_measure, u_i: list[float], f_i: list[float],
-                 sampling: int = 100, check_validity=True):
+                 sampling: int = 100):
         super().__init__(natural_measure, u_i=u_i, f_i=f_i)
-        self._check_validity = check_validity
         self._sampling = sampling
+        self._check()
         self._make()
 
     def get_control_points(self) -> tuple[np.ndarray, np.ndarray]:
@@ -130,15 +130,14 @@ class BezierBehavior(UnivariateBehavior):
         f_i = cp_y[1:].tolist()
         self.update(u_i=u_i, f_i=f_i)
 
-
+    def _check(self):
+        u_coefs = np.array([0.0] + self._parameters['u_i'])
+        if not is_monotonic(u_coefs):
+            raise InvalidBehaviorParameters("The Bezier behavior does not describe a function, try Bezier2 instead.")
 
     def _make(self):
         u_coefs = np.array([0.0] + self._parameters['u_i'])
         f_coefs = np.array([0.0] + self._parameters['f_i'])
-        if self._check_validity and not is_monotonic(u_coefs):
-            print(u_coefs)
-            raise InvalidBehaviorParameters(
-                "The Bezier behavior does not describe a function, try Bezier2 instead.")
         t = np.linspace(0, 1, self._sampling)
         u = evaluate_poly(t, u_coefs)
 
@@ -172,6 +171,7 @@ class BezierBehavior(UnivariateBehavior):
 
     def update(self, natural_measure=None, /, **parameters):
         super().update(natural_measure, **parameters)
+        self._check()
         if parameters:
             self._make()
 
@@ -241,20 +241,21 @@ class Bezier2Behavior(BivariateBehavior):
 
     def __init__(self, natural_measure, u_i: list[float], f_i: list[float]):
         super().__init__(natural_measure, u_i=u_i, f_i=f_i)
+        self._check()
         self._make()
 
-    def _make(self):
-        self._a_coefs = np.array([0.0] + self._parameters['u_i'])
-        self._b_coefs = np.array([0.0] + self._parameters['f_i'])
+    def _check(self):
+        a_coefs = np.array([0.0] + self._parameters['u_i'])
+        b_coefs = np.array([0.0] + self._parameters['f_i'])
 
         # checking validity of behavior
-        da0 = evaluate_derivative_poly(0.0, self._a_coefs)
-        db0 = evaluate_derivative_poly(0.0, self._b_coefs)
+        da0 = evaluate_derivative_poly(0.0, a_coefs)
+        db0 = evaluate_derivative_poly(0.0, b_coefs)
         if da0 == 0.0 or db0 == 0.0:
             raise InvalidBehaviorParameters('The initial slope of the behavior'
                                             'cannot be perfectly horizontal or vertical')
-        a_extrema = get_extrema(self._a_coefs)
-        b_extrema = get_extrema(self._b_coefs)
+        a_extrema = get_extrema(a_coefs)
+        b_extrema = get_extrema(b_coefs)
         if any(x in set(b_extrema) for x in a_extrema):
             raise InvalidBehaviorParameters('The behavior curve cannot have cusps.')
         a_extrema = [(a_extremum, 'a_max' if i % 2 == (0 if da0 > 0 else 1) else 'a_min')
@@ -306,23 +307,25 @@ class Bezier2Behavior(BivariateBehavior):
                 case _:
                     print('error')
 
-        a1 = evaluate_poly(1.0, self._a_coefs)
-        da1 = evaluate_derivative_poly(1.0, self._a_coefs)
-        b1 = evaluate_poly(1.0, self._b_coefs)
-        db1 = evaluate_derivative_poly(1.0, self._b_coefs)
-        self._a = lambda t: ((np.abs(t) <= 1) * np.sign(t) * evaluate_poly(np.abs(t), self._a_coefs)
+    def _make(self):
+        a_coefs = np.array([0.0] + self._parameters['u_i'])
+        b_coefs = np.array([0.0] + self._parameters['f_i'])
+        a1 = evaluate_poly(1.0, a_coefs)
+        da1 = evaluate_derivative_poly(1.0, a_coefs)
+        b1 = evaluate_poly(1.0, b_coefs)
+        db1 = evaluate_derivative_poly(1.0, b_coefs)
+        self._a = lambda t: ((np.abs(t) <= 1) * np.sign(t) * evaluate_poly(np.abs(t), a_coefs)
                              + (np.abs(t) > 1) * np.sign(t) * (a1 + da1 * (np.abs(t) - 1)))
-        self._b = lambda t: ((np.abs(t) <= 1) * np.sign(t) * evaluate_poly(np.abs(t), self._b_coefs)
+        self._b = lambda t: ((np.abs(t) <= 1) * np.sign(t) * evaluate_poly(np.abs(t), b_coefs)
                              + (np.abs(t) > 1) * np.sign(t) * (b1 + db1 * (np.abs(t) - 1)))
-        self._da = lambda t: ((np.abs(t) <= 1) * evaluate_derivative_poly(np.abs(t), self._a_coefs)
+        self._da = lambda t: ((np.abs(t) <= 1) * evaluate_derivative_poly(np.abs(t), a_coefs)
                               + (np.abs(t) > 1) * da1)
-        self._db = lambda t: ((np.abs(t) <= 1) * evaluate_derivative_poly(np.abs(t), self._b_coefs)
+        self._db = lambda t: ((np.abs(t) <= 1) * evaluate_derivative_poly(np.abs(t), b_coefs)
                               + (np.abs(t) > 1) * db1)
-        self._d2a = lambda t: (np.abs(t) <= 1) * np.sign(t) * evaluate_second_derivative_poly(np.abs(t), self._a_coefs)
-        self._d2b = lambda t: (np.abs(t) <= 1) * np.sign(t) * evaluate_second_derivative_poly(np.abs(t), self._b_coefs)
-        self._d3a = lambda t: (np.abs(t) <= 1) * evaluate_third_derivative_poly(np.abs(t), self._a_coefs)
-        self._d3b = lambda t: (np.abs(t) <= 1) * evaluate_third_derivative_poly(np.abs(t), self._b_coefs)
-
+        self._d2a = lambda t: (np.abs(t) <= 1) * np.sign(t) * evaluate_second_derivative_poly(np.abs(t), a_coefs)
+        self._d2b = lambda t: (np.abs(t) <= 1) * np.sign(t) * evaluate_second_derivative_poly(np.abs(t), b_coefs)
+        self._d3a = lambda t: (np.abs(t) <= 1) * evaluate_third_derivative_poly(np.abs(t), a_coefs)
+        self._d3b = lambda t: (np.abs(t) <= 1) * evaluate_third_derivative_poly(np.abs(t), b_coefs)
         self._dbda = lambda t: self._db(t) / self._da(t)
         self._d_dbda = lambda t: (self._d2b(t) * self._da(t) - self._db(t) * self._d2a(t)) / self._da(t) ** 2
 
@@ -461,6 +464,7 @@ class Bezier2Behavior(BivariateBehavior):
 
     def update(self, natural_measure=None, /, **parameters):
         super().update(natural_measure, **parameters)
+        self._check()
         if parameters:
             self._make()
 
@@ -470,7 +474,8 @@ class Bezier2Behavior(BivariateBehavior):
         return self._hysteron_info
 
     def _compute_hysteron_info(self):
-        extrema = np.sort(get_extrema(self._a_coefs))
+        a_coefs = np.array([0.0] + self._parameters['u_i'])
+        extrema = np.sort(get_extrema(a_coefs))
         extrema = np.hstack((-extrema[::-1], extrema))
         nb_extrema = extrema.shape[0]
         if nb_extrema == 0:  # not a hysteron
@@ -561,11 +566,15 @@ class IsentropicGas(IdealGas):
             gamma: the heat capacity ratio (a.k.a. adiabatic index), that is, cp/cv. Must be strictly greater than 1.
                    It is a non-dimensional property of the gas (for dry air, gamma = 1.4)
         """
-        if gamma < 1.0:
-            raise InvalidBehaviorParameters(f"The ratio of heat capacities 'gamma' must be strictly greater than 1."
-                                            f"Current value = {gamma}")
+
         super().__init__(v0, n=n, R=R, T0=T0)
         self._parameters['gamma'] = gamma
+        self._check()
+
+    def _check(self):
+        if self._parameters['gamma'] < 1.0:
+            raise InvalidBehaviorParameters(f"The ratio of heat capacities gamma must be strictly greater than 1. "
+                                            f"Current value = {self._parameters['gamma']:.3E}")
 
     def elastic_energy(self, alpha: float | np.ndarray) -> float:
         v0 = self._natural_measure
@@ -600,26 +609,36 @@ class IsentropicGas(IdealGas):
         nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
         return nRT0 * gamma / v ** 2 * (v0 / v) ** (gamma - 1),
 
+    def update(self, natural_measure=None, /, **parameters):
+        super().update(natural_measure, **parameters)
+        self._check()
+
 
 class ZigZagBehavior(UnivariateBehavior):
     def __init__(self, natural_measure, a, x, delta):
         super().__init__(natural_measure, a=a, x=x, delta=delta)
+        self._check()
         self._make()
+
+    def _check(self):
+        a, x, delta = self._parameters['a'], self._parameters['x'], self._parameters['delta']
+        if x[0] - 0.0 < delta or (len(x) > 1 and np.min(np.diff(x)) < 2 * delta):
+            raise InvalidBehaviorParameters(f'delta ({delta:.3E}) is too large for the zigzag intervals provided. Should be less than {np.min(np.diff(x))/2:.3E}')
+        if len(a) != len(x) + 1:
+            raise InvalidBehaviorParameters(f'Expected {len(a) - 1} transitions, but only {len(x)} were provided.')
 
     def _make(self):
         a, x, delta = self._parameters['a'], self._parameters['x'], self._parameters['delta']
-        if x[0] - 0.0 < delta or (len(x) > 1 and np.min(np.diff(x)) < 2 * delta):
-            raise InvalidBehaviorParameters(f'Smoothing factor {delta} is too large for the zigzag intervals provided.')
-        if len(a) != len(x) + 1:
-            raise InvalidBehaviorParameters(f'Expected {len(a) - 1} transitions, but only {len(x)} were provided.')
-        self._u_i, self._f_i = szz.compute_zigzag_control_points(a, x)
+        self._u_i, self._f_i = szz.compute_zigzag_control_points(a, x, extra=4*delta)
         self._generalized_force_function = szz.create_smooth_zigzag_function(a, x, delta)
         self._generalized_stiffness_function = szz.create_smooth_zigzag_derivative_function(a, x, delta)
 
     def get_control_points(self) -> tuple[np.ndarray, np.ndarray]:
-        return self._u_i, self._f_i
+        return self._u_i.copy(), self._f_i.copy()
 
     def update_from_control_points(self, cp_x, cp_y):
+        if (np.diff(cp_x) < 0).any():
+            raise InvalidBehaviorParameters(f'Each control point must be on the right of the previous one.')
         a, x = szz.compute_zizag_slopes_and_transitions_from_control_points(cp_x, cp_y)
         self.update(a=a, x=x)
 
@@ -634,6 +653,7 @@ class ZigZagBehavior(UnivariateBehavior):
 
     def update(self, natural_measure=None, /, **parameters):
         super().update(natural_measure, **parameters)
+        self._check()
         if parameters:
             self._make()
 
@@ -642,24 +662,25 @@ class ZigZag2Behavior(BivariateBehavior):
 
     def __init__(self, natural_measure, u_i: list[float], f_i: list[float], delta):
         super().__init__(natural_measure, u_i=u_i, f_i=f_i, delta=delta)
+        self._check()
         self._make()
+
+    def _check(self):
+        u_i, f_i, delta = self._parameters['u_i'], self._parameters['f_i'], self._parameters['delta']
+        if not 0.0 < delta < 1.0:
+            raise InvalidBehaviorParameters(f'Parameter delta must be between 0 and 1 (current value: {delta:.3E})')
+        if len(u_i) != len(f_i):
+            raise InvalidBehaviorParameters(f'u_i and f_i must contain the same number of elements')
 
     def _make(self):
         u_i, f_i, delta = self._parameters['u_i'], self._parameters['f_i'], self._parameters['delta']
-        # checking validity of behavior
-        if not 0.0 < delta < 1.0:
-            raise InvalidBehaviorParameters(f'Parameter delta must be between 0 and 1 (current value: {delta}')
-        if len(u_i) != len(f_i):
-            raise InvalidBehaviorParameters(f'u_i and f_i must contain the same number of elements')
         self._cp_u = np.array([0.0] + u_i)
         self._cp_f = np.array([0.0] + f_i)
-
         n = len(u_i) + 1
         self._cp_t = np.arange(n) / (n - 1)
-        self._delta = delta / (2*(n - 1))
+        self._delta = delta / (2 * (n - 1))
         slopes_u, transitions_u = szz.compute_zizag_slopes_and_transitions_from_control_points(self._cp_t, self._cp_u)
         slopes_f, transitions_f = szz.compute_zizag_slopes_and_transitions_from_control_points(self._cp_t, self._cp_f)
-
         self._a = szz.create_smooth_zigzag_function(slopes_u, transitions_u, self._delta)
         self._b = szz.create_smooth_zigzag_function(slopes_f, transitions_f, self._delta)
         self._da = szz.create_smooth_zigzag_derivative_function(slopes_u, transitions_u, self._delta)
@@ -784,7 +805,7 @@ class ZigZag2Behavior(BivariateBehavior):
         # plt.show()
 
     def get_control_points(self) -> tuple[np.ndarray, np.ndarray]:
-        return self._cp_u, self._cp_f
+        return self._cp_u.copy(), self._cp_f.copy()
 
     def update_from_control_points(self, cp_x, cp_y):
         u_i = cp_x[1:].tolist()
@@ -816,6 +837,7 @@ class ZigZag2Behavior(BivariateBehavior):
 
     def update(self, natural_measure=None, /, **parameters):
         super().update(natural_measure, **parameters)
+        self._check()
         if parameters:
             self._make()
 
@@ -825,7 +847,7 @@ class ZigZag2Behavior(BivariateBehavior):
         return self._hysteron_info
 
     def _compute_hysteron_info(self):
-        extrema = np.sort(get_extrema(self._cp_t, self._cp_u, self._delta))
+        extrema = np.sort(szz.get_extrema(self._cp_t, self._cp_u, self._delta))
         extrema = np.hstack((-extrema[::-1], extrema))
         nb_extrema = extrema.shape[0]
         if nb_extrema == 0:  # not a hysteron
@@ -923,5 +945,11 @@ class ContactBehavior(UnivariateBehavior):
             return +np.inf,
 
 
-class InvalidBehaviorParameters(Exception):
+class InvalidBehaviorParameters(ValueError):
     """ raise this when one attempts to create a mechanical behavior with invalid parameters"""
+    def __init__(self, message):
+        super().__init__(message)
+        self._msg = message
+
+    def get_message(self):
+        return self._msg
