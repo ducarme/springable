@@ -15,7 +15,7 @@ from matplotlib.ticker import AutoLocator
 class DrawingSpace:
     def __init__(self, drawing_frame: ttk.Frame, handler: GUIEventHandler):
         self.handler = handler
-        fig = Figure(figsize=(5, 4))
+        fig = Figure(figsize=(6, 4))
         self._bg = None
         self.ax = fig.add_subplot()
 
