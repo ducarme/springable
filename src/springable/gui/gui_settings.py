@@ -18,7 +18,7 @@ DEFAULT_BEHAVIORS: dict[str, MechanicalBehavior] = {'LINEAR': LinearBehavior(DEF
                                                     'ISENTROPIC_GAS': IsentropicGas(DEFAULT_NATURAL_MEASURE, 1.0, 1.0,
                                                                                     1.0, 3.0)}
 NB_SAMPLES = 150
-XLIM = (-5., 5.)
-YLIM = (-5., 5.)
+XLIM = (-1., 5.)
+YLIM = (-2., 2.5)
 
 

@@ -284,25 +284,27 @@ class Bezier2Behavior(BivariateBehavior):
             match current_state:
                 case 'top-right':
                     if transition != 'b_max':
-                        raise InvalidBehaviorParameters('The curve cannot have such fold(s)')
+                        raise InvalidBehaviorParameters('The tangent cannot approach +inf, '
+                                                        'when moving along the curve.')
                     current_state = 'bottom-right'
                 case 'bottom-right':
                     if transition == 'a_max':
                         current_state = 'bottom-left'
                     elif transition == 'b_min':
                         current_state = 'top-right'
-                    else:
+                    else:  # should be impossible
                         raise InvalidBehaviorParameters('The curve cannot have such fold(s)')
                 case 'top-left':
                     if transition != 'b_max':
-                        raise InvalidBehaviorParameters('The curve cannot have such fold(s)')
+                        raise InvalidBehaviorParameters('The tangent cannot approach +inf, '
+                                                        'when moving along the curve.')
                     current_state = 'bottom-left'
                 case 'bottom-left':
                     if transition == 'a_min':
                         current_state = 'bottom-right'
                     elif transition == 'b_min':
                         current_state = 'top-left'
-                    else:
+                    else:  # should be impossible
                         raise InvalidBehaviorParameters('The curve cannot have such fold(s)')
                 case _:
                     print('error')

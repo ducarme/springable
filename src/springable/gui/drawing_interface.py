@@ -83,8 +83,10 @@ class DrawingSpace:
         self.axis_status_lbl.grid(row=0, column=1)
         fig_frame.grid(row=1, column=0, columnspan=3)
         self.add_remove_cp_btn_frame.grid(row=2, column=0, sticky='W')
-
         self.add_remove_cp_btn_frame.grid_remove()
+
+        self._current_curve_name = None
+
 
     def _update_xaxis_limits(self, *args):
         try:
@@ -206,9 +208,11 @@ class DrawingSpace:
         for curve in self.curves.values():
             curve.set_linewidth(1.5)
         self.curves[name].set_linewidth(2.5)
+        self._current_curve_name = name
         self.update()
 
     def remove_curve(self, name):
+        self._current_curve_name = None
         self.curves[name].remove()
         try:
             self.curves.pop(name)
@@ -258,8 +262,11 @@ class DrawingSpace:
         fig = self.canvas.figure
         fig.draw_artist(self._xaxis_line)
         fig.draw_artist(self._yaxis_line)
-        for line in self.curves.values():
-            fig.draw_artist(line)
+        for name, line in self.curves.items():
+            if name != self._current_curve_name:
+                fig.draw_artist(line)
+        if self._current_curve_name is not None:
+            fig.draw_artist(self.curves[self._current_curve_name])
         if self._active_curve_interactor is not None:
             fig.draw_artist(self._active_curve_interactor.get_poly())
             fig.draw_artist(self._active_curve_interactor.get_line())
