@@ -267,7 +267,7 @@ class StaticSolver:
             natural_coordinates[self._free_dof_indices] = result.x
             natural_coordinates[self._fixed_dof_indices] = initial_coordinates[self._fixed_dof_indices]
             self._assembly.set_coordinates(natural_coordinates)
-        except IllDefinedShape | NonfiniteMechanicalQuantity:
+        except (IllDefinedShape, NonfiniteMechanicalQuantity):
             print('Could not guide the assembly to its natural configuration')
             self._assembly.set_coordinates(initial_coordinates)
 

@@ -1,5 +1,7 @@
 import tkinter as tk
 import tkinter.ttk as ttk
+from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
+from matplotlib.widgets import RectangleSelector
 
 
 def value_to_text(val, fmt='.3E', parameter_name='Value'):
@@ -51,6 +53,17 @@ def slider_panel(root, parameter_name, initial_val, low, high, command, row):
     slider.grid(column=2, row=row)
     error_lbl.grid(column=1, row=row + 1, columnspan=3)
     return slider
+
+
+class SimpleToolbar(NavigationToolbar2Tk):
+    def __init__(self, canvas, parent, home: callable):
+        NavigationToolbar2Tk.toolitems = (
+            ('Home', 'Reset original view', 'home', 'home'),)
+        super().__init__(canvas, parent, pack_toolbar=False)
+        self._home = home
+
+    def home(self, *args):
+        self._home(*args)
 
 
 class Tooltip:

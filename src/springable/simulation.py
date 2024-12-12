@@ -28,9 +28,13 @@ def save_results(result: static_solver.Result, save_dir):
     io.write_results(result, save_dir)
 
 
-def simulate_model(model_path, save_dir, solver_settings_path=None, graphics_settings_path=None, postprocessing=None):
+def simulate_model(model_path, save_dir=None, solver_settings_path=None, graphics_settings_path=None,
+                   postprocessing=None):
     # CREATE MAIN DIRECTORY WHERE RESULT WILL BE SAVED + COPY INPUT FILES
-    save_dir = io.mkdir(save_dir)
+    if save_dir is None:
+        save_dir = io.mkdir(os.path.splitext(os.path.basename(model_path))[0])
+    else:
+        save_dir = io.mkdir(save_dir)
     io.copy_model_file(save_dir, model_path)
     if solver_settings_path is not None:
         io.copy_solver_settings_file(save_dir, solver_settings_path)
@@ -72,8 +76,8 @@ def simulate_model(model_path, save_dir, solver_settings_path=None, graphics_set
     return save_dir
 
 
-def scan_parameter_space(model_path, save_dir, scan_parameters_one_by_one=True,
-                         solver_settings_path=None, graphics_settings_path=None, postprocessing = None):
+def scan_parameter_space(model_path, save_dir=None, scan_parameters_one_by_one=True,
+                         solver_settings_path=None, graphics_settings_path=None, postprocessing=None):
     if solver_settings_path is not None:
         solver_settings = io.read_solver_settings_file(solver_settings_path)
     else:
@@ -96,7 +100,10 @@ def scan_parameter_space(model_path, save_dir, scan_parameters_one_by_one=True,
     # CREATE MAIN DIRECTORY WHERE ALL SIMULATIONS WILL BE SAVED
     # + SUBDIRECTORY TO STORE MODEL DRAWINGS
     # + COPY INPUT FILES
-    save_dir = io.mkdir(os.path.join(save_dir))
+    if save_dir is None:
+        save_dir = io.mkdir(os.path.splitext(os.path.basename(model_path))[0])
+    else:
+        save_dir = io.mkdir(save_dir)
     model_drawings_dir = None
     if general_options['generate_all_model_drawings']:
         model_drawings_dir = io.mkdir(os.path.join(save_dir, 'all_model_drawings'))
@@ -158,15 +165,23 @@ def scan_parameter_space(model_path, save_dir, scan_parameters_one_by_one=True,
         nb_combinations = design_parameter_combinations.shape[0]
         parameters = default_parameters.copy()
         for i in range(nb_combinations):
+            # preparing for saving
+            sim_name = f"sim{i}"
+            subsave_dir = io.mkdir(os.path.join(save_dir, sim_name))
+
             # running simulation with updated parameters
             design_parameters = dict(zip(design_parameter_names, design_parameter_combinations[i, :]))
             parameters.update(design_parameters)
             mdl = io.read_model(model_path, parameters)
+
+            if general_options['generate_all_model_drawings']:
+                animation.draw_model(mdl, model_drawings_dir, save_name=sim_name,
+                                     show=general_options['show_all_model_drawings'], **custom_assembly_appearance)
+
+            # run simulation
             res = solve_model(mdl, solver_settings)
 
             # saving
-            sim_name = f"sim{i}"
-            subsave_dir = io.mkdir(os.path.join(save_dir, sim_name))
             save_results(res, subsave_dir)
             io.write_design_parameters(design_parameters, subsave_dir)
 

@@ -130,8 +130,7 @@ def create_smooth_zigzag_second_derivative_function(a, x, delta):
                                                second_der_spline_functions)
 
 
-def get_extrema(cp_x, cp_y, delta):
-    a, x = compute_zizag_slopes_and_transitions_from_control_points(cp_x, cp_y)
+def get_extrema(a, x, delta):
     conditions = _create_interval_conditions(x, delta)
     intercepts = _compute_intercepts(a, x)
     dfs = _create_all_derivative_smoothing_functions(a, x, delta, intercepts)
@@ -146,3 +145,26 @@ def get_extrema(cp_x, cp_y, delta):
             if real_roots and conditions[i](real_roots[0]):
                 extrema.append(real_roots[0])
     return np.array(extrema)
+
+
+def get_extrema_from_control_points(cp_x, cp_y, delta):
+    a, x = compute_zizag_slopes_and_transitions_from_control_points(cp_x, cp_y)
+    return get_extrema(a, x, delta)
+
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    a = [2, 1, 1, -1, 5]
+    x = [1, 2, 3, 6]
+    delta = .1
+
+    szz = create_smooth_zigzag_function(a, x, delta)
+
+    u = np.linspace(x[0] - 1., x[-1] + 1., 300)
+    u_extrema = get_extrema(a, x, delta)
+    fig, ax = plt.subplots()
+    ax.plot(u, szz(u))
+    ax.plot(u_extrema, szz(u_extrema), 'o')
+    plt.show()

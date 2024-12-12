@@ -114,6 +114,7 @@ def text_to_behavior(behavior_text: str, evaluator: se.SimpleEval = None,
         parameters_txt = core_behavior_txt.removeprefix('FROMFILE(')
         parameters_txt = parameters_txt.removesuffix(')')
         path = smart_split(parameters_txt, ';')
+        path = [evaluator.eval(p) for p in path]
         behavior_text_path = os.path.join(*path)
         with open(behavior_text_path) as fr:
             line = fr.readline()
@@ -145,7 +146,7 @@ def text_to_behavior(behavior_text: str, evaluator: se.SimpleEval = None,
                 parameters[par_name] = par_val
             return behavior_type(natural_measure, **parameters)
     else:  # the behavior does not match any name --> linear behavior
-        spring_constant = evaluator.eval(behavior_text.strip())
+        spring_constant = evaluator.eval(core_behavior_txt)
         return LinearBehavior(natural_measure, spring_constant)
 
 

@@ -2,6 +2,7 @@ import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.lines import Line2D
 from matplotlib.patches import Polygon
+from .gui_utils import SimpleToolbar
 from .gui_event_handler import GUIEventHandler
 from .gui_settings import XLIM, YLIM
 import tkinter as tk
@@ -15,7 +16,7 @@ from matplotlib.ticker import AutoLocator
 class DrawingSpace:
     def __init__(self, drawing_frame: ttk.Frame, handler: GUIEventHandler):
         self.handler = handler
-        fig = Figure(figsize=(6, 4))
+        fig = Figure(figsize=(6, 4.5))
         self._bg = None
         self.ax = fig.add_subplot()
 
@@ -56,10 +57,10 @@ class DrawingSpace:
         self._yaxis_line, = self.ax.plot([0, 0], [ymin, ymax], 'k-', lw=1, animated=True)
 
         fig_frame = ttk.Frame(drawing_frame)
-        self.ax.set_xlabel("$\\Delta \\alpha$")
-        self.ax.set_ylabel("$\\nabla_{\\alpha} U$")
+        self.ax.set_xlabel("generalized displacement $\\Delta \\alpha$ ")
+        self.ax.set_ylabel("generalized force $\\nabla_{\\alpha} U$")
         self.canvas = FigureCanvasTkAgg(fig, master=fig_frame)
-        toolbar = NavigationToolbar2Tk(self.canvas, fig_frame, pack_toolbar=False)
+        toolbar = SimpleToolbar(self.canvas, fig_frame, self._reset_axis)
         toolbar.update()
 
         toolbar.pack(side=tk.BOTTOM, fill=tk.X)
@@ -87,6 +88,17 @@ class DrawingSpace:
 
         self._current_curve_name = None
 
+    def _reset_axis(self):
+        self.xmin_entry.delete(0, tk.END)
+        self.xmax_entry.delete(0, tk.END)
+        self.ymin_entry.delete(0, tk.END)
+        self.ymax_entry.delete(0, tk.END)
+        self.xmin_entry.insert(0, f"{XLIM[0]}")
+        self.xmax_entry.insert(0, f"{XLIM[1]}")
+        self.ymin_entry.insert(0, f"{YLIM[0]}")
+        self.ymax_entry.insert(0, f"{YLIM[1]}")
+        self._update_xaxis_limits()
+        self._update_yaxis_limits()
 
     def _update_xaxis_limits(self, *args):
         try:
@@ -120,7 +132,7 @@ class DrawingSpace:
                 self.ax.set_ylim((ymin, ymax))
                 self.ax.yaxis.set_major_locator(AutoLocator())
                 self._yaxis_line.set_data([0, 0], [ymin, ymax])
-                self.update()  # manual update() is needed because the handler is not notify
+                self.update()  # manual update() is needed because the handler is not notified
                 self.canvas.draw()
 
     def print_curves(self):

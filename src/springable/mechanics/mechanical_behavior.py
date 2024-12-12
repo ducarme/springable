@@ -75,6 +75,16 @@ class BivariateBehavior(MechanicalBehavior):
         raise NotImplementedError("This method is abstract")
 
 
+class ControllableByPoints:
+    """ Interface to implement for curves that can be defined by control points """
+
+    def get_control_points(self) -> tuple[np.ndarray, np.ndarray]:
+        raise NotImplementedError
+
+    def update_from_control_points(self, cp_x: np.ndarray, cp_y: np.ndarray):
+        raise NotImplementedError
+
+
 class LinearBehavior(UnivariateBehavior):
 
     def __init__(self, natural_measure: float, k: float):
@@ -112,7 +122,7 @@ class NaturalBehavior(UnivariateBehavior):
         return stiffness,
 
 
-class BezierBehavior(UnivariateBehavior):
+class BezierBehavior(UnivariateBehavior, ControllableByPoints):
     def __init__(self, natural_measure, u_i: list[float], f_i: list[float],
                  sampling: int = 100):
         super().__init__(natural_measure, u_i=u_i, f_i=f_i)
@@ -186,14 +196,20 @@ class BezierBehavior(UnivariateBehavior):
             natural_measure = 1.0
             u_i = x[::2].tolist()
             f_i = x[1::2].tolist()
-            behavior = cls(natural_measure, u_i=u_i, f_i=f_i, check_validity=False)
-            f_fit = behavior._first_der_energy(u_sampling)
-            mismatch = 0.0
-            for fd_curve in force_displacement_curves:
-                u_data = fd_curve[0]
-                f_data = fd_curve[1]
-                f_exp = interp1d(u_data, f_data, fill_value='extrapolate')(u_sampling)
-                mismatch += np.sum((f_exp - f_fit) ** 2)
+            try:
+                behavior = BezierBehavior(natural_measure, u_i=u_i, f_i=f_i)
+                f_fit = behavior.gradient_energy(natural_measure + u_sampling)[0]
+            except InvalidBehaviorParameters as e:
+                mismatch = nb_samples * fmax**2
+                print(f"Could not define a proper mismatch based on the parameters u_i={u_i} and f_i={f_i}. "
+                      f"{e.get_message()}. Mismatch is defaulted to {mismatch:.3E}.")
+            else:
+                mismatch = 0.0
+                for fd_curve in force_displacement_curves:
+                    u_data = fd_curve[0]
+                    f_data = fd_curve[1]
+                    f_exp = interp1d(u_data, f_data, fill_value='extrapolate')(u_sampling)
+                    mismatch += np.sum((f_exp - f_fit) ** 2)
             return mismatch
 
         u_guess = np.linspace(1 / degree, 1.0, degree) * umax
@@ -237,7 +253,7 @@ class BezierBehavior(UnivariateBehavior):
         return u_i, f_i
 
 
-class Bezier2Behavior(BivariateBehavior):
+class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
 
     def __init__(self, natural_measure, u_i: list[float], f_i: list[float]):
         super().__init__(natural_measure, u_i=u_i, f_i=f_i)
@@ -616,7 +632,7 @@ class IsentropicGas(IdealGas):
         self._check()
 
 
-class ZigZagBehavior(UnivariateBehavior):
+class ZigZagBehavior(UnivariateBehavior, ControllableByPoints):
     def __init__(self, natural_measure, a, x, delta):
         super().__init__(natural_measure, a=a, x=x, delta=delta)
         self._check()
@@ -625,13 +641,14 @@ class ZigZagBehavior(UnivariateBehavior):
     def _check(self):
         a, x, delta = self._parameters['a'], self._parameters['x'], self._parameters['delta']
         if x[0] - 0.0 < delta or (len(x) > 1 and np.min(np.diff(x)) < 2 * delta):
-            raise InvalidBehaviorParameters(f'delta ({delta:.3E}) is too large for the zigzag intervals provided. Should be less than {np.min(np.diff(x))/2:.3E}')
+            raise InvalidBehaviorParameters(
+                f'delta ({delta:.3E}) is too large for the zigzag intervals provided. Should be less than {np.min(np.diff(x)) / 2:.3E}')
         if len(a) != len(x) + 1:
             raise InvalidBehaviorParameters(f'Expected {len(a) - 1} transitions, but only {len(x)} were provided.')
 
     def _make(self):
         a, x, delta = self._parameters['a'], self._parameters['x'], self._parameters['delta']
-        self._u_i, self._f_i = szz.compute_zigzag_control_points(a, x, extra=4*delta)
+        self._u_i, self._f_i = szz.compute_zigzag_control_points(a, x, extra=4 * delta)
         self._generalized_force_function = szz.create_smooth_zigzag_function(a, x, delta)
         self._generalized_stiffness_function = szz.create_smooth_zigzag_derivative_function(a, x, delta)
 
@@ -660,7 +677,7 @@ class ZigZagBehavior(UnivariateBehavior):
             self._make()
 
 
-class ZigZag2Behavior(BivariateBehavior):
+class ZigZag2Behavior(BivariateBehavior, ControllableByPoints):
 
     def __init__(self, natural_measure, u_i: list[float], f_i: list[float], delta):
         super().__init__(natural_measure, u_i=u_i, f_i=f_i, delta=delta)
@@ -673,6 +690,73 @@ class ZigZag2Behavior(BivariateBehavior):
             raise InvalidBehaviorParameters(f'Parameter delta must be between 0 and 1 (current value: {delta:.3E})')
         if len(u_i) != len(f_i):
             raise InvalidBehaviorParameters(f'u_i and f_i must contain the same number of elements')
+
+        n = len(u_i) + 1
+        _cp_t = np.arange(n) / (n - 1)
+        _delta = delta / (2 * (n - 1))
+        _cp_u = np.array([0.0] + u_i)
+        _cp_f = np.array([0.0] + f_i)
+
+        # checking validity of behavior
+        da0 = u_i[0]
+        db0 = f_i[0]
+        if da0 == 0.0 or db0 == 0.0:
+            raise InvalidBehaviorParameters('The initial slope of the behavior'
+                                            'cannot be perfectly horizontal or vertical')
+        a_extrema = szz.get_extrema_from_control_points(_cp_t, _cp_u, _delta)
+        b_extrema = szz.get_extrema_from_control_points(_cp_t, _cp_f, _delta)
+        if any(x in set(b_extrema) for x in a_extrema):
+            raise InvalidBehaviorParameters('The behavior curve cannot have cusps.')
+        a_extrema = [(a_extremum, 'a_max' if i % 2 == (0 if da0 > 0 else 1) else 'a_min')
+                     for i, a_extremum in enumerate(a_extrema)]
+        b_extrema = [(b_extremum, 'b_max' if i % 2 == (0 if db0 > 0 else 1) else 'b_min')
+                     for i, b_extremum in enumerate(b_extrema)]
+        extrema = []
+        aa = 0
+        bb = 0
+        while aa < len(a_extrema) and bb < len(b_extrema):
+            if a_extrema[aa][0] < b_extrema[bb][0]:
+                ext = a_extrema[aa]
+                aa += 1
+            else:
+                ext = b_extrema[bb]
+                bb += 1
+            extrema.append(ext)
+        if aa < len(a_extrema):
+            extrema += a_extrema[aa:]
+        if bb < len(b_extrema):
+            extrema += b_extrema[bb:]
+
+        transitions = [extremum[1] for extremum in extrema]
+        current_state = f'{"top" if db0 > 0 else "bottom"}-{"right" if da0 > 0 else "left"}'
+        for transition in transitions:
+            match current_state:
+                case 'top-right':
+                    if transition != 'b_max':
+                        raise InvalidBehaviorParameters('The tangent cannot approach +inf, '
+                                                        'when moving along the curve.')
+                    current_state = 'bottom-right'
+                case 'bottom-right':
+                    if transition == 'a_max':
+                        current_state = 'bottom-left'
+                    elif transition == 'b_min':
+                        current_state = 'top-right'
+                    else:  # should be impossible
+                        raise InvalidBehaviorParameters('The curve cannot have such fold(s)')
+                case 'top-left':
+                    if transition != 'b_max':
+                        raise InvalidBehaviorParameters('The tangent cannot approach +inf, '
+                                                        'when moving along the curve.')
+                    current_state = 'bottom-left'
+                case 'bottom-left':
+                    if transition == 'a_min':
+                        current_state = 'bottom-right'
+                    elif transition == 'b_min':
+                        current_state = 'top-left'
+                    else:  # should be impossible
+                        raise InvalidBehaviorParameters('The curve cannot have such fold(s)')
+                case _:
+                    print('error')
 
     def _make(self):
         u_i, f_i, delta = self._parameters['u_i'], self._parameters['f_i'], self._parameters['delta']
@@ -849,7 +933,7 @@ class ZigZag2Behavior(BivariateBehavior):
         return self._hysteron_info
 
     def _compute_hysteron_info(self):
-        extrema = np.sort(szz.get_extrema(self._cp_t, self._cp_u, self._delta))
+        extrema = np.sort(szz.get_extrema_from_control_points(self._cp_t, self._cp_u, self._delta))
         extrema = np.hstack((-extrema[::-1], extrema))
         nb_extrema = extrema.shape[0]
         if nb_extrema == 0:  # not a hysteron
@@ -949,6 +1033,7 @@ class ContactBehavior(UnivariateBehavior):
 
 class InvalidBehaviorParameters(ValueError):
     """ raise this when one attempts to create a mechanical behavior with invalid parameters"""
+
     def __init__(self, message):
         super().__init__(message)
         self._msg = message
