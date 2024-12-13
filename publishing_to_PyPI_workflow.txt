@@ -10,6 +10,9 @@ exclude = ["springable.my_package_to_exclude"]
 * to exclude modules (.py files): in MANIFEST.in
 exclude src/springable/my_module_to_exclude.py
 
+* python packages build and twine must be installed in the developer environment
+(venv) $ python -m pip install build twine
+
 
 
 
