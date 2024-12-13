@@ -262,17 +262,15 @@ class SquaredDistancePointSegment(Shape):
             if output_mode == Shape.MEASURE:
                 return dist2
                 # return dist2 ** 0.5
-
             jacobian = np.array([2 * (x0 - x2), 2 * (y0 - y2), 0.0, 0.0, -2 * (x0 - x2), -2 * (y0 - y2)])
             if output_mode == Shape.MEASURE_AND_JACOBIAN:
                 return dist2, jacobian
                 # return dist2 ** 0.5, 0.5 * dist2 ** -0.5 * jacobian
-
             hessian = self._d2v20v20_dq2
             if output_mode == Shape.MEASURE_JACOBIAN_AND_HESSIAN:
                 return dist2, jacobian, hessian
-                # return dist2 ** 0.5, 0.5 * dist2 ** -0.5 * jacobian, 0.5 * dist2 ** -0.5 * hessian + -0.25 * dist2 ** (-3./2) * np.outer(jacobian, jacobian)
-
+                # return dist2 ** 0.5, 0.5 * dist2 ** -0.5 * jacobian, 0.5 * dist2 ** -0.5 * hessian + -0.25 * dist2
+                # ** (-3./2) * np.outer(jacobian, jacobian)
             else:
                 raise ValueError('Unknown mode')
 
@@ -462,9 +460,8 @@ class HoleyArea(Sum):
     def get_bulk_area(self) -> Area:
         return self._bulk_area
 
-    def get_holes(self) -> tuple[Area]:
+    def get_holes(self) -> tuple[Area, ...]:
         return self._holes
-
 
 
 class IllDefinedShape(ValueError):

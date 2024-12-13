@@ -5,9 +5,14 @@ import platform
 import subprocess
 import numpy as np
 import csv
-import tomllib
 import shutil
 import json
+import sys
+
+if sys.version_info >= (3, 11):
+    from tomllib import load as load_toml_file
+else:
+    from tomli import load as load_toml_file
 
 
 def read_model(model_path, parameters: dict[str, float | str] = None) -> Model:
@@ -94,7 +99,7 @@ def write_solver_parameters(solver_parameters, save_dir, save_name='solver_param
 
 def _read_settings_file(file_path):
     with open(file_path, "rb") as f:
-        settings = tomllib.load(f)
+        settings = load_toml_file(f)
     return settings
 
 

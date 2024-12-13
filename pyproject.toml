@@ -4,22 +4,25 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "springable"
-version = "0.0.4"
+version = "0.1.0"
 authors = [
     {name="Paul Ducarme"},
     {email="paulducarme@hotmail.com" },
 ]
 description = "Nonlinear spring assembly solver and visualization"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
-  "numpy",
-  "scipy",
-  "matplotlib",
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "tomli; python_version == '3.10'"
 ]
 classifiers = [
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
 ]
@@ -27,7 +30,7 @@ keywords = ["nonlinear", "spring", "simulation", "animation", "instability", "sn
 
 [tool.setuptools.packages.find]
 where = ["src"]
-exclude = ["springable.gui"]
+exclude = ["springable.dynamics"]
 
 
 [project.urls]

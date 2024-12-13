@@ -23,34 +23,8 @@ rotation springs (bending), area springs (useful to model fluids and pneumatic l
 
 **Table of contents**
 
-<!-- TOC start (generated with https://github.com/derlin/bitdowntoc) -->
+[TOC]
 
-- [Installation](#installation)
-- [Don't want to install it right now? Try the Online Notebook](#dont-want-to-install-it-right-now-try-the-online-notebook)
-- [How to use](#how-to-use)
-   * [Running a simulation](#running-a-simulation)
-   * [Creating a CSV file describing the spring model](#creating-a-csv-file-describing-the-spring-model)
-      + [The `PARAMETERS` section](#the-parameters-section)
-      + [The `NODES` section](#the-nodes-section)
-      + [The `SPRINGS` section](#the-springs-section)
-      + [The `ROTATION SPRINGS` section](#the-rotation-springs-section)
-      + [The `AREA SPRINGS` section](#the-area-springs-section)
-      + [The `LINE SPRINGS` section](#the-line-springs-section)
-      + [The `LOADING` section](#the-loading-section)
-      + [A complete example](#a-complete-example)
-      + [Additional notes](#additional-notes)
-   * [Specifying a nonlinear mechanical behavior](#specifying-a-nonlinear-mechanical-behavior)
-   * [Configuring simulation settings](#configuring-simulation-settings)
-      + [Additional notes](#additional-notes-1)
-   * [Advanced topics](#advanced-topics)
-      + [Area spring with holes](#area-spring-with-holes)
-      + [Complex loading descriptions](#complex-loading-descriptions)
-      + [Scanning parameters](#scanning-parameters)
-- [How to define your own custom springs](#how-to-define-your-own-custom-springs)
-
-<!-- TOC end -->
-
-<!-- TOC --><a name="installation"></a>
 ## Installation
 
 Use `pip` to install. In the terminal simply enter
@@ -61,15 +35,12 @@ and you are good to go!
 
 It is supported on **Python 3.10 and above**.
 
-<!-- TOC --><a name="dont-want-to-install-it-right-now-try-the-online-notebook"></a>
 ## Don't want to install it right now? Try the Online Notebook
 Try `springable` online, without any installation in an [interactive online notebook](https://colab.research.google.com/github/ducarme/springable/blob/main/docs/examples/example01_getting_started/example01_getting_started.ipynb)
 
 
-<!-- TOC --><a name="how-to-use"></a>
 ## How to use
 
-<!-- TOC --><a name="running-a-simulation"></a>
 ### Running a simulation
 To start a simulation, we first create the file 
 that will describe the spring model we want to simulate. To do that, we create a simple
@@ -122,7 +93,6 @@ in the terminal.
 
 Many settings can be tuned before running a simulation. See paragraph [Configuring simulation settings](#configuring-simulation-settings) for more details.
 
-<!-- TOC --><a name="creating-a-csv-file-describing-the-spring-model"></a>
 ### Creating a CSV file describing the spring model
 
 
@@ -165,7 +135,6 @@ LOADING
 NB:
 * `<...>`: required field
 * `[...]`: optional field
-<!-- TOC --><a name="the-parameters-section"></a>
 #### The `PARAMETERS` section
 The `PARAMETERS` section serves to define some parameters that can be used to in the next sections. To define a parameter, a line with the following structure is added to the section `PARAMETERS`:\
 `<parameter name>, <parameter value>`.
@@ -184,7 +153,6 @@ stiffness, 7.3
 ```
 *Three parameters - `width`, `height` and `stiffness` - are defined and set to values `2.0`, `1.0` and `7.3` respectively.*
 
-<!-- TOC --><a name="the-nodes-section"></a>
 #### The `NODES` section
 The `NODES` section serves to define the nodes composing the spring assembly, by specifying their index,
 their coordinates and the fact they are constrained or not. To define a node, a line with the following structure is added to the section `NODES`:\
@@ -211,7 +179,6 @@ NODES
 respectively. Nodes `0` and `1` are constrained horizontally and vertically, while node `2` is constrained horizontally
 but free to move vertically.*
 
-<!-- TOC --><a name="the-springs-section"></a>
 #### The `SPRINGS` section
 The `SPRINGS` section serves to define **longitudinal springs**, that is, springs whose elastic energy is a function of their length.
 Each longitudinal spring is defined by the
@@ -243,7 +210,6 @@ SPRINGS
 No natural length was provided, so their natural length will be automatically set to the distance between nodes `0`
 and `2`, and between nodes `1` and `2` as defined in the section `NODES`, respectively.*
 
-<!-- TOC --><a name="the-rotation-springs-section"></a>
 #### The `ROTATION SPRINGS` section
 The `ROTATION SPRINGS` section serves to define **rotation springs**
 (also known as [torsion springs](https://en.wikipedia.org/wiki/Torsion_spring)), that is, springs whose elastic energy is a function of an angle. They are useful when modelling mechanical systems involving elastic bending, such as flexures for example.
@@ -280,7 +246,6 @@ Note that if no natural angle was specified, the natural angle would have been a
 the nodes `0`, `1` and `2` as defined in the section `NODES`.*
 
 
-<!-- TOC --><a name="the-area-springs-section"></a>
 #### The `AREA SPRINGS` section
 The `AREA SPRINGS` section serves to define **area springs**, that is, springs whose elastic energy is a function of their area. They are useful when modelling mechanical systems involving fluids and pneumatic or hydraulic components.
 Those springs are defined by specifying **n nodes** (n>=3), which together define the area of a
@@ -319,7 +284,6 @@ by the spring constant set to `3.0`.
 Here, no natural area was provided, so the natural area will be automatically set to
 the area of the polygon defined by the nodes `0`, `2`, and `1` as defined in the section `NODES`.*
 
-<!-- TOC --><a name="the-line-springs-section"></a>
 #### The `LINE SPRINGS` section
 The `LINE SPRINGS` section serves to define **line springs**, that is, springs whose elastic energy is a function of their [polygonal chain](https://en.wikipedia.org/wiki/Polygonal_chain)'s length.
 They are useful when modelling mechanical systems involving cable-driven actuation or [pulleys](https://en.wikipedia.org/wiki/Pulley).
@@ -356,7 +320,6 @@ Here, no natural length was provided, so the natural length will be automaticall
 the length of the polygonal chain defined by the nodes `0`, `2`, and `1` as defined in the section `NODES`.*
 
 
-<!-- TOC --><a name="the-loading-section"></a>
 #### The `LOADING` section
 The `LOADING` section serves to set the forces applied on some specific nodes along a specific direction (horizontal or vertical).
 To define a horizontal or vertical force on a node, a line with the following structure is added to the section `LOADING`:\
@@ -385,7 +348,6 @@ the simulation is assumed to have completed.*
 Please refer to [Complex loading descriptions](#complex-loading-descriptions) paragraph in the [Advanced topics](#advanced-topics) for more details.*
 
 
-<!-- TOC --><a name="a-complete-example"></a>
 #### A complete example
 This example describes a spring structure composed of two inclined linear longitudinal springs connected in the center,
 and hinging through a linear rotation spring.
@@ -412,7 +374,6 @@ LOADING
 2, Y, -10.0, -3.0
 ```
 
-<!-- TOC --><a name="additional-notes"></a>
 #### Additional notes
 * Empty lines have no semantic meaning. Adding/removing some will not change the spring model.
 * `#` is used to indicate a line comment. Each line starting with `#` will be ignored when reading the file.
@@ -422,11 +383,9 @@ Value π can be used without defining it in the section `PARAMETERS` with the ke
 * If your spring assembly does not include a certain type of spring, feel free to leave the corresponding section empty (header only)
 or to omit it completely (no header and no content).
 
-<!-- TOC --><a name="specifying-a-nonlinear-mechanical-behavior"></a>
 ### Specifying a nonlinear mechanical behavior
 TO DO
 
-<!-- TOC --><a name="configuring-simulation-settings"></a>
 ### Configuring simulation settings
 Many settings can be tuned before running a simulation. They fall into two categories: **solver settings**
 or **graphics settings**.
@@ -499,7 +458,6 @@ ss.simulate_model(model_path='my_spring_model.csv', save_dir='my_simulation_resu
 ```
 
 
-<!-- TOC --><a name="additional-notes-1"></a>
 #### Additional notes
 * A custom settings file does not need to contain all the possible settings; just include the one you wish to modify.
 * Graphics settings are divided into 4 sections of settings (indicated by `[...]` in TOML files):
@@ -508,16 +466,11 @@ ss.simulate_model(model_path='my_spring_model.csv', save_dir='my_simulation_resu
   * animation options (determines _how_ animations will look like)
   * assembly appearance (determines _how_ the spring assembly will be depicted)
 
-<!-- TOC --><a name="advanced-topics"></a>
 ### Advanced topics
-<!-- TOC --><a name="area-spring-with-holes"></a>
 #### Area spring with holes
-<!-- TOC --><a name="complex-loading-descriptions"></a>
 #### Complex loading descriptions
-<!-- TOC --><a name="scanning-parameters"></a>
 #### Scanning parameters
 
-<!-- TOC --><a name="how-to-define-your-own-custom-springs"></a>
 ## How to define your own custom springs
 TO DO
 
