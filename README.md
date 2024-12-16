@@ -369,8 +369,8 @@ The magnitude of the force is `-10` (it is a negative value, so the force points
 The maximum displacement is set to `-3.0`, meaning that if node `2` is displaced downward by more that `3.0`,
 the simulation is assumed to have completed.
 
-[!Note]
-More complex loading can be specified (preloading, multiple loading steps, blocking nodes).
+> [!NOTE]
+> More complex loading can be specified (preloading, multiple loading steps, blocking nodes).
 Please refer to [Complex loading descriptions](#complex-loading-descriptions) paragraph in the [Advanced topics](#advanced-topics) for more details.*
 
 
