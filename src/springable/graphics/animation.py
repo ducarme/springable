@@ -33,7 +33,8 @@ def draw_model(mdl: model.Model, save_dir=None, save_name='model', show=True, **
             ff.save_fig(fig, save_dir, save_name, ['png', 'pdf'])
         if show:
             plt.show()
-        plt.close()
+        else:
+            plt.close(fig=fig)
 
 
 def animate(_result: Result, save_dir, save_name: str = None, show=True,
@@ -213,6 +214,9 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                             bbox_inches='tight')
                 visual_helpers.print_progress(frame_cnt, frame_indices.shape[0])
             _model.get_assembly().set_coordinates(_natural_coordinates)
+            for blocked_nodes_directions in blocked_nodes_directions_step_list:
+                _model.get_assembly().release_nodes_along_directions(*blocked_nodes_directions)
+
             print('\nPNG frames saved successfully')
 
         filepath = None
@@ -227,6 +231,8 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                          progress_callback=visual_helpers.print_progress)
                 print('\nGIF animation saved successfully')
                 _model.get_assembly().set_coordinates(_natural_coordinates)
+                for blocked_nodes_directions in blocked_nodes_directions_step_list:
+                    _model.get_assembly().release_nodes_along_directions(*blocked_nodes_directions)
 
             if ao['save_as_transparent_mov']:
                 format_type = 'video'
@@ -246,6 +252,9 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                 )
                 print('\nMOV transparent animation saved successfully')
                 _model.get_assembly().set_coordinates(_natural_coordinates)
+                for blocked_nodes_directions in blocked_nodes_directions_step_list:
+                    _model.get_assembly().release_nodes_along_directions(*blocked_nodes_directions)
+
             if ao['save_as_mp4']:
                 format_type = 'video'
                 fig.patch.set_visible(True)
@@ -259,7 +268,12 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                 _model.get_assembly().set_coordinates(_natural_coordinates)
                 for blocked_nodes_directions in blocked_nodes_directions_step_list:
                     _model.get_assembly().release_nodes_along_directions(*blocked_nodes_directions)
-            plt.close()
+            try:
+                plt.close(fig=fig)
+            except AttributeError:
+                pass
+                # Some user reported an attribute error after saving animations, when using Visual Code Studio
+                # It is hard to reproduce and clarify the cause, so this is a quick and dirty solution.
             if show and filepath is not None:
                 if io.is_notebook():
                     io.play_media_in_notebook_if_possible(filepath, format_type=format_type)

@@ -321,7 +321,7 @@ def parametric_curve(processing_fun: callable,
         if show:
             plt.show()
         else:
-            plt.close()
+            plt.close(fig)
 
 
 def parametric_force_displacement_curve(results: list[static_solver.Result] | typing.Iterator[static_solver.Result],
@@ -377,7 +377,7 @@ def curve(processing_fun: callable, result: static_solver.Result,
         if show:
             plt.show()
         else:
-            plt.close()
+            plt.close(fig)
 
 
 class LoadingPathEmpty(Exception):

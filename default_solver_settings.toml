@@ -1,16 +1,17 @@
 reference_load_parameter = 0.05
 radius = 0.05
-detect_critical_points = true
+i_max = 5_000  # max number of increments to reach the prescribed force
+
+detect_critical_points = false
 bifurcate_at_simple_bifurcations = false  # only has an effect if 'detect_critical_points' is enabled
 show_warnings = false
 verbose = true
 detail_verbose = false
-i_max = 10_000  # max number of increments to reach the prescribed force
 convergence_value = 1e-6
 detect_mechanism = true
 
 # herein below, more advanced settings for the arclength method
-j_max = 20  # max number of iterations to correct the prediction
+j_max = 15  # max number of iterations to correct the prediction
 alpha = 0.0  # positive and never larger than 0.5
 psi_p = 0.0
 psi_c = 0.0

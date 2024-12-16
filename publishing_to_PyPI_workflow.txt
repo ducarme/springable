@@ -1,6 +1,6 @@
 UPDATE SPRINGABLE VERSION AND PUBLISHING TO PYPI
 
-* update springable package __init__ file: change variable __version__
+* update springable package __init__ file (src/springable/__init__.py): change variable __version__
 * update _readme_no_toc.md. Copy-paste text to https://bitdowntoc.derlin.ch/ --> Copy-paste output text to README.md
 * update pyproject.toml: change springable version
 * to exclude packages (not modules): in pyproject.toml
@@ -10,8 +10,118 @@ exclude = ["springable.my_package_to_exclude"]
 * to exclude modules (.py files): in MANIFEST.in
 exclude src/springable/my_module_to_exclude.py
 
+* commit and push
+
 * python packages build and twine must be installed in the developer environment
 (venv) $ python -m pip install build twine
+
+* create a source archive and a wheel
+(venv) $ python -m build
+
+--> a dist directory must be have been created in the main directory.
+It must contain the wheel .whl and the archive .tar.gz
+
+* To confirm the package has been built correctly
+Window PowerShell
+(venv) PS> cd .\dist
+(venv) PS> Copy-Item .\xxx.whl yyy.zip
+(venv) PS> Expand-Archive yyy.zip
+(venv) PS> tree .\yyy\ /F
+
+You should get something like this
+
+───springable
+│   │   behavior_creation.py
+│   │   simulation.py
+│   │   visualization.py
+│   │   __init__.py
+│   │
+│   ├───graphics
+│   │   │   animation.py
+│   │   │   default_graphics_settings.py
+│   │   │   drawing.py
+│   │   │   plot.py
+│   │   │   visual_helpers.py
+│   │   │   __init__.py
+│   │   │
+│   │   └───figure_utils
+│   │           figure_formatting.py
+│   │           __init__.py
+│   │
+│   ├───gui
+│   │       control_panel_interface.py
+│   │       drawing_interface.py
+│   │       gui_event_handler.py
+│   │       gui_settings.py
+│   │       gui_utils.py
+│   │       start_behavior_creation_app.py
+│   │       __init__.py
+│   │
+│   ├───mechanics
+│   │   │   assembly.py
+│   │   │   element.py
+│   │   │   load.py
+│   │   │   mechanical_behavior.py
+│   │   │   model.py
+│   │   │   node.py
+│   │   │   shape.py
+│   │   │   static_solver.py
+│   │   │   __init__.py
+│   │   │
+│   │   └───math_utils
+│   │           bezier_curve.py
+│   │           smooth_zigzag_curve.py
+│   │           __init__.py
+│   │
+│   └───readwrite
+│           fileio.py
+│           interpreting.py
+│           keywordmapping.py
+│           keywords.py
+│           simpleeval.py
+│           __init__.py
+│
+└───springable-0.1.0.dist-info
+        LICENSE
+        METADATA
+        RECORD
+        top_level.txt
+        WHEEL
+
+
+* check if the wheel and archive can be rendered by PyPI using twine
+(venv) $ twine check dist/*
+both .tar.gz and .whl should be tagged with 'Passed' in the output
+(for the .zip archive, it will be tagged with 'ERROR'. Not a problem, it is not used by PyPI))
+
+* upload to TestPyPI to check whether everything works properly (delete the .zip and expanded zip beforehand)
+(venv) $ twine upload -r testpypi dist/*
+--> View at: https://test.pypi.org/project/springable/a.b.c/
+
+* make a new, fresh python virtual enviroment and activate it
+python -m venv new_venv
+new_venv\Scripts\activate
+
+* install springable from testPyPI using
+(new_venv) python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple springable
+
+* check whether it was installed properly and check to see if simulations can be runned properly, etc
+(new_venv) python
+>>> import springable
+  ____             _                   _     _
+ / ___| _ __  _ __(_)_ __   __ _  __ _| |__ | | ___
+ \___ \| '_ \| '__| | '_ \ / _` |/ _` | '_ \| |/ _ \
+  ___) | |_) | |  | | | | | (_| | (_| | |_) | |  __/
+ |____/| .__/|_|  |_|_| |_|\__, |\__,_|_.__/|_|\___|
+       |_|                 |___/
+
+Springable - Explore the richness of nonlinear mechanics with simple springs!
+Version a.b.c
+
+Paul Ducarme, AMOLF, Amsterdam (NL), 2024
+
+
+
 
 
 

@@ -215,7 +215,7 @@ class PathDrawing(ShapeDrawing):
 
 
 class DistanceDrawing(ShapeDrawing):
-    def __init__(self, dist: shape.DistancePointLine | shape.SquaredDistancePointSegment,
+    def __init__(self, dist: shape.DistancePointLine | shape.SquaredDistancePointSegment | shape.SignedDistancePointLine,
                  is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: dict):
         super().__init__(dist, None, is_hysteron, ax, color, opacity, aa)
         x0, y0, x1, y1, x2, y2 = self._shape.get_nodal_coordinates()
@@ -293,6 +293,7 @@ class CompoundDrawing(ShapeDrawing):
                        shape.HoleyArea: HoleyAreaDrawing,
                        shape.Path: PathDrawing,
                        shape.DistancePointLine: DistanceDrawing,
+                       shape.SignedDistancePointLine: DistanceDrawing,
                        shape.SquaredDistancePointSegment: DistanceDrawing
                        }
 
@@ -348,46 +349,48 @@ class ElementDrawing(Drawing):
         if self._opacity_handler is None or not isinstance(self._element.get_shape(),
                                                            (
                                                                    shape.DistancePointLine,
-                                                                   shape.SquaredDistancePointSegment)):
+                                                                   shape.SquaredDistancePointSegment,
+                                                                   shape.SignedDistancePointLine)
+                                                           ):
             opacity = None  # to specify later
         else:
             opacity = self._opacity_handler.determine_property_value(self._element)
 
         hysteron_state_drawing_position = None
-        if isinstance(self._element.get_shape(), shape.Segment):
+        _shape = self._element.get_shape()
+        if isinstance(_shape, shape.Segment):
             color = color if color is not None else self._aa['spring_default_color']
             opacity = opacity if opacity is not None else self._aa['spring_default_opacity']
-            shape_drawing = SegmentDrawing(self._element.get_shape(), self._width, self._is_hysteron,
+            shape_drawing = SegmentDrawing(_shape, self._width, self._is_hysteron,
                                            self._ax, color, opacity, self._aa)
 
-        elif isinstance(self._element.get_shape(), shape.Angle):
+        elif isinstance(_shape, shape.Angle):
             color = color if color is not None else self._aa['rotation_spring_default_color']
             opacity = opacity if opacity is not None else self._aa['rotation_spring_default_opacity']
-            shape_drawing = AngleDrawing(self._element.get_shape(), self._width, self._is_hysteron,
+            shape_drawing = AngleDrawing(_shape, self._width, self._is_hysteron,
                                          self._ax, color, opacity, self._aa)
-        elif isinstance(self._element.get_shape(), shape.Area):
+        elif isinstance(_shape, shape.Area):
             color = color if color is not None else self._aa['area_spring_default_color']
             opacity = opacity if opacity is not None else self._aa['area_spring_default_opacity']
-            shape_drawing = AreaDrawing(self._element.get_shape(), self._is_hysteron,
+            shape_drawing = AreaDrawing(_shape, self._is_hysteron,
                                         self._ax, color, opacity, self._aa)
 
-        elif isinstance(self._element.get_shape(), shape.Path):
+        elif isinstance(_shape, shape.Path):
             color = color if color is not None else self._aa['line_spring_default_color']
             opacity = opacity if opacity is not None else self._aa['line_spring_default_opacity']
-            shape_drawing = PathDrawing(self._element.get_shape(), self._is_hysteron,
+            shape_drawing = PathDrawing(_shape, self._is_hysteron,
                                         self._ax, color, opacity, self._aa)
-        elif isinstance(self._element.get_shape(), (shape.DistancePointLine, shape.SquaredDistancePointSegment)):
+        elif isinstance(_shape, (shape.DistancePointLine, shape.SquaredDistancePointSegment, shape.SignedDistancePointLine)):
             color = color if color is not None else self._aa['distance_spring_line_default_color']
             opacity = opacity if opacity is not None else self._aa['distance_spring_line_default_opacity']
-            shape_drawing = DistanceDrawing(self._element.get_shape(), self._is_hysteron,
+            shape_drawing = DistanceDrawing(_shape, self._is_hysteron,
                                             self._ax, color, opacity, self._aa)
-        elif isinstance(self._element.get_shape(), shape.HoleyArea):
+        elif isinstance(_shape, shape.HoleyArea):
             color = color if color is not None else self._aa['distance_spring_line_default_color']
             opacity = opacity if opacity is not None else self._aa['distance_spring_line_default_opacity']
-            shape_drawing = HoleyAreaDrawing(self._element.get_shape(), self._is_hysteron,
-                                       self._ax, color, opacity, self._aa)
+            shape_drawing = HoleyAreaDrawing(_shape, self._is_hysteron, self._ax, color, opacity, self._aa)
         else:
-            raise NotImplementedError('Cannot draw element because no implementation of how to draw its shape')
+            raise NotImplementedError(f'Cannot draw element because no implementation of how to draw its shape {_shape}')
 
         hysteron_state_drawing_position = shape_drawing.get_hysteron_label_position()
 
@@ -423,7 +426,7 @@ class ElementDrawing(Drawing):
             color = self._color_handler.determine_property_value(self._element)
         if (self._opacity_handler is not None
                 and isinstance(self._element.get_shape(),
-                               (shape.DistancePointLine, shape.SquaredDistancePointSegment))):
+                               (shape.DistancePointLine, shape.SquaredDistancePointSegment, shape.SignedDistancePointLine))):
             opacity = self._opacity_handler.determine_property_value(self._element)
 
         self._shape_drawing.update(color, opacity)

@@ -6,7 +6,7 @@ usable_shapes = KeywordMapping({shape.Segment: '',
                                 shape.Area: 'AREA',
                                 shape.Path: 'LINE',
                                 shape.Angle: 'ROTATION',
-                                shape.DistancePointLine: 'DISTANCE',
+                                shape.SignedDistancePointLine: 'DISTANCE',
                                 shape.SquaredDistancePointSegment: 'GAP',
                                 })
 

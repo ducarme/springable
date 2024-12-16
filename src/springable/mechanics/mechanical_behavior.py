@@ -988,19 +988,19 @@ class ZigZag2Behavior(BivariateBehavior, ControllableByPoints):
 
 
 class ContactBehavior(UnivariateBehavior):
-    def __init__(self, natural_measure, k, d0):
-        super().__init__(natural_measure, d0=d0, k=k)
+    def __init__(self, natural_measure, f0, x0):
+        super().__init__(natural_measure, f0=f0, x0=x0)
+        self._p = 3.0
 
     def elastic_energy(self, alpha: float) -> float:
         dalpha = alpha - self._natural_measure
-        k = self._parameters['k']
-        d0 = self._parameters['d0']
-        if dalpha >= d0:
+        f0 = self._parameters['f0']
+        x0 = self._parameters['x0']
+        p = self._p
+        if dalpha >= x0:
             return 0.0
-        elif 0.0 < dalpha < d0:
-            return 0.5 * k * (d0 ** 2 - dalpha ** 2) + 2 * k * d0 * (dalpha - d0) - k * d0 ** 2 * np.log(dalpha / d0)
         else:
-            return +np.inf
+            return f0 * x0 / (p + 1) * ((x0 - dalpha) / x0) ** (p + 1)
 
     def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float | np.ndarray]:
         if isinstance(alpha, np.ndarray):
@@ -1010,25 +1010,23 @@ class ContactBehavior(UnivariateBehavior):
             return g,
 
         dalpha = alpha - self._natural_measure
-        k = self._parameters['k']
-        d0 = self._parameters['d0']
-        if dalpha >= d0:
+        f0 = self._parameters['f0']
+        x0 = self._parameters['x0']
+        p = self._p
+        if dalpha >= x0:
             return 0.0,
-        elif 0.0 < dalpha < d0:
-            return -k * (dalpha - d0) ** 2 / dalpha,
         else:
-            return -np.inf,
+            return -f0 * ((x0 - dalpha) / x0) ** p,
 
     def hessian_energy(self, alpha: float) -> tuple[float]:
         dalpha = alpha - self._natural_measure
-        k = self._parameters['k']
-        d0 = self._parameters['d0']
-        if dalpha >= d0:
+        f0 = self._parameters['f0']
+        x0 = self._parameters['x0']
+        p = self._p
+        if dalpha >= x0:
             return 0.0,
-        elif 0.0 < dalpha < d0:
-            return k * ((d0 / dalpha) ** 2 - 1),
         else:
-            return +np.inf,
+            return +f0 / x0 * p * ((x0 - dalpha) / x0) ** (p - 1),
 
 
 class InvalidBehaviorParameters(ValueError):

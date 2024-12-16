@@ -81,6 +81,9 @@ class Segment(Shape):
 
 
 class Angle(Shape):
+    MIN_ANGLE_ALLOWED = 0.05 * np.pi / 180.0
+    MAX_ANGLE_ALLOWED = 2 * np.pi - MIN_ANGLE_ALLOWED
+
     # constant matrices used to compute the hessian of the transformation
     _d2Xdq2 = np.array([[0, 0, -1, 0, 1, 0],
                         [0, 0, 0, -1, 0, 1],
@@ -107,6 +110,9 @@ class Angle(Shape):
             raise IllDefinedShape
         if output_mode == Shape.MEASURE:
             return theta
+
+        if not Angle.MIN_ANGLE_ALLOWED <= theta <= Angle.MAX_ANGLE_ALLOWED:
+            raise IllDefinedShape
 
         cross = Angle._calculate_cross_product(x0, y0, x1, y1, x2, y2)  # Y
         dot = Angle._calculate_dot_product(x0, y0, x1, y1, x2, y2)  # X
@@ -154,20 +160,9 @@ class Angle(Shape):
     def calculate_angle(x0, y0, x1, y1, x2, y2) -> float:
         cross = Angle._calculate_cross_product(x0, y0, x1, y1, x2, y2)
         dot = Angle._calculate_dot_product(x0, y0, x1, y1, x2, y2)
+        if cross == dot == 0.0:
+            raise ValueError
         return np.arctan2(cross, dot) % (2 * np.pi)
-        # if dot > 0.0 and cross >= 0.0:
-        #     angle = np.arctan(cross / dot)
-        # elif dot > 0.0 and cross < 0.0:
-        #     angle = np.arctan(cross / dot) + 2 * np.pi
-        # elif dot < 0.0:
-        #     angle = np.arctan(cross / dot) + 1 * np.pi
-        # elif dot == 0.0 and cross > 0.0:
-        #     angle = 1 * np.pi / 2
-        # elif dot == 0.0 and cross < 0.0:
-        #     angle = 3 * np.pi / 2
-        # else:  # dot == cross == 0.0
-        #     raise ValueError('Cannot calculate the angle')
-        # return angle
 
     @staticmethod
     def _calculate_cross_product(x0, y0, x1, y1, x2, y2) -> float:
@@ -180,8 +175,7 @@ class Angle(Shape):
         return dot_product
 
 
-class Area(Shape):
-
+class SignedArea(Shape):
     def __init__(self, *nodes):
         if len(nodes) < 3:
             raise ValueError('At least three nodes are required to define an area')
@@ -198,24 +192,47 @@ class Area(Shape):
         coordinates = self.get_nodal_coordinates()
         signed_area = Area.calculate_signed_area(coordinates)
         if output_mode == Shape.MEASURE:
-            return np.abs(signed_area)
+            return signed_area
         n = int(len(coordinates) / 2)  # nb of nodes
         x, y = coordinates[::2], coordinates[1::2]
         jacobian_signed_area = np.empty(2 * n)
         jacobian_signed_area[0::2] = 0.5 * np.array([y[(k + 1) % n] - y[k - 1] for k in range(n)])
         jacobian_signed_area[1::2] = 0.5 * np.array([x[k - 1] - x[(k + 1) % n] for k in range(n)])
         if output_mode == Shape.MEASURE_AND_JACOBIAN:
-            return np.abs(signed_area), np.sign(signed_area) * jacobian_signed_area
+            return signed_area, jacobian_signed_area
         if output_mode == Shape.MEASURE_JACOBIAN_AND_HESSIAN:
-            return (np.abs(signed_area),
-                    np.sign(signed_area) * jacobian_signed_area,
-                    np.sign(signed_area) * self._hessian_signed_area)
+            return signed_area, jacobian_signed_area, self._hessian_signed_area
+        else:
+            raise ValueError('Unknown mode')
 
     @staticmethod
     def calculate_signed_area(coordinates):
         n = int(len(coordinates) / 2)  # nb of nodes
         x, y = coordinates[::2], coordinates[1::2]
         return 0.5 * np.sum([x[k] * y[(k + 1) % n] - x[(k + 1) % n] * y[k] for k in range(n)])
+
+
+class Area(SignedArea):
+
+    def compute(self, output_mode) -> float | tuple[float, np.ndarray] | tuple[float, np.ndarray, np.ndarray]:
+
+        computed_metrics = super().compute(output_mode)
+        if output_mode == Shape.MEASURE:
+            signed_area = computed_metrics
+            return np.abs(signed_area)
+        elif output_mode == Shape.MEASURE_AND_JACOBIAN:
+            signed_area = computed_metrics[0]
+            jacobian_signed_area = computed_metrics[1]
+            return np.abs(signed_area), np.sign(signed_area) * jacobian_signed_area
+        elif output_mode == Shape.MEASURE_JACOBIAN_AND_HESSIAN:
+            signed_area = computed_metrics[0]
+            jacobian_signed_area = computed_metrics[1]
+            hessian_signed_area = computed_metrics[2]
+            return (np.abs(signed_area),
+                    np.sign(signed_area) * jacobian_signed_area,
+                    np.sign(signed_area) * hessian_signed_area)
+        else:
+            raise ValueError('Unknown mode')
 
 
 class SquaredDistancePointSegment(Shape):
@@ -349,6 +366,57 @@ class DistancePointLine(CompoundShape):
 
     def __init__(self, node0: Node, node1: Node, node2: Node):
         super().__init__(Area(node0, node1, node2), Segment(node1, node2))
+
+    def compute(self, output_mode) \
+            -> float | tuple[float, np.ndarray] | tuple[float, np.ndarray, np.ndarray]:
+        triangle, line = self.get_shapes()
+        triangle_metric = triangle.compute(output_mode)
+        line_metric = line.compute(output_mode)
+        if not isinstance(triangle_metric, tuple):
+            area = triangle_metric
+            length = line_metric
+        else:
+            area = triangle_metric[0]
+            length = line_metric[0]
+        distance = 2 * area / length
+        if output_mode == Shape.MEASURE:
+            return distance
+
+        area_local_indices = self._shape_local_dof_indices[triangle]
+        line_local_indices = self._shape_local_dof_indices[line]
+        jacobian_area = np.zeros(self.get_nb_dofs())
+        jacobian_line = np.zeros(self.get_nb_dofs())
+        jacobian_area[area_local_indices] = triangle_metric[1]
+        jacobian_line[line_local_indices] = line_metric[1]
+        jacobian = 2 * (length * jacobian_area - area * jacobian_line) / length ** 2
+        if output_mode == Shape.MEASURE_AND_JACOBIAN:
+            return distance, jacobian
+
+        hessian_area = np.zeros((self.get_nb_dofs(), self.get_nb_dofs()))
+        hessian_line = np.zeros((self.get_nb_dofs(), self.get_nb_dofs()))
+        hessian_area[np.ix_(area_local_indices, area_local_indices)] = triangle_metric[2]
+        hessian_line[np.ix_(line_local_indices, line_local_indices)] = line_metric[2]
+
+        hessian = 2 * (
+                hessian_area / length
+                - (np.outer(jacobian_area, jacobian_line) + np.outer(jacobian_line, jacobian_area)) / length ** 2
+                - area * hessian_line / length ** 2
+                + 2 * area * np.outer(jacobian_line, jacobian_line) / length ** 3
+        )
+        if output_mode == Shape.MEASURE_JACOBIAN_AND_HESSIAN:
+            return distance, jacobian, hessian
+
+        else:
+            raise ValueError('Unknown mode')
+
+
+class SignedDistancePointLine(CompoundShape):
+    """ Shape metric that computes the signed distance between a point and a line.
+    The line is specified as two nodes forming a vector. If the point is on the left of the vector,
+    the distance is positive else negative. """
+
+    def __init__(self, node0: Node, node1: Node, node2: Node):
+        super().__init__(SignedArea(node0, node1, node2), Segment(node1, node2))
 
     def compute(self, output_mode) \
             -> float | tuple[float, np.ndarray] | tuple[float, np.ndarray, np.ndarray]:

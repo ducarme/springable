@@ -15,6 +15,7 @@ shape_unit_dimensions: dict[type[shape], int] = {shape.Segment: 1,
                                                  shape.Angle: 0,
                                                  shape.Path: 1,
                                                  shape.DistancePointLine: -1,
+                                                 shape.SignedDistancePointLine: -1,
                                                  shape.SquaredDistancePointSegment: -2}
 
 

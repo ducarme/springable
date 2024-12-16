@@ -12,7 +12,7 @@ DEFAULT_BEHAVIORS: dict[str, MechanicalBehavior] = {'LINEAR': LinearBehavior(DEF
                                                                              [1.0, 2.0], 0.2),
                                                     'ZIGZAG2': ZigZag2Behavior(DEFAULT_NATURAL_MEASURE, [1.0, 2.0, 3.0],
                                                                                [1.0, -5.0, 1.0], 0.5),
-                                                    'CONTACT': ContactBehavior(0.0, 0.2, 2.0),
+                                                    'CONTACT': ContactBehavior(0.0, 10.0, 0.5),
                                                     'ISOTHERMIC_GAS': IsothermicGas(DEFAULT_NATURAL_MEASURE, 1.0, 1.0,
                                                                                     1.0),
                                                     'ISENTROPIC_GAS': IsentropicGas(DEFAULT_NATURAL_MEASURE, 1.0, 1.0,
