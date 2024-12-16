@@ -189,7 +189,7 @@ class StaticSolver:
     UNSTABLE = 'unstable'  # unstable under both force control and displacement control
     _DEFAULT_SOLVER_SETTINGS = {'reference_load_parameter': 0.05,
                                 'radius': 0.05,
-                                'detect_critical_points': False,
+                                'detect_critical_points': True,
                                 'bifurcate_at_simple_bifurcations': False,
                                 'show_warnings': False,
                                 'verbose': True,
