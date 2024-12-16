@@ -175,7 +175,8 @@ width, 2.0
 height, 1.0
 stiffness, 7.3
 ```
-*Three parameters - `width`, `height` and `stiffness` - are defined and set to values `2.0`, `1.0` and `7.3` respectively.*
+>Three parameters - `width`, `height` and `stiffness` - are defined
+> and set to values `2.0`, `1.0` and `7.3` respectively.
 
 #### The `NODES` section
 The `NODES` section serves to define the nodes composing the spring assembly, by specifying their index,
@@ -199,9 +200,9 @@ NODES
 1, +width/2, 0.0, 1, 1
 2, 0.0, height, 1, 0
 ```
-*Three nodes labelled `0`, `1` and `2` are defined at coordinates `(-width/2, 0.0)`, `(+width/2, 0.0)`, `(0.0, height)`
+>Three nodes labelled `0`, `1` and `2` are defined at coordinates `(-width/2, 0.0)`, `(+width/2, 0.0)`, `(0.0, height)`
 respectively. Nodes `0` and `1` are constrained horizontally and vertically, while node `2` is constrained horizontally
-but free to move vertically.*
+but free to move vertically.
 
 #### The `SPRINGS` section
 The `SPRINGS` section serves to define **longitudinal springs**, that is, springs whose elastic energy is a function of their length.
@@ -230,9 +231,9 @@ SPRINGS
 0-2, stiffness
 1-2, stiffness
 ```
-*Two linear longitudinal springs are defined. Both are characterized by the spring constant value `stiffness`.
+>Two linear longitudinal springs are defined. Both are characterized by the spring constant value `stiffness`.
 No natural length was provided, so their natural length will be automatically set to the distance between nodes `0`
-and `2`, and between nodes `1` and `2` as defined in the section `NODES`, respectively.*
+and `2`, and between nodes `1` and `2` as defined in the section `NODES`, respectively.
 
 #### The `ROTATION SPRINGS` section
 The `ROTATION SPRINGS` section serves to define **rotation springs**
@@ -263,11 +264,11 @@ Example:
 ROTATION SPRINGS
 0-2-1, 1.5, PI/2
 ```
-*A linear rotation spring is defined. The torque it creates will be determined by the difference between the angle 021
+>A linear rotation spring is defined. The torque it creates will be determined by the difference between the angle 021
 (vertex at node `2`) and its natural angle `PI/2` (90 deg). The angle-difference versus torque relation is defined
 by the spring constant set to `1.5`.
 Note that if no natural angle was specified, the natural angle would have been automatically set to the angle defined by
-the nodes `0`, `1` and `2` as defined in the section `NODES`.*
+the nodes `0`, `1` and `2` as defined in the section `NODES`.
 
 
 #### The `AREA SPRINGS` section
@@ -302,11 +303,11 @@ Example:
 AREA SPRINGS
 0-2-1, 3.0
 ```
-*A linear area spring is defined. The 2d-pressure it creates will be determined by the difference between the area of the polygon 0210
+>A linear area spring is defined. The 2d-pressure it creates will be determined by the difference between the area of the polygon 0210
 and its natural area. The area-change versus 2d-pressure relation is defined
 by the spring constant set to `3.0`.
 Here, no natural area was provided, so the natural area will be automatically set to
-the area of the polygon defined by the nodes `0`, `2`, and `1` as defined in the section `NODES`.*
+the area of the polygon defined by the nodes `0`, `2`, and `1` as defined in the section `NODES`.
 
 #### The `LINE SPRINGS` section
 The `LINE SPRINGS` section serves to define **line springs**, that is, springs whose elastic energy is a function of their [polygonal chain](https://en.wikipedia.org/wiki/Polygonal_chain)'s length.
@@ -338,10 +339,10 @@ Example:
 LINE SPRINGS
 0-2-1, 1.0
 ```
-*A linear line spring is defined. The tension it creates will be determined by the difference between its current and natural lengths.
+>A linear line spring is defined. The tension it creates will be determined by the difference between its current and natural lengths.
 The displacement versus tension relation is defined by the spring constant set to `1.0`.
 Here, no natural length was provided, so the natural length will be automatically set to
-the length of the polygonal chain defined by the nodes `0`, `2`, and `1` as defined in the section `NODES`.*
+the length of the polygonal chain defined by the nodes `0`, `2`, and `1` as defined in the section `NODES`.
 
 
 #### The `LOADING` section
@@ -363,12 +364,13 @@ Example:
 LOADING
 2, Y, -10.0, -3.0
 ```
-*A force is applied on node `2`, along the `Y`-direction (vertical).
+>A force is applied on node `2`, along the `Y`-direction (vertical).
 The magnitude of the force is `-10` (it is a negative value, so the force points downwards).
 The maximum displacement is set to `-3.0`, meaning that if node `2` is displaced downward by more that `3.0`,
-the simulation is assumed to have completed.*
+the simulation is assumed to have completed.
 
-*Note: More complex loading can be specified (preloading, multiple loading steps, blocking nodes).
+[!Note]
+More complex loading can be specified (preloading, multiple loading steps, blocking nodes).
 Please refer to [Complex loading descriptions](#complex-loading-descriptions) paragraph in the [Advanced topics](#advanced-topics) for more details.*
 
 
