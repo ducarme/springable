@@ -142,7 +142,7 @@ def get_extrema(a, x, delta):
         else:
             roots = dfs[index].roots()
             real_roots = np.real(roots[np.isreal(roots)])
-            if real_roots and conditions[i](real_roots[0]):
+            if real_roots.size > 0 and conditions[i](real_roots[0]):
                 extrema.append(real_roots[0])
     return np.array(extrema)
 
