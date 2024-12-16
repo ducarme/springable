@@ -106,14 +106,15 @@ that describes the model you want to simulate. In this case, we used the CSV fil
 * The `save_dir` argument is simply the name of the folder under which the simulation results will be saved. It should not exist yet; it will be created automatically when we run the script.
 It is an optional argument, if not specified, a folder will be created automatically in the working directory to store the result files.
 
-Finally, we run the Python script. This can be done by simply executing
+Finally, we run the Python script. This can be done in the terminal by simply executing
 
     python my_first_spring_simulation.py
 
-in the terminal.
 
 
-Many settings can be tuned before running a simulation. See paragraph [Configuring simulation settings](#configuring-simulation-settings) for more details.
+
+>[!TIP]
+> Many settings can be tuned before running a simulation. See paragraph [Configuring simulation settings](#configuring-simulation-settings) for more details.
 
 ### Creating a CSV file describing the spring model
 
@@ -295,7 +296,8 @@ the mechanical behavior is simply the **spring constant** (positive float), that
 It is an optional parameter; if not provided the natural area of the area spring will automatically be set to the
 area defined by the n nodes as created in the `NODES` section.
 
-*Note: to define an area spring associated to a **[polygon with holes](https://en.wikipedia.org/wiki/Polygon_with_holes)**,
+> [!NOTE]
+> To define an area spring associated to a **[polygon with holes](https://en.wikipedia.org/wiki/Polygon_with_holes)**,
 please refer to [Area springs with holes](#area-spring-with-holes) paragraph in the [Advanced topics](#advanced-topics).*
 
 Example:
