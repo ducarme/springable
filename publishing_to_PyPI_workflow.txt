@@ -120,6 +120,11 @@ Version a.b.c
 
 Paul Ducarme, AMOLF, Amsterdam (NL), 2024
 
+* if everythin ok, upload to PyPI
+>>> twine upload dist/*
+
+
+
 
 
 
@@ -133,5 +138,5 @@ Paul Ducarme, AMOLF, Amsterdam (NL), 2024
 
 
 useful resources:
-[1] https://realpython.com/pypi-publish-python-package/#prepare-your-package-for-publication
+[1] twine check dist/*
 [2] https://stackoverflow.com/questions/34514703/pip-install-from-pypi-works-but-from-testpypi-fails-cannot-find-requirements
