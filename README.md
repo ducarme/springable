@@ -440,8 +440,8 @@ and run it (in the terminal, that would be done using `python start_behavior_cre
 A window named *Behavior creation* should pop up on your screen
 <p align="center"><img src="https://github.com/user-attachments/assets/20f715f0-d1cb-405b-9760-65faf9dbd7ae" height="320px"/></p>
 
-By playing around with the interface, you will be able to create various generalized force-displacement curve and generate the corresponding code to use in the
-[spring model CSV file](#creating-a-csv-file-describing-the-spring-model). Hereinbelow, more details are provided about the various type mechanical behaviors.
+By playing around with the interface, you will be able to create various generalized force-displacement curves and generate the corresponding code to use in the
+[spring model CSV file](#creating-a-csv-file-describing-the-spring-model). Hereinbelow, more details are provided about the various types of mechanical behavior.
 
 #### Linear behavior
 For a **linear** generalized force-displacement curve $F=kU$, where $k$ is the spring constant,
@@ -470,7 +470,7 @@ Example: `... , NATURAL(k=2.0), 1.0`.
 
 #### Bezier behavior
 A **Bezier** behavior is described by a generalized force-displacement curve defined as a [Bezier curve](https://en.wikipedia.org/wiki/B%C3%A9zier_curve).
-More precisely, the $F-U$ curve is given by $F=\sum_{i=1}^n f_i b_{i,n}(t)$ and $U=\sum_{i=1}^n u_i b_{i,n}(t)$, where $u_i$ and $f_i$ describes
+More precisely, the $F-U$ curve is given by $F=\sum_{i=1}^n f_i b_{i,n}(t)$ and $U=\sum_{i=1}^n u_i b_{i,n}(t)$, where $u_i$ and $f_i$ describe
 the coordinates of [control points](https://en.wikipedia.org/wiki/Control_point_(mathematics)),
 $b_{i,n}$ are the [Bernstein polynomials](https://en.wikipedia.org/wiki/Bernstein_polynomial) of degree $n$,
 and $t$ is the curve parameter that runs from 0 to 1.
@@ -481,8 +481,10 @@ Example: `..., BEZIER(u_i=[1.0;1.2;3.0];f_i=[2.0;-3.0;2.4])`
 > A spring is defined with a generalized force-displacement relation described as a Bezier curve of degree 3 with control points (0, 0), (1.0, 2.0), (1.2, -3.0) and (3.0, 2.4).
 
 > [!IMPORTANT]
-> For a generalized displacement $U$ larger than $u_n$, the corresponding generalized force is extrapolated linearly based on the slope at the last control points.
-> The generalized force-displacement relation is also defined for negative generalized displacement $U<0$ by imposing the symmetry $F(U<0)=-F(|U|)$.
+> For a generalized displacement $U$ larger than $u_n$, the corresponding generalized force is extrapolated linearly based on the slope at the last control point.
+> Also, the generalized force-displacement relation is defined for negative generalized displacement $U<0$ by imposing the symmetry $F(U<0)=-F(|U|)$.
+
+
 
 
 
