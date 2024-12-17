@@ -5,7 +5,7 @@
 [![Research Group](https://img.shields.io/badge/Research%20group-Soft%20robotic%20matter%20%40%20AMOLF-67CD00)](https://overvelde.com/)
 [![Made with love in Amsterdam (NL)](https://img.shields.io/badge/Made%20with%20%E2%9D%A4%EF%B8%8F%20in-Amsterdam%20(NL)-ece4fc)](https://amolf.nl/)
 
-<p align="center"><img src="https://github.com/user-attachments/assets/fbde0c3c-cbd1-4cdd-9e25-95d5e8706c41" height="150px"/></p>
+<p align="center"><img src="https://github.com/user-attachments/assets/5ff439c7-6faf-4647-aa4b-c4180ac76e62" height="150px"/></p>
 <p align="center">Library for nonlinear spring simulations</p>
 <p align="center"><img src="https://github.com/user-attachments/assets/5c379275-2bdc-4fe8-88d2-05cefdd1d02b" height="400px"/></p>
 
