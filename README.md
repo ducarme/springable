@@ -417,7 +417,9 @@ An intrinsic mechanical behavior is fully characterized by a **generalized force
 For a longitudinal spring, that curve will be interpreted as *force-displacement* curve. For a rotational spring, as a
 *torque-angle change* curve. For an area spring, as a *2d pressure-area change* curve. Etc.
 
-Mathematically speaking, the generalized force $F$ is defined as the derivative of the elastic energy with respect to the
+> [!Note] Mathematically speaking, the generalized force $F$ is defined as the derivative of the elastic energy with respect to the *measure* $\alpha$
+> of the spring. The measure $\alpha$ is the *length* for a longitudinal spring, the *angle* for a rotation spring, the *area* for an area spring, etc.
+> The generalized displacement $U$ is defined as the difference between the current natural measure $\alpha$ and the *natural measure* $\alpha_0$
 
 
 ### Configuring simulation settings
