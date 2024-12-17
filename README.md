@@ -1,15 +1,13 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/springable)](https://pypi.org/project/springable/)
+![GitHub License](https://img.shields.io/github/license/ducarme/springable)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ducarme/springable/blob/main/docs/examples/example01_getting_started/example01_getting_started.ipynb)
 [![Research Group](https://img.shields.io/badge/Research-AMOLF%20Soft%20Robotic%20Matter%20Group-67CD00)](https://overvelde.com/)
 [![Made with love in Amsterdam (NL)](https://img.shields.io/badge/Made%20with%20%E2%9D%A4%EF%B8%8F%20in-Amsterdam%20(NL)-ece4fc)](https://amolf.nl/)
 
-<p align="center">
-  <a><img src="https://github.com/user-attachments/assets/fbde0c3c-cbd1-4cdd-9e25-95d5e8706c41" height="200px"/></a>
-  <p align="center">Library for nonlinear spring simulations</p>
-</p>
-
-![](https://github.com/user-attachments/assets/5c379275-2bdc-4fe8-88d2-05cefdd1d02b)
+<p align="center"><img src="https://github.com/user-attachments/assets/fbde0c3c-cbd1-4cdd-9e25-95d5e8706c41" height="150px"/></p>
+<p align="center">Library for nonlinear spring simulations</p>
+<p align="center"><img src="https://github.com/user-attachments/assets/5c379275-2bdc-4fe8-88d2-05cefdd1d02b" height="400px"/></p>
 
 
 **Springable** is a library for **mechanical simulations of nonlinear springs**. It allows you to simulate how structures made out of (non)linear springs deform when subject to forces.

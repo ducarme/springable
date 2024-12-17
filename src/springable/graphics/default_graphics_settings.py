@@ -26,6 +26,7 @@ DEFAULT_PLOT_OPTIONS = {
     "show_driven_path_legend": True,
     "figure_width": 4,
     "figure_height": 4,
+    "transparent": False,
     "range_parameter_scan_colormap": 'viridis',
     "discrete_parameter_scan_colormap": 'tab10',
     "lowest_eigval_colormap": 'PuOr',
@@ -71,6 +72,7 @@ DEFAULT_ANIMATION_OPTIONS = {
 
 DEFAULT_ASSEMBLY_APPEARANCE = {
     "stylesheet": "default",
+    "transparent": False,
     "coloring_mode": "generalized_force",
     "color_elements": True,
     "color_forces": False,

@@ -30,7 +30,7 @@ def draw_model(mdl: model.Model, save_dir=None, save_name='model', show=True, **
         ax.set_xlim(midx - canvas_span / 2, midx + canvas_span / 2)
         ax.set_ylim(midy - canvas_span / 2, midy + canvas_span / 2)
         if save_dir is not None:
-            ff.save_fig(fig, save_dir, save_name, ['png', 'pdf'])
+            ff.save_fig(fig, save_dir, save_name, ['png', 'pdf'], transparent=aa['transparent'])
         if show:
             plt.show()
         else:

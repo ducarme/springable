@@ -25,7 +25,7 @@ def _print_progress(title, index, length):
     sys.stdout.flush()
 
 
-def _load_graphics_settings(graphics_settings):
+def _load_graphics_settings(graphics_settings: str | tuple | list):
     if graphics_settings is not None:
         if isinstance(graphics_settings, str):
             graphics_settings = io.read_graphics_settings_file(graphics_settings)
@@ -44,7 +44,7 @@ def _load_graphics_settings(graphics_settings):
     return graphics_settings
 
 
-def load_result(_result):
+def load_result(_result: str | static_solver.Result) -> static_solver.Result:
     if isinstance(_result, str):
         _result = io.read_results(_result)
     if not isinstance(_result, static_solver.Result):

@@ -37,6 +37,7 @@ show_driven_path_legend = true
 
 figure_width = 4
 figure_height = 4
+transparent = false
 
 # herein below, colormaps. Must be named colormaps from matplotlib
 # (visit https =//matplotlib.org/stable/users/explain/colors/colormaps.html for more info)
@@ -104,6 +105,7 @@ animated_equilibrium_point_size= 10
 
 [assembly_appearance]
 stylesheet = "default"  # only used when drawing the model, not used for the animation
+transparent = false  # used when saving the model drawing or saving animation as PNG frames
 coloring_mode = "generalized_force"
 # "none", "energy", "generalized_force", "generalized_stiffness"
 color_elements = true

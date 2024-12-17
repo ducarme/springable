@@ -8,6 +8,22 @@ import matplotlib.patches as mpatches
 import typing
 
 
+def extract_branches(result: static_solver.Result) -> dict[str, list[list[int]]]:
+    stability: np.ndarray = result.get_stability()
+    branch_dict = {static_solver.StaticSolver.STABLE: [],
+                   static_solver.StaticSolver.STABILIZABLE: [],
+                   static_solver.StaticSolver.UNSTABLE: []}
+    current_branch = [0]
+    for i in range(1, stability.shape[0]):
+        if stability[i] == stability[i - 1]:
+            current_branch.append(i)
+        else:
+            branch_dict[stability[i - 1]].append(current_branch)
+            current_branch = [i]
+    branch_dict[stability[-1]].append(current_branch)
+    return branch_dict
+
+
 def extract_loading_path(result: static_solver.Result, drive_mode: str, starting_index: int = 0):
     u_load, f_load = result.get_equilibrium_path()
     stability = result.get_stability()
@@ -317,7 +333,7 @@ def parametric_curve(processing_fun: callable,
         if save_dir is not None:
             if save_name is None:
                 save_name = po['default_plot_name']
-            ff.save_fig(fig, save_dir, save_name, ["png", "pdf"])
+            ff.save_fig(fig, save_dir, save_name, ["png", "pdf"], transparent=po['transparent'])
         if show:
             plt.show()
         else:
@@ -373,7 +389,7 @@ def curve(processing_fun: callable, result: static_solver.Result,
         if save_dir is not None:
             if save_name is None:
                 save_name = po['default_plot_name']
-            ff.save_fig(fig, save_dir, save_name, ["png", "pdf"])
+            ff.save_fig(fig, save_dir, save_name, ["png", "pdf"], transparent=po['transparent'])
         if show:
             plt.show()
         else:
