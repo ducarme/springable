@@ -2,7 +2,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/springable)](https://pypi.org/project/springable/)
 ![GitHub License](https://img.shields.io/github/license/ducarme/springable)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ducarme/springable/blob/main/docs/examples/example01_getting_started/example01_getting_started.ipynb)
-[![Research Group](https://img.shields.io/badge/Research-AMOLF%20Soft%20Robotic%20Matter%20Group-67CD00)](https://overvelde.com/)
+[![Research Group](https://img.shields.io/badge/Research%20group-Soft%20robotic%20matter%20%40%20AMOLF-67CD00)](https://overvelde.com/)
 [![Made with love in Amsterdam (NL)](https://img.shields.io/badge/Made%20with%20%E2%9D%A4%EF%B8%8F%20in-Amsterdam%20(NL)-ece4fc)](https://amolf.nl/)
 
 <p align="center"><img src="https://github.com/user-attachments/assets/fbde0c3c-cbd1-4cdd-9e25-95d5e8706c41" height="150px"/></p>
@@ -18,10 +18,10 @@ The implementation of the library is geared towards understanding how spring ass
 ranging from simple monotonic responses to complex, highly-nonlinear ones, such as snapping instabilities, sequencing,
 buckling, symmetry-breaking or restabilization.
 
-In its core, **springable** deals with **springs**, that we define as any entity that can store [elastic energy](https://en.wikipedia.org/wiki/Elastic_energy).
+In its core, `springable` deals with **springs**, that we define as any entity that can store [elastic energy](https://en.wikipedia.org/wiki/Elastic_energy).
 *Springs* therefore include longitudinal springs (compression and extension),
 rotation springs (bending), area springs (useful to model fluids and pneumatic loading), line springs (useful to model cable-driven systems), and more!
-On top of that, the library allows you to define the energy potential of each individual spring to make them intrisically linear or nonlinear, thereby generating a whole ecosystem of springs, ready to be assembled and simulated!
+On top of that, the library allows you to define the energy potential of each individual spring to make them intrinsically linear or nonlinear, thereby generating a whole ecosystem of springs, ready to be assembled and simulated!
 
 **Table of contents**
 
@@ -46,8 +46,7 @@ On top of that, the library allows you to define the energy potential of each in
       + [Area spring with holes](#area-spring-with-holes)
       + [Complex loading descriptions](#complex-loading-descriptions)
       + [Scanning parameters](#scanning-parameters)
-- [How to define your own custom springs](#how-to-define-your-own-custom-springs)
-
+   
 ## Installation
 
 Use `pip` to install. In the terminal simply enter
@@ -413,7 +412,13 @@ Value π can be used without defining it in the section `PARAMETERS` with the ke
 or to omit it completely (no header and no content).
 
 ### Specifying a nonlinear mechanical behavior
-TO DO
+In `springable`, each spring (longitudinal, rotational, etc) has its own intrinsic mechanical behavior.
+An intrinsic mechanical behavior is fully characterized by a **generalized force-displacement curve**.
+For a longitudinal spring, that curve will be interpreted as *force-displacement* curve. For a rotational spring, as a
+*torque-angle change* curve. For an area spring, as a *2d pressure-area change* curve. Etc.
+
+Mathematically speaking, the generalized force $F$ is defined as the derivative of the elastic energy with respect to the
+
 
 ### Configuring simulation settings
 Many settings can be tuned before running a simulation. They fall into two categories: **solver settings**
