@@ -1,28 +1,31 @@
-# springable
-
 
 [![PyPI version](https://img.shields.io/pypi/v/springable)](https://pypi.org/project/springable/)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ducarme/springable/blob/main/docs/examples/example01_getting_started/example01_getting_started.ipynb)
 [![Research Group](https://img.shields.io/badge/Research-AMOLF%20Soft%20Robotic%20Matter%20Group-67CD00)](https://overvelde.com/)
 [![Made with love in Amsterdam (NL)](https://img.shields.io/badge/Made%20with%20%E2%9D%A4%EF%B8%8F%20in-Amsterdam%20(NL)-ece4fc)](https://amolf.nl/)
 
+<p align="center">
+  <a><img src="https://github.com/user-attachments/assets/fbde0c3c-cbd1-4cdd-9e25-95d5e8706c41" height="200px"/></a>
+  <p align="center">Library for nonlinear spring simulations</p>
+</p>
+
 ![](https://github.com/user-attachments/assets/5c379275-2bdc-4fe8-88d2-05cefdd1d02b)
 
 
-The Python package `springable` allows you to simulate how structures made out of springs deform when subject to forces.
+**Springable** is a library for **mechanical simulations of nonlinear springs**. It allows you to simulate how structures made out of (non)linear springs deform when subject to forces.
 By accounting for any geometrical changes (as large as they may be), the simulation allows you to explore the richness
 of nonlinear mechanics, beyond the (boring) linear regime.
 
-The implementation of the package is geared towards understanding how spring assemblies lead to mechanical behaviors
+The implementation of the library is geared towards understanding how spring assemblies lead to mechanical behaviors
 ranging from simple monotonic responses to complex, highly-nonlinear ones, such as snapping instabilities, sequencing,
 buckling, symmetry-breaking or restabilization.
 
-In its core, `springable` deals with **springs**, that we define as any entity that can store [elastic energy](https://en.wikipedia.org/wiki/Elastic_energy).
-**Springs** therefore include longitudinal springs (compression and extension),
+In its core, **springable** deals with **springs**, that we define as any entity that can store [elastic energy](https://en.wikipedia.org/wiki/Elastic_energy).
+*Springs* therefore include longitudinal springs (compression and extension),
 rotation springs (bending), area springs (useful to model fluids and pneumatic loading), line springs (useful to model cable-driven systems), and more!
+On top of that, the library allows you to define the energy potential of each individual spring to make them intrisically linear or nonlinear, thereby generating a whole ecosystem of springs, ready to be assembled and simulated!
 
 **Table of contents**
-
 
 - [Installation](#installation)
 - [Don't want to install it right now? Try the Online Notebook](#dont-want-to-install-it-right-now-try-the-online-notebook)
