@@ -33,17 +33,17 @@ SPRINGS
 0-12, ks, PI/6 * l
 10-11, ks, PI/6 * l
 ROTATION SPRINGS
-12-0-1, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
-0-1-2, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
-1-2-3, ZIGZAG(a=[krot*0.99;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
-2-3-4, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
-3-4-5, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
-4-5-6, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
-5-6-7, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
-6-7-8, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
-7-8-9, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
-8-9-10, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
-9-10-11, ZIGZAG(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+12-0-1, PIECEWISE(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+0-1-2, PIECEWISE(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+1-2-3, PIECEWISE(a=[krot*0.99;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+2-3-4, PIECEWISE(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+3-4-5, PIECEWISE(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+4-5-6, PIECEWISE(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+5-6-7, PIECEWISE(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+6-7-8, PIECEWISE(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+7-8-9, PIECEWISE(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+8-9-10, PIECEWISE(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
+9-10-11, PIECEWISE(a=[krot;-0.5*krot; krot]; x=[theta_soft/180*PI;theta_stiff/180*PI]; delta=10.0/180*PI), PI
 0-12-11, 10*krot, PI/2
 12-11-10, 10*krot, PI/2
 LOADING

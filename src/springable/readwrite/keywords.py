@@ -11,10 +11,10 @@ usable_shapes = KeywordMapping({shape.Segment: '',
                                 })
 
 usable_behaviors = KeywordMapping({mechanical_behavior.LinearBehavior: 'LINEAR',
-                                   mechanical_behavior.NaturalBehavior: 'NATURAL',
+                                   mechanical_behavior.LogarithmBehavior: 'LOGARITHM',
                                    mechanical_behavior.BezierBehavior: 'BEZIER',
                                    mechanical_behavior.Bezier2Behavior: 'BEZIER2',
-                                   mechanical_behavior.ZigZagBehavior: 'ZIGZAG',
+                                   mechanical_behavior.PiecewiseBehavior: 'PIECEWISE',
                                    mechanical_behavior.ZigZag2Behavior: 'ZIGZAG2',
                                    mechanical_behavior.ContactBehavior: 'CONTACT',
                                    mechanical_behavior.IsothermicGas: 'ISOTHERMIC_GAS',

@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def compute_zigzag_control_points(a, x, extra=1.0):
+def compute_piecewise_control_points(a, x, extra=1.0):
     cp_x = [0.0]
     cp_y = [0.0]
     for i in range(len(x)):
@@ -14,7 +14,7 @@ def compute_zigzag_control_points(a, x, extra=1.0):
     return np.array(cp_x), np.array(cp_y)
 
 
-def compute_zizag_slopes_and_transitions_from_control_points(cp_x, cp_y) \
+def compute_piecewise_slopes_and_transitions_from_control_points(cp_x, cp_y) \
         -> tuple[list[float], list[float]]:
     a = (np.diff(cp_y) / np.diff(cp_x)).tolist()
     x = np.array(cp_x[1:-1]).tolist()
@@ -80,7 +80,7 @@ def _create_all_second_derivative_smoothing_functions(a, x, delta, b):
     return dfuns
 
 
-def create_smooth_zigzag_function(a, x, delta):
+def create_smooth_piecewise_function(a, x, delta):
     b = _compute_intercepts(a, x)
     smoothing_functions = _create_all_smoothing_functions(a, x, delta, b)
     conditions = _create_interval_conditions(x, delta)
@@ -97,7 +97,7 @@ def create_smooth_zigzag_function(a, x, delta):
                                                spline_functions)
 
 
-def create_smooth_zigzag_derivative_function(a, x, delta):
+def create_smooth_piecewise_derivative_function(a, x, delta):
     b = _compute_intercepts(a, x)
     derivative_smoothing_functions = _create_all_derivative_smoothing_functions(a, x, delta, b)
     conditions = _create_interval_conditions(x, delta)
@@ -113,7 +113,7 @@ def create_smooth_zigzag_derivative_function(a, x, delta):
     return lambda u: np.piecewise(np.abs(u), [condition(np.abs(u)) for condition in conditions], der_spline_functions)
 
 
-def create_smooth_zigzag_second_derivative_function(a, x, delta):
+def create_smooth_piecewise_second_derivative_function(a, x, delta):
     b = _compute_intercepts(a, x)
     second_derivative_smoothing_functions = _create_all_second_derivative_smoothing_functions(a, x, delta, b)
     conditions = _create_interval_conditions(x, delta)
@@ -148,7 +148,7 @@ def get_extrema(a, x, delta):
 
 
 def get_extrema_from_control_points(cp_x, cp_y, delta):
-    a, x = compute_zizag_slopes_and_transitions_from_control_points(cp_x, cp_y)
+    a, x = compute_piecewise_slopes_and_transitions_from_control_points(cp_x, cp_y)
     return get_extrema(a, x, delta)
 
 
@@ -156,15 +156,15 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import numpy as np
 
-    a = [2, 1, 1, -1, 5]
-    x = [1, 2, 3, 6]
-    delta = .1
+    _a = [2, 1, 1, -1, 5]
+    _x = [1, 2, 3, 6]
+    _delta = .1
 
-    szz = create_smooth_zigzag_function(a, x, delta)
+    spw = create_smooth_piecewise_function(_a, _x, _delta)
 
-    u = np.linspace(x[0] - 1., x[-1] + 1., 300)
-    u_extrema = get_extrema(a, x, delta)
+    u = np.linspace(_x[0] - 1., _x[-1] + 1., 300)
+    u_extrema = get_extrema(_a, _x, _delta)
     fig, ax = plt.subplots()
-    ax.plot(u, szz(u))
-    ax.plot(u_extrema, szz(u_extrema), 'o')
+    ax.plot(u, spw(u))
+    ax.plot(u_extrema, spw(u_extrema), 'o')
     plt.show()

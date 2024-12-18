@@ -14,7 +14,7 @@ NODES
 1, 100.0, 0.0, 0, 1
 2, 200.0, 0.0, 0, 1
 SPRINGS
-2-1, ZIGZAG(a=[a00; a01; a02]; x=[x0;x0+delta_x0];delta=0.01)
-1-0, ZIGZAG(a=[a10; a11; a12]; x=[x1;x1+delta_x1];delta=0.01)
+2-1, PIECEWISE(a=[a00; a01; a02]; x=[x0;x0+delta_x0];delta=0.01)
+1-0, PIECEWISE(a=[a10; a11; a12]; x=[x1;x1+delta_x1];delta=0.01)
 LOADING
 2, X, 10

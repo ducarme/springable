@@ -14,6 +14,7 @@ class Assembly:
         self._nb_internal_dofs = np.sum([_el.get_nb_internal_dofs() for _el in self._elements]) if self._elements else 0
         self._nb_dofs = 2 * len(nodes) + self._nb_internal_dofs
 
+
         if auto_node_numbering:
             # assigns a unique number to each node
             for node_number, _node in enumerate(self._nodes):

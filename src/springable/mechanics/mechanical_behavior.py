@@ -1,5 +1,5 @@
 from .math_utils.bezier_curve import *
-from .math_utils import smooth_zigzag_curve as szz
+from .math_utils import smooth_piecewise_linear_curve as spw
 from scipy.interpolate import interp1d, griddata
 from scipy.integrate import quad, solve_ivp, cumulative_trapezoid
 from scipy.optimize import minimize, LinearConstraint
@@ -103,7 +103,7 @@ class LinearBehavior(UnivariateBehavior):
         return self._parameters['k']
 
 
-class NaturalBehavior(UnivariateBehavior):
+class LogarithmBehavior(UnivariateBehavior):
 
     def __init__(self, natural_measure: float, k: float):
         super().__init__(natural_measure, k=k)
@@ -118,7 +118,6 @@ class NaturalBehavior(UnivariateBehavior):
 
     def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
         stiffness = self._parameters['k'] * self._natural_measure / alpha
-        print(stiffness)
         return stiffness,
 
 
@@ -632,25 +631,26 @@ class IsentropicGas(IdealGas):
         self._check()
 
 
-class ZigZagBehavior(UnivariateBehavior, ControllableByPoints):
-    def __init__(self, natural_measure, a, x, delta):
-        super().__init__(natural_measure, a=a, x=x, delta=delta)
+class PiecewiseBehavior(UnivariateBehavior, ControllableByPoints):
+    def __init__(self, natural_measure, k, u, us):
+        super().__init__(natural_measure, k=k, u=u, us=us)
         self._check()
         self._make()
 
     def _check(self):
-        a, x, delta = self._parameters['a'], self._parameters['x'], self._parameters['delta']
-        if x[0] - 0.0 < delta or (len(x) > 1 and np.min(np.diff(x)) < 2 * delta):
+        k, u, us = self._parameters['k'], self._parameters['u'], self._parameters['us']
+        if u[0] - 0.0 < us or (len(u) > 1 and np.min(np.diff(u)) < 2 * us):
             raise InvalidBehaviorParameters(
-                f'delta ({delta:.3E}) is too large for the zigzag intervals provided. Should be less than {np.min(np.diff(x)) / 2:.3E}')
-        if len(a) != len(x) + 1:
-            raise InvalidBehaviorParameters(f'Expected {len(a) - 1} transitions, but only {len(x)} were provided.')
+                f'us ({us:.3E}) is too large for the piecewise intervals provided. '
+                f'Should be less than {min(np.min(np.diff(u)) / 2, u[0] - 0.0):.3E}')
+        if len(k) != len(u) + 1:
+            raise InvalidBehaviorParameters(f'Expected {len(k) - 1} transitions, but only {len(k)} were provided.')
 
     def _make(self):
-        a, x, delta = self._parameters['a'], self._parameters['x'], self._parameters['delta']
-        self._u_i, self._f_i = szz.compute_zigzag_control_points(a, x, extra=4 * delta)
-        self._generalized_force_function = szz.create_smooth_zigzag_function(a, x, delta)
-        self._generalized_stiffness_function = szz.create_smooth_zigzag_derivative_function(a, x, delta)
+        k, u, us = self._parameters['k'], self._parameters['u'], self._parameters['us']
+        self._u_i, self._f_i = spw.compute_piecewise_control_points(k, u, extra=4 * us)
+        self._generalized_force_function = spw.create_smooth_piecewise_function(k, u, us)
+        self._generalized_stiffness_function = spw.create_smooth_piecewise_derivative_function(k, u, us)
 
     def get_control_points(self) -> tuple[np.ndarray, np.ndarray]:
         return self._u_i.copy(), self._f_i.copy()
@@ -658,8 +658,8 @@ class ZigZagBehavior(UnivariateBehavior, ControllableByPoints):
     def update_from_control_points(self, cp_x, cp_y):
         if (np.diff(cp_x) < 0).any():
             raise InvalidBehaviorParameters(f'Each control point must be on the right of the previous one.')
-        a, x = szz.compute_zizag_slopes_and_transitions_from_control_points(cp_x, cp_y)
-        self.update(a=a, x=x)
+        k, u = spw.compute_piecewise_slopes_and_transitions_from_control_points(cp_x, cp_y)
+        self.update(k=k, u=u)
 
     def elastic_energy(self, alpha: float) -> float:
         return quad(self._generalized_force_function, 0.0, alpha - self._natural_measure)[0]
@@ -679,21 +679,21 @@ class ZigZagBehavior(UnivariateBehavior, ControllableByPoints):
 
 class ZigZag2Behavior(BivariateBehavior, ControllableByPoints):
 
-    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], delta):
-        super().__init__(natural_measure, u_i=u_i, f_i=f_i, delta=delta)
+    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], epsilon):
+        super().__init__(natural_measure, u_i=u_i, f_i=f_i, epsilon=epsilon)
         self._check()
         self._make()
 
     def _check(self):
-        u_i, f_i, delta = self._parameters['u_i'], self._parameters['f_i'], self._parameters['delta']
-        if not 0.0 < delta < 1.0:
-            raise InvalidBehaviorParameters(f'Parameter delta must be between 0 and 1 (current value: {delta:.3E})')
+        u_i, f_i, epsilon = self._parameters['u_i'], self._parameters['f_i'], self._parameters['epsilon']
+        if not 0.0 < epsilon < 1.0:
+            raise InvalidBehaviorParameters(f'Parameter epsilon must be between 0 and 1 (current value: {epsilon:.3E})')
         if len(u_i) != len(f_i):
             raise InvalidBehaviorParameters(f'u_i and f_i must contain the same number of elements')
 
         n = len(u_i) + 1
         _cp_t = np.arange(n) / (n - 1)
-        _delta = delta / (2 * (n - 1))
+        _delta = epsilon / (2 * (n - 1))
         _cp_u = np.array([0.0] + u_i)
         _cp_f = np.array([0.0] + f_i)
 
@@ -703,8 +703,8 @@ class ZigZag2Behavior(BivariateBehavior, ControllableByPoints):
         if da0 == 0.0 or db0 == 0.0:
             raise InvalidBehaviorParameters('The initial slope of the behavior'
                                             'cannot be perfectly horizontal or vertical')
-        a_extrema = szz.get_extrema_from_control_points(_cp_t, _cp_u, _delta)
-        b_extrema = szz.get_extrema_from_control_points(_cp_t, _cp_f, _delta)
+        a_extrema = spw.get_extrema_from_control_points(_cp_t, _cp_u, _delta)
+        b_extrema = spw.get_extrema_from_control_points(_cp_t, _cp_f, _delta)
         if any(x in set(b_extrema) for x in a_extrema):
             raise InvalidBehaviorParameters('The behavior curve cannot have cusps.')
         a_extrema = [(a_extremum, 'a_max' if i % 2 == (0 if da0 > 0 else 1) else 'a_min')
@@ -759,20 +759,22 @@ class ZigZag2Behavior(BivariateBehavior, ControllableByPoints):
                     print('error')
 
     def _make(self):
-        u_i, f_i, delta = self._parameters['u_i'], self._parameters['f_i'], self._parameters['delta']
+        u_i, f_i, epsilon = self._parameters['u_i'], self._parameters['f_i'], self._parameters['epsilon']
         self._cp_u = np.array([0.0] + u_i)
         self._cp_f = np.array([0.0] + f_i)
         n = len(u_i) + 1
         self._cp_t = np.arange(n) / (n - 1)
-        self._delta = delta / (2 * (n - 1))
-        slopes_u, transitions_u = szz.compute_zizag_slopes_and_transitions_from_control_points(self._cp_t, self._cp_u)
-        slopes_f, transitions_f = szz.compute_zizag_slopes_and_transitions_from_control_points(self._cp_t, self._cp_f)
-        self._a = szz.create_smooth_zigzag_function(slopes_u, transitions_u, self._delta)
-        self._b = szz.create_smooth_zigzag_function(slopes_f, transitions_f, self._delta)
-        self._da = szz.create_smooth_zigzag_derivative_function(slopes_u, transitions_u, self._delta)
-        self._db = szz.create_smooth_zigzag_derivative_function(slopes_f, transitions_f, self._delta)
-        self._d2a = szz.create_smooth_zigzag_second_derivative_function(slopes_u, transitions_u, self._delta)
-        self._d2b = szz.create_smooth_zigzag_second_derivative_function(slopes_f, transitions_f, self._delta)
+        self._delta = epsilon / (2 * (n - 1))
+        slopes_u, transitions_u = spw.compute_piecewise_slopes_and_transitions_from_control_points(self._cp_t,
+                                                                                                   self._cp_u)
+        slopes_f, transitions_f = spw.compute_piecewise_slopes_and_transitions_from_control_points(self._cp_t,
+                                                                                                   self._cp_f)
+        self._a = spw.create_smooth_piecewise_function(slopes_u, transitions_u, self._delta)
+        self._b = spw.create_smooth_piecewise_function(slopes_f, transitions_f, self._delta)
+        self._da = spw.create_smooth_piecewise_derivative_function(slopes_u, transitions_u, self._delta)
+        self._db = spw.create_smooth_piecewise_derivative_function(slopes_f, transitions_f, self._delta)
+        self._d2a = spw.create_smooth_piecewise_second_derivative_function(slopes_u, transitions_u, self._delta)
+        self._d2b = spw.create_smooth_piecewise_second_derivative_function(slopes_f, transitions_f, self._delta)
         self._d3a = lambda t: np.zeros_like(t)
         self._d3b = lambda t: np.zeros_like(t)
         self._dbda = lambda t: self._db(t) / self._da(t)
@@ -933,7 +935,7 @@ class ZigZag2Behavior(BivariateBehavior, ControllableByPoints):
         return self._hysteron_info
 
     def _compute_hysteron_info(self):
-        extrema = np.sort(szz.get_extrema_from_control_points(self._cp_t, self._cp_u, self._delta))
+        extrema = np.sort(spw.get_extrema_from_control_points(self._cp_t, self._cp_u, self._delta))
         extrema = np.hstack((-extrema[::-1], extrema))
         nb_extrema = extrema.shape[0]
         if nb_extrema == 0:  # not a hysteron
@@ -988,19 +990,19 @@ class ZigZag2Behavior(BivariateBehavior, ControllableByPoints):
 
 
 class ContactBehavior(UnivariateBehavior):
-    def __init__(self, natural_measure, f0, x0):
-        super().__init__(natural_measure, f0=f0, x0=x0)
+    def __init__(self, natural_measure, f0, u0):
+        super().__init__(natural_measure, f0=f0, u0=u0)
         self._p = 3.0
 
     def elastic_energy(self, alpha: float) -> float:
         dalpha = alpha - self._natural_measure
         f0 = self._parameters['f0']
-        x0 = self._parameters['x0']
+        u0 = self._parameters['u0']
         p = self._p
-        if dalpha >= x0:
+        if dalpha >= u0:
             return 0.0
         else:
-            return f0 * x0 / (p + 1) * ((x0 - dalpha) / x0) ** (p + 1)
+            return f0 * u0 / (p + 1) * ((u0 - dalpha) / u0) ** (p + 1)
 
     def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float | np.ndarray]:
         if isinstance(alpha, np.ndarray):
@@ -1011,22 +1013,22 @@ class ContactBehavior(UnivariateBehavior):
 
         dalpha = alpha - self._natural_measure
         f0 = self._parameters['f0']
-        x0 = self._parameters['x0']
+        u0 = self._parameters['u0']
         p = self._p
-        if dalpha >= x0:
+        if dalpha >= u0:
             return 0.0,
         else:
-            return -f0 * ((x0 - dalpha) / x0) ** p,
+            return -f0 * ((u0 - dalpha) / u0) ** p,
 
     def hessian_energy(self, alpha: float) -> tuple[float]:
         dalpha = alpha - self._natural_measure
         f0 = self._parameters['f0']
-        x0 = self._parameters['x0']
+        u0 = self._parameters['u0']
         p = self._p
-        if dalpha >= x0:
+        if dalpha >= u0:
             return 0.0,
         else:
-            return +f0 / x0 * p * ((x0 - dalpha) / x0) ** (p - 1),
+            return +f0 / u0 * p * ((u0 - dalpha) / u0) ** (p - 1),
 
 
 class InvalidBehaviorParameters(ValueError):
