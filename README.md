@@ -442,6 +442,17 @@ A window named *Behavior creation* should pop up on your screen
 By playing around with the interface, you will be able to create various generalized force-displacement curves and generate the corresponding code to use in the
 [spring model CSV file](#creating-a-csv-file-describing-the-spring-model). Herein below, more details are provided about the various types of mechanical behavior.
 
++ [Linear behavior](#linear-behavior)
++ [Logarithm behavior](#logarithm-behavior)
++ [Bezier behavior](#bezier-behavior)
++ [Bezier2 behavior](#bezier2-behavior)
++ [Piecewise behavior](#piecewise-behavior)
++ [Zigzag behavior](#zigzag-behavior)
++ [Zigzag2 behavior](#zigzag2-behavior)
++ [Contact behavior](#contact-behavior)
++ [Isothermic gas behavior](#isothermic-behavior)
++ [Isentropic gas behavior](#isentropic-behavior)
++ [Additional notes](#additional-notes-1)
 
 
 #### Linear behavior
@@ -516,6 +527,20 @@ Example: `..., BEZIER2(u_i=[2.5;-1.0;2.0];f_i=[2.0;-1.0;1.0])`
 > Also, a Bezier2 behavior is introducing an extra [degree of freedom (DOF)](https://en.wikipedia.org/wiki/Degrees_of_freedom_(mechanics))
 > in order to disambiguate the state of the spring, as the generalized displacement $U$ is not enough to fully define its state.
 > Using a **Bezier** behavior instead when the curve does not curve back helps keep the number of DOFs low.
+
+#### Piecewise behavior
+A **piecewise** behavior is defined by a [piecewise linear function](https://en.wikipedia.org/wiki/Piecewise_linear_function),
+whose corners have been smoothed using a quadratic function. A piecewise curve composed of $n$ segments is described by
+$n$ slopes $k_i$ and $n-1$ transition points $u_i$ at which the segments connect. The quantity $u_s$ describes how smooth
+each corner must be. More precisely, around each corner $i$ located at $u_i$, the curve is given by quadratic function on the interval
+$\[u_i-u_s, u_i+u_s\]$.
+
+#### Zigzag behavior
+#### Zigzag2 behavior
+#### Contact behavior
+#### Isothermic behavior
+#### Isentropic behavior
+#### Additional notes
 
 
 ### Configuring simulation settings

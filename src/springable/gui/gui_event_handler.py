@@ -86,10 +86,10 @@ class GUIEventHandler:
             return new_cp_x, new_cp_y
         elif isinstance(b, PiecewiseBehavior):
             cp_x, cp_y = b.get_control_points()
-            new_cp_x = np.append(cp_x, cp_x[-1] + 4 * b.get_parameters()['delta'])
-            new_cp_y = np.append(cp_y, cp_y[-1] + b.get_parameters()['a'][-1] * 4 * b.get_parameters()['delta'])
+            new_cp_x = np.append(cp_x, cp_x[-1] + 4 * b.get_parameters()['us'])
+            new_cp_y = np.append(cp_y, cp_y[-1] + b.get_parameters()['k'][-1] * 4 * b.get_parameters()['us'])
             return new_cp_x, new_cp_y
-        elif isinstance(b, ZigZag2Behavior):
+        elif isinstance(b, (ZigzagBehavior, Zigzag2Behavior)):
             cp_x, cp_y = b.get_control_points()
             s = 0.5
             new_cp_x = np.append(cp_x, cp_x[-1] + (cp_x[-1] - cp_x[-2]) * s)
@@ -118,7 +118,7 @@ class GUIEventHandler:
         except InvalidBehaviorParameters as e:
             error = e.get_message()
 
-        if isinstance(behavior, (BezierBehavior, Bezier2Behavior, PiecewiseBehavior, ZigZag2Behavior)):
+        if isinstance(behavior, (BezierBehavior, Bezier2Behavior, PiecewiseBehavior, ZigzagBehavior, Zigzag2Behavior)):
             cp_x, cp_y = behavior.get_control_points()
             if isinstance(behavior, UnivariateBehavior):
                 u = np.linspace(self._umin, self._umax, self._nb_samples)
@@ -152,7 +152,7 @@ class GUIEventHandler:
         self._behaviors[tab_name] = behavior
 
         error = ''
-        if isinstance(behavior, (BezierBehavior, Bezier2Behavior, PiecewiseBehavior, ZigZag2Behavior)):
+        if isinstance(behavior, (BezierBehavior, Bezier2Behavior, PiecewiseBehavior, ZigzagBehavior, Zigzag2Behavior)):
             if previous_control_points is not None:
                 try:
                     behavior.update(natural_measure, **notebook_parameters)
@@ -219,7 +219,8 @@ class GUIEventHandler:
 
         natural_measure = behavior.get_natural_measure()
 
-        if isinstance(behavior, (BezierBehavior, Bezier2Behavior, PiecewiseBehavior, ZigZag2Behavior)):
+        if isinstance(behavior, (BezierBehavior, Bezier2Behavior,
+                                 PiecewiseBehavior, ZigzagBehavior, Zigzag2Behavior)):
             if isinstance(behavior, UnivariateBehavior):
                 if not error:
                     u = np.linspace(self._umin, self._umax, self._nb_samples)
@@ -257,7 +258,8 @@ class GUIEventHandler:
         behavior = self._behaviors[name]
         natural_measure = self._behaviors[name].get_natural_measure()
 
-        if isinstance(behavior, (BezierBehavior, Bezier2Behavior, PiecewiseBehavior, ZigZag2Behavior)):
+        if isinstance(behavior, (BezierBehavior, Bezier2Behavior,
+                                 PiecewiseBehavior, ZigzagBehavior, Zigzag2Behavior)):
             cp_x, cp_y = self._drawing_space.get_control_points(name)
             error = ''
             try:
@@ -299,7 +301,8 @@ class GUIEventHandler:
             u = None
             f = None
         else:
-            if isinstance(behavior, (BezierBehavior, Bezier2Behavior, PiecewiseBehavior, ZigZag2Behavior)):
+            if isinstance(behavior, (BezierBehavior, Bezier2Behavior,
+                                     PiecewiseBehavior, ZigzagBehavior, Zigzag2Behavior)):
                 if isinstance(behavior, UnivariateBehavior):
                     u = np.linspace(self._umin, self._umax, self._nb_samples)
                     f = behavior.gradient_energy(natural_measure + u)[0]
@@ -386,7 +389,8 @@ class GUIEventHandler:
             # because all except clauses end with 'return'
             b = self._behaviors[tab_name]
             self._behavior_errors[tab_name] = ''
-            if isinstance(b, (BezierBehavior, Bezier2Behavior, PiecewiseBehavior, ZigZag2Behavior)):
+            if isinstance(b, (BezierBehavior, Bezier2Behavior,
+                              PiecewiseBehavior, ZigzagBehavior, Zigzag2Behavior)):
                 cp_x, cp_y = b.get_control_points()
                 if isinstance(b, UnivariateBehavior):
                     u = np.linspace(self._umin, self._umax, self._nb_samples)

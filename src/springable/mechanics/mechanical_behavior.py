@@ -199,7 +199,7 @@ class BezierBehavior(UnivariateBehavior, ControllableByPoints):
                 behavior = BezierBehavior(natural_measure, u_i=u_i, f_i=f_i)
                 f_fit = behavior.gradient_energy(natural_measure + u_sampling)[0]
             except InvalidBehaviorParameters as e:
-                mismatch = nb_samples * fmax**2
+                mismatch = nb_samples * fmax ** 2
                 print(f"Could not define a proper mismatch based on the parameters u_i={u_i} and f_i={f_i}. "
                       f"{e.get_message()}. Mismatch is defaulted to {mismatch:.3E}.")
             else:
@@ -515,122 +515,6 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
                                    'branch_ids': branch_ids}
 
 
-class IdealGas(UnivariateBehavior):
-
-    def __init__(self, v0: float, n: float, R: float, T0: float):
-        """
-            v0: the volume the amount of gas would take at ambient pressure
-            n:  the amount of substance (number of gas particles, number of moles, ...)
-            R:  is the proportionality factor between the gas temperature and the gas thermal energy per unit of substance
-                (Boltzmann constant if the amount of substance is expressed as the number of particles,
-                the molar gas constant if the amount of substance is expressed as the number of moles, ...)
-            T0: the temperature of the gas at ambient pressure
-        """
-        super().__init__(v0, n=n, R=R, T0=T0)
-
-    def elastic_energy(self, alpha: float | np.ndarray) -> float:
-        raise NotImplementedError("This method is abstract")
-
-    def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float]:
-        raise NotImplementedError("This method is abstract")
-
-    def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
-        raise NotImplementedError("This method is abstract")
-
-
-class IsothermicGas(IdealGas):
-
-    def elastic_energy(self, alpha: float | np.ndarray) -> float:
-        v = alpha
-        v0 = self._natural_measure
-        if v < 0:
-            return np.nan
-        nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
-        return nRT * (v / v0 - 1.0 - np.log(v / v0))
-
-    def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float | np.ndarray]:
-        if isinstance(alpha, np.ndarray):
-            g = np.empty_like(alpha)
-            for i, alpha_i in enumerate(alpha):
-                g[i] = self.gradient_energy(alpha_i)[0]
-            return g,
-
-        v = alpha
-        v0 = self._natural_measure
-        if v < 0:
-            return np.nan,
-        nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
-        return nRT * (v - v0) / (v * v0),
-
-    def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
-        v = alpha
-        if v < 0:
-            return np.nan,
-        nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
-        return nRT / v ** 2,
-
-
-class IsentropicGas(IdealGas):
-
-    def __init__(self, v0: float, n: float, R: float, T0: float, gamma: float):
-        """
-            v0: the volume the amount of gas would take at ambient pressure
-            n:  the amount of substance (number of gas particles, number of moles, ...)
-            R:  is the proportionality factor between the gas temperature and the gas thermal energy per unit of substance
-                (Boltzmann constant if the amount of substance is expressed as the number of particles,
-                the molar gas constant if the amount of substance is expressed as the number of moles, ...)
-            T0: the temperature of the gas at ambient pressure
-            gamma: the heat capacity ratio (a.k.a. adiabatic index), that is, cp/cv. Must be strictly greater than 1.
-                   It is a non-dimensional property of the gas (for dry air, gamma = 1.4)
-        """
-
-        super().__init__(v0, n=n, R=R, T0=T0)
-        self._parameters['gamma'] = gamma
-        self._check()
-
-    def _check(self):
-        if self._parameters['gamma'] < 1.0:
-            raise InvalidBehaviorParameters(f"The ratio of heat capacities gamma must be strictly greater than 1. "
-                                            f"Current value = {self._parameters['gamma']:.3E}")
-
-    def elastic_energy(self, alpha: float | np.ndarray) -> float:
-        v0 = self._natural_measure
-        gamma = self._parameters['gamma']
-        v = alpha
-        if v < 0:
-            return np.nan
-        nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
-        return nRT0 * (v / v0 - 1) + nRT0 / (gamma - 1) * ((v0 / v) ** (gamma - 1) - 1)
-
-    def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float | np.ndarray]:
-        if isinstance(alpha, np.ndarray):
-            g = np.empty_like(alpha)
-            for i, alpha_i in enumerate(alpha):
-                g[i] = self.gradient_energy(alpha_i)[0]
-            return g,
-
-        v0 = self._natural_measure
-        gamma = self._parameters['gamma']
-        v = alpha
-        if v < 0:
-            return np.nan,
-        nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
-        return nRT0 * (1 / v0 - 1 / v * (v0 / v) ** (gamma - 1)),
-
-    def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
-        v0 = self._natural_measure
-        gamma = self._parameters['gamma']
-        v = alpha
-        if v < 0:
-            return np.nan,
-        nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
-        return nRT0 * gamma / v ** 2 * (v0 / v) ** (gamma - 1),
-
-    def update(self, natural_measure=None, /, **parameters):
-        super().update(natural_measure, **parameters)
-        self._check()
-
-
 class PiecewiseBehavior(UnivariateBehavior, ControllableByPoints):
     def __init__(self, natural_measure, k, u, us):
         super().__init__(natural_measure, k=k, u=u, us=us)
@@ -677,9 +561,86 @@ class PiecewiseBehavior(UnivariateBehavior, ControllableByPoints):
             self._make()
 
 
-class ZigZag2Behavior(BivariateBehavior, ControllableByPoints):
+class ZigzagBehavior(UnivariateBehavior, ControllableByPoints):
 
-    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], epsilon):
+    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], epsilon: float,
+                 sampling: int = 100):
+        super().__init__(natural_measure, u_i=u_i, f_i=f_i, epsilon=epsilon)
+        self._sampling = sampling
+        self._check()
+        self._make()
+
+    def get_control_points(self) -> tuple[np.ndarray, np.ndarray]:
+        cp_x = np.array([0.0] + self._parameters['u_i'])
+        cp_y = np.array([0.0] + self._parameters['f_i'])
+        return cp_x, cp_y
+
+    def update_from_control_points(self, cp_x, cp_y):
+        u_i = cp_x[1:].tolist()
+        f_i = cp_y[1:].tolist()
+        self.update(u_i=u_i, f_i=f_i)
+
+    def _check(self):
+        u_i, f_i, epsilon = self._parameters['u_i'], self._parameters['f_i'], self._parameters['epsilon']
+        if not 0.0 < epsilon < 1.0:
+            raise InvalidBehaviorParameters(f'Parameter epsilon must be between 0 and 1 (current value: {epsilon:.3E})')
+        if len(u_i) != len(f_i):
+            raise InvalidBehaviorParameters(f'u_i and f_i must contain the same number of elements')
+        if (np.diff(u_i, prepend=0.0) <= 0.0).any():
+            raise InvalidBehaviorParameters(
+                f'u_i values should be positive and monotonically increasing. Try Zigzag2 instead')
+
+    def _make(self):
+        u_i, f_i, epsilon = self._parameters['u_i'], self._parameters['f_i'], self._parameters['epsilon']
+        cp_u = np.array([0.0] + u_i)
+        cp_f = np.array([0.0] + f_i)
+        n = len(u_i) + 1
+        cp_t = np.arange(n) / (n - 1)
+        delta = epsilon / (2 * (n - 1))
+        slopes_u, transitions_u = spw.compute_piecewise_slopes_and_transitions_from_control_points(cp_t, cp_u)
+        slopes_f, transitions_f = spw.compute_piecewise_slopes_and_transitions_from_control_points(cp_t, cp_f)
+        u = spw.create_smooth_piecewise_function(slopes_u, transitions_u, delta)
+        f = spw.create_smooth_piecewise_function(slopes_f, transitions_f, delta)
+        du = spw.create_smooth_piecewise_derivative_function(slopes_u, transitions_u, delta)
+        df = spw.create_smooth_piecewise_derivative_function(slopes_f, transitions_f, delta)
+
+        t = np.linspace(0, 1, self._sampling)
+        u_s = u(t)
+        f_s = f(t)
+        k_s = df(t) / du(t)
+
+        def fdu(_t, _): return f(_t) * du(_t)
+
+        e_s = solve_ivp(fun=fdu, t_span=[0.0, 1.0], y0=[0.0], t_eval=t).y[0, :]
+        e_inside = interp1d(u_s, e_s, kind='linear', bounds_error=False, fill_value=0.0)
+
+        self._energy = lambda uu: ((uu < u_s[-1]) * e_inside(np.abs(uu))
+                                   + (np.abs(uu) >= u_s[-1]) * (e_s[-1] + f_s[-1] * (np.abs(uu) - u_s[-1])
+                                                                + 0.5 * k_s[-1] * (np.abs(uu) - u_s[-1]) ** 2))
+        self._force = lambda uu: np.sign(uu) * interp1d(u_s, f_s, kind='linear', bounds_error=False,
+                                                        fill_value='extrapolate')(np.abs(uu))
+        self._stiffness = lambda uu: interp1d(u_s, k_s, kind='linear', bounds_error=False, fill_value=k_s[-1])(
+            np.abs(uu))
+
+    def elastic_energy(self, alpha: float | np.ndarray) -> float:
+        return self._energy(alpha - self._natural_measure)
+
+    def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float]:
+        return self._force(alpha - self._natural_measure),
+
+    def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
+        return self._stiffness(alpha - self._natural_measure),
+
+    def update(self, natural_measure=None, /, **parameters):
+        super().update(natural_measure, **parameters)
+        self._check()
+        if parameters:
+            self._make()
+
+
+class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
+
+    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], epsilon: float):
         super().__init__(natural_measure, u_i=u_i, f_i=f_i, epsilon=epsilon)
         self._check()
         self._make()
@@ -1029,6 +990,122 @@ class ContactBehavior(UnivariateBehavior):
             return 0.0,
         else:
             return +f0 / u0 * p * ((u0 - dalpha) / u0) ** (p - 1),
+
+
+class IdealGas(UnivariateBehavior):
+
+    def __init__(self, v0: float, n: float, R: float, T0: float):
+        """
+            v0: the volume the amount of gas would take at ambient pressure
+            n:  the amount of substance (number of gas particles, number of moles, ...)
+            R:  is the proportionality factor between the gas temperature and the gas thermal energy per unit of substance
+                (Boltzmann constant if the amount of substance is expressed as the number of particles,
+                the molar gas constant if the amount of substance is expressed as the number of moles, ...)
+            T0: the temperature of the gas at ambient pressure
+        """
+        super().__init__(v0, n=n, R=R, T0=T0)
+
+    def elastic_energy(self, alpha: float | np.ndarray) -> float:
+        raise NotImplementedError("This method is abstract")
+
+    def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float]:
+        raise NotImplementedError("This method is abstract")
+
+    def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
+        raise NotImplementedError("This method is abstract")
+
+
+class IsothermicGas(IdealGas):
+
+    def elastic_energy(self, alpha: float | np.ndarray) -> float:
+        v = alpha
+        v0 = self._natural_measure
+        if v < 0:
+            return np.nan
+        nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
+        return nRT * (v / v0 - 1.0 - np.log(v / v0))
+
+    def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float | np.ndarray]:
+        if isinstance(alpha, np.ndarray):
+            g = np.empty_like(alpha)
+            for i, alpha_i in enumerate(alpha):
+                g[i] = self.gradient_energy(alpha_i)[0]
+            return g,
+
+        v = alpha
+        v0 = self._natural_measure
+        if v < 0:
+            return np.nan,
+        nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
+        return nRT * (v - v0) / (v * v0),
+
+    def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
+        v = alpha
+        if v < 0:
+            return np.nan,
+        nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
+        return nRT / v ** 2,
+
+
+class IsentropicGas(IdealGas):
+
+    def __init__(self, v0: float, n: float, R: float, T0: float, gamma: float):
+        """
+            v0: the volume the amount of gas would take at ambient pressure
+            n:  the amount of substance (number of gas particles, number of moles, ...)
+            R:  is the proportionality factor between the gas temperature and the gas thermal energy per unit of substance
+                (Boltzmann constant if the amount of substance is expressed as the number of particles,
+                the molar gas constant if the amount of substance is expressed as the number of moles, ...)
+            T0: the temperature of the gas at ambient pressure
+            gamma: the heat capacity ratio (a.k.a. adiabatic index), that is, cp/cv. Must be strictly greater than 1.
+                   It is a non-dimensional property of the gas (for dry air, gamma = 1.4)
+        """
+
+        super().__init__(v0, n=n, R=R, T0=T0)
+        self._parameters['gamma'] = gamma
+        self._check()
+
+    def _check(self):
+        if self._parameters['gamma'] < 1.0:
+            raise InvalidBehaviorParameters(f"The ratio of heat capacities gamma must be strictly greater than 1. "
+                                            f"Current value = {self._parameters['gamma']:.3E}")
+
+    def elastic_energy(self, alpha: float | np.ndarray) -> float:
+        v0 = self._natural_measure
+        gamma = self._parameters['gamma']
+        v = alpha
+        if v < 0:
+            return np.nan
+        nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
+        return nRT0 * (v / v0 - 1) + nRT0 / (gamma - 1) * ((v0 / v) ** (gamma - 1) - 1)
+
+    def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float | np.ndarray]:
+        if isinstance(alpha, np.ndarray):
+            g = np.empty_like(alpha)
+            for i, alpha_i in enumerate(alpha):
+                g[i] = self.gradient_energy(alpha_i)[0]
+            return g,
+
+        v0 = self._natural_measure
+        gamma = self._parameters['gamma']
+        v = alpha
+        if v < 0:
+            return np.nan,
+        nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
+        return nRT0 * (1 / v0 - 1 / v * (v0 / v) ** (gamma - 1)),
+
+    def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
+        v0 = self._natural_measure
+        gamma = self._parameters['gamma']
+        v = alpha
+        if v < 0:
+            return np.nan,
+        nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
+        return nRT0 * gamma / v ** 2 * (v0 / v) ** (gamma - 1),
+
+    def update(self, natural_measure=None, /, **parameters):
+        super().update(natural_measure, **parameters)
+        self._check()
 
 
 class InvalidBehaviorParameters(ValueError):
