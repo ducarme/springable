@@ -496,7 +496,8 @@ and $t$ is the curve parameter that runs from 0 to 1.
 `BEZIER(u_i=[<value_11>; <value_12>; ...;<value_1n>]; f_i=[<value_21>; <value_22>; ...; <value_2n>])`
 
 Example: `..., BEZIER(u_i=[1.0;1.2;3.0];f_i=[2.0;-3.0;2.4])`
-> A spring is defined with a generalized force-displacement relation described as a Bezier curve of degree 3 with control points (0, 0), (1.0, 2.0), (1.2, -3.0) and (3.0, 2.4).
+> A spring is defined with a generalized force-displacement relation described as a Bezier curve of degree 3
+> with control points (0, 0), (`1.0`, `2.0`), (`1.2`, `-3.0`) and (`3.0`, `2.4`).
 
 The unit of each $u_i$ should be the unit of the generalized displacement $U$.
 The unit of each $f_i$ should be the unit of the generalized force $F$.
@@ -516,7 +517,7 @@ meaning that at a certain generalized displacement value, multiple force values 
 
 Example: `..., BEZIER2(u_i=[2.5;-1.0;2.0];f_i=[2.0;-1.0;1.0])`
 > A spring is defined with a generalized force-displacement relation described as a Bezier curve of degree 3
-> with control points (0, 0), (2.5, 2.0), (-1.0, -1.0) and (2.0, 1.0).
+> with control points (0, 0), (`2.5`, `2.0`), (`-1.0`, `-1.0`) and (`2.0`, `1.0`).
 > This curve curves back; it cannot be described a function $F(U)$.
 
 > [!IMPORTANT]
@@ -524,19 +525,74 @@ Example: `..., BEZIER2(u_i=[2.5;-1.0;2.0];f_i=[2.0;-1.0;1.0])`
 > Second, the tangent vector along the curve can never point vertically upward, as one moves along the curve from the origin
 > (it is perfectly fine for the tangent to point vertically downward).
 > 
-> Also, a Bezier2 behavior is introducing an extra [degree of freedom (DOF)](https://en.wikipedia.org/wiki/Degrees_of_freedom_(mechanics))
+> Also, a Bezier2 behavior introduces an extra [degree of freedom (DOF)](https://en.wikipedia.org/wiki/Degrees_of_freedom_(mechanics))
 > in order to disambiguate the state of the spring, as the generalized displacement $U$ is not enough to fully define its state.
 > Using a **Bezier** behavior instead when the curve does not curve back helps keep the number of DOFs low.
 
 #### Piecewise behavior
-A **piecewise** behavior is defined by a [piecewise linear function](https://en.wikipedia.org/wiki/Piecewise_linear_function),
-whose corners have been smoothed using a quadratic function. A piecewise curve composed of $n$ segments is described by
-$n$ slopes $k_i$ and $n-1$ transition points $u_i$ at which the segments connect. The quantity $u_s$ describes how smooth
-each corner must be. More precisely, around each corner $i$ located at $u_i$, the curve is given by quadratic function on the interval
-$\[u_i-u_s, u_i+u_s\]$.
+A **piecewise** behavior is defined by a [piecewise linear function](https://en.wikipedia.org/wiki/Piecewise_linear_function)
+whose corners have been smoothed using a quadratic function. A piecewise curve composed of $n>1$ segments is described by
+$n$ slopes $k_i$ and $n-1$ transition points $u_i$ at which the segments would connect. The quantity $u_s$ describes how smooth
+each corner must be. More precisely, around each corner $i$ located at $u_i$, the curve is given by a quadratic function on the interval
+$\[u_i-u_s, u_i+u_s\]$, instead of linear segments.
+The smoothing quadratic functions are tuned to be [C1 continuous](https://en.wikipedia.org/wiki/Smoothness)
+with the segments they connect.
+
+`PIECEWISE(k_i=[<value_11>; <value_12>; ...;<value_1n>]; u_i=[<value_21>; <value_22>; ...; <value_2(n-1)>]; us=<value>])`
+
+Example: `..., PIECEWISE(k_i=[1.0;-1.0;2.0]; u_i=[1.0;2.0]; us=0.2)`
+> A spring is defined with a generalized force-displacement relation described as a smoothed piecewise linear curve
+> composed of three segments with slopes `1.0`, `-1.0` and `2.0`,
+> with the transition between the first and second segment at `1.0`
+> and the transition between the second and third segment at `2.0`. The amount of smoothing is set to `0.2`.
+
+> [!NOTE]
+> The quantity $u_s$ must be positive and lower than $\min((u_1-0.0), (u_2-u_1), ..., (u_{n-1}-u_{n-2}))$.
+> Also, the generalized force-displacement relation is defined for negative generalized displacements $U<0$
+> by imposing the symmetry $F(U<0)=-F(|U|)$.
 
 #### Zigzag behavior
+A **zigzag** behavior is described by a generalized force-displacement curve defined as a
+[polygonal chain](https://en.wikipedia.org/wiki/Polygonal_chain) with smoothed corners.
+It is specified by providing the control points' coordinates $(u_i, f_i)$
+(coordinates of the corners of the non-smoothed polygonal chain),
+and a smoothing parameter $0<\epsilon<1$.
+
+`ZIGZAG(u_i=[<value_11>; <value_12>; ...;<value_1n>]; f_i=[<value_21>; <value_22>; ...; <value_2n>]; epsilon=<value>)`
+
+Example: `..., ZIGZAG(u_i=[1.0; 2.0; 3.0]; f_i=[1.0; -0.5; 2.0]; epsilon=0.8)`
+> A spring is defined with a generalized force-displacement relation described as a smoothed zigzag curve
+> defined by 4 control points (0, 0), (`1.0`, `1.0`), (`2.0`, `-0.5`) and (`3.0`, `2.0`). The corners are smoothed using
+> $\epsilon=$`0.8`
+
+> [!NOTE]
+> The generalized force-displacement relation is defined for negative generalized displacements $U<0$
+> by imposing the symmetry $F(U<0)=-F(|U|)$.
+
 #### Zigzag2 behavior
+A **zigzag2** behavior is the same as a [zigzag behavior](#zigzag-behavior).
+The only difference is that, unlike a zigzag behavior,
+a zigzag2 behavior is allowed to define a curve that *curves back*,
+meaning that at a certain generalized displacement value, multiple force values can exist.
+
+`ZIGZAG2(u_i=[<value_11>; <value_12>; ...;<value_1n>]; f_i=[<value_21>; <value_22>; ...; <value_2n>]; epsilon=<value>)`
+
+Example: `..., ZIGZAG2(u_i=[2.0; 1.0; 3.0]; f_i=[2.0; 0.0; 1.0]; epsilon=0.4)`
+> A spring is defined with a generalized force-displacement relation described as a smoothed zigzag curve
+> with control points (0, 0), (`2.0`, `2.0`), (`1.0`, `0.0`) and (`3.0`, `1.0`).
+> The corners are smoothed using $\epsilon=$`0.4`
+> This curve curves back; it cannot be described a function $F(U)$.
+
+> [!IMPORTANT]
+> Due to implementation details, the way the curve folds and unfolds should respect some conditions. First, the curve cannot have [cusps](https://en.wikipedia.org/wiki/Cusp_(singularity)).
+> Second, the tangent vector along the curve can never point vertically upward, as one moves along the curve from the origin
+> (it is perfectly fine for the tangent to point vertically downward).
+> 
+> Also, a zigzag2 behavior introduces an extra [degree of freedom (DOF)](https://en.wikipedia.org/wiki/Degrees_of_freedom_(mechanics))
+> in order to disambiguate the state of the spring, as the generalized displacement $U$ is not enough to fully define its state.
+> Using a **zigzag** behavior instead when the curve does not curve back helps keep the number of DOFs low.
+
+
 #### Contact behavior
 #### Isothermic behavior
 #### Isentropic behavior
