@@ -29,23 +29,10 @@ On top of that, the library allows you to define the energy potential of each in
 - [Don't want to install it right now? Try the Online Notebook](#dont-want-to-install-it-right-now-try-the-online-notebook)
 - [How to use](#how-to-use)
    * [Running a simulation](#running-a-simulation)
-   * [Creating a CSV file describing the spring model](#creating-a-csv-file-describing-the-spring-model)
-      + [The `PARAMETERS` section](#the-parameters-section)
-      + [The `NODES` section](#the-nodes-section)
-      + [The `SPRINGS` section](#the-springs-section)
-      + [The `ROTATION SPRINGS` section](#the-rotation-springs-section)
-      + [The `AREA SPRINGS` section](#the-area-springs-section)
-      + [The `LINE SPRINGS` section](#the-line-springs-section)
-      + [The `LOADING` section](#the-loading-section)
-      + [A complete example](#a-complete-example)
-      + [Additional notes](#additional-notes)
-   * [Specifying a nonlinear mechanical behavior](#specifying-a-nonlinear-mechanical-behavior)
-   * [Configuring simulation settings](#configuring-simulation-settings)
-      + [Additional notes](#additional-notes-1)
+   * [Creating a CSV file describing the spring model (+ examples)](#creating-a-csv-file-describing-the-spring-model)
+   * [Specifying a nonlinear mechanical behavior (+examples)](#specifying-a-nonlinear-mechanical-behavior)
+   * [Configuring simulation settings (+examples)](#configuring-simulation-settings)
    * [Advanced topics](#advanced-topics)
-      + [Area spring with holes](#area-spring-with-holes)
-      + [Complex loading descriptions](#complex-loading-descriptions)
-      + [Scanning parameters](#scanning-parameters)
    
 ## Installation
 
@@ -158,6 +145,18 @@ LOADING
 NB:
 * `<...>`: required field
 * `[...]`: optional field
+
+Each section is described in details herein below.
+
++ [The `PARAMETERS` section](#the-parameters-section)
++ [The `NODES` section](#the-nodes-section)
++ [The `SPRINGS` section](#the-springs-section)
++ [The `ROTATION SPRINGS` section](#the-rotation-springs-section)
++ [The `AREA SPRINGS` section](#the-area-springs-section)
++ [The `LINE SPRINGS` section](#the-line-springs-section)
++ [The `LOADING` section](#the-loading-section)
++ [A complete example](#a-complete-example)
++ [Additional notes](#additional-notes)
 
 
 #### The `PARAMETERS` section
@@ -569,6 +568,9 @@ ss.simulate_model(model_path='my_spring_model.csv', save_dir='my_simulation_resu
   * assembly appearance (determines _how_ the spring assembly will be depicted)
 
 ### Advanced topics
++ [Area spring with holes](#area-spring-with-holes)
++ [Complex loading descriptions](#complex-loading-descriptions)
++ [Scanning parameters](#scanning-parameters)
 #### Area spring with holes
 #### Complex loading descriptions
 #### Scanning parameters
