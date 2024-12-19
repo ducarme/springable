@@ -687,9 +687,6 @@ ss.simulate_model(model_path='my_spring_model.csv', save_dir='my_simulation_resu
 #### Complex loading descriptions
 #### Scanning parameters
 
-## How to define your own custom springs
-TO DO
-
 
 
 

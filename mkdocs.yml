@@ -1,0 +1,33 @@
+site_name: springable
+theme:
+    name: material
+    icon:
+      logo: material/cat
+    favicon:
+      logo: material/cat
+    language: en
+    direction: ltr
+    palette:
+        primary: dark-blue
+        accent: orange
+    features:
+      - content.code.copy
+nav:
+  - index.md
+  - getting_started.md
+  - creating_the_spring_model_csv_file.md
+  - specifying_a_nonlinear_mechanical_behavior.md
+  - configuring_simulation_settings.md
+  - advanced_topics.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.superfences
+
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
