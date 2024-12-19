@@ -473,7 +473,7 @@ class AssemblyDrawing(Drawing):
             node_drawings.add(NodeDrawing(self._ax, _node, self._aa))
         for _element in self._assembly.get_elements():
             element_drawings.add(ElementDrawing(self._ax, _element,
-                                                0.225 * self._characteristic_length,
+                                                0.15 * self._characteristic_length,
                                                 self._aa,
                                                 self._el_color_handler,
                                                 self._el_opacity_handler,

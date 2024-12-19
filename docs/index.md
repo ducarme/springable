@@ -1,8 +1,8 @@
 <figure markdown="1">
 ![](assets/logo_springable_small_light.png)
 <figcaption>Library for nonlinear spring simulations</figcaption>
+<video autoplay loop muted src="https://github.com/user-attachments/assets/016852f5-3dd7-49ba-badb-249ba38569c6"></video>
 </figure>
-![](https://github.com/user-attachments/assets/08c5ab52-b4d5-4398-b010-43758bb096ea)
 
 
 

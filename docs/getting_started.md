@@ -66,15 +66,38 @@ python my_first_spring_simulation.py
 !!! tip
     Many settings can be tuned before running a simulation. See paragraph [Configuring simulation settings](configuring_simulation_settings.md) for more details.
 
+## Quickly viewing the results 
+
+After running the command, three media files are generated, shown and saved.
+
+* The drawing depicting the spring structure about to be simulated (before solver starts)
+* The force-displacement curve of the structure (after solver finishes)
+* The animation of the model as it is loaded (after solver finishes)
+
 <div class="grid cards" markdown>
-- ![](assets/getting_started_example/model.png)
-- ![](assets/getting_started_example/fd_curve.png) 
+
+-   spring structure drawing
+    
+    ---
+    
+    ![](https://github.com/user-attachments/assets/0b51521f-87a2-43ca-a153-7252caca8942)
+
+-   force-displacement curve
+
+    ---
+
+    ![](https://github.com/user-attachments/assets/6420086a-d87c-47ce-984e-ce98c6a475d7)
+
 </div>
 
 <div class="grid cards" markdown>
-- ![](assets/getting_started_example/animation.mp4)
-- ![](https://github.com/user-attachments/assets/5c379275-2bdc-4fe8-88d2-05cefdd1d02b)
+-    animation
+
+     ---
+
+    <video autoplay loop muted src="https://github.com/user-attachments/assets/8b40afd1-db93-4bd7-adfb-1d106e96e740"></video>
 </div>
 
-
-
+!!! tip
+    Many settings can be tuned to change of the appearance of the spring structure, plots settings, colors, animation fps and resolution, etc.
+    See paragraph [Configuring simulation settings](configuring_simulation_settings.md) for more details.
