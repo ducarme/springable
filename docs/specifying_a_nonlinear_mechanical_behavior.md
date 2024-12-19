@@ -63,15 +63,18 @@ as the generalized force approaches infinity as the measure gets close to zero.
 Example: `... , LOGARITHM(k=2.0)`
 > A spring with a natural behavior characterized by $k$ equals `2.0` is defined.
 
-It seems like we are missing the parameter $\alpha_0$ in the specification (only $k$ is provided). This is not a problem; remember that the value of $\alpha_0$ is
-in fact automatically set to the value of the spring measure in the state defined by [the `NODES` section](#the-node-section), when not provided.
-If you want to assign a value for $\alpha_0$, you can do it by adding a comma followed by the $\alpha_0$ value
-
-Example: `... , LOGARITHM(k=2.0), 1.0`.
-
-> A spring is defined with a behavior of type `LOGARITHM` with `k=2.0` and a natural measure `1.0`.
-
 The unit of $k$ should be the unit of the generalized force $F$ divided by the unit of the generalized displacement $U$.
+
+
+??? question "Isn't the parameter $\alpha_0$ missing?"
+    It seems like we are missing the parameter $\alpha_0$ in the specification (only $k$ is provided). This is not a problem; remember that the value of $\alpha_0$ is
+    in fact automatically set to the value of the spring measure in the state defined by [the `NODES` section](creating_the_spring_model_csv_file.md/#the-nodes-section), when not provided.
+    If you want to assign a value for $\alpha_0$, you can do it by adding a comma followed by the $\alpha_0$ value.
+
+    Example: `... , LOGARITHM(k=2.0), 1.0`
+
+    > A spring is defined with a behavior of type `LOGARITHM` with `k=2.0` and a natural measure `1.0`.
+
 
 ## Bezier behavior
 A **Bezier** behavior is described by a generalized force-displacement curve defined as a [Bezier curve](https://en.wikipedia.org/wiki/B%C3%A9zier_curve).
@@ -117,10 +120,10 @@ Example: `..., BEZIER2(u_i=[2.5;-1.0;2.0];f_i=[2.0;-1.0;1.0])`
 
 ## Piecewise behavior
 A **piecewise** behavior is defined by a [piecewise linear function](https://en.wikipedia.org/wiki/Piecewise_linear_function)
-whose corners have been smoothed using a quadratic function. A piecewise curve composed of $n>1$ segments is described by
+whose corners have been smoothed using quadratic functions. A piecewise curve composed of $n>1$ segments is described by
 $n$ slopes $k_i$ and $n-1$ transition points $u_i$ at which the segments would connect. The quantity $u_s$ describes how smooth
 each corner must be. More precisely, around each corner $i$ located at $u_i$, the curve is given by a quadratic function on the interval
-$\[u_i-u_s, u_i+u_s\]$, instead of linear segments.
+$\left[u_i-u_s, u_i+u_s\right]$, instead of linear segments.
 The smoothing quadratic functions are tuned to be [C1 continuous](https://en.wikipedia.org/wiki/Smoothness)
 with the segments they connect.
 

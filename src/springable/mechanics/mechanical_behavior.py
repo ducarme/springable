@@ -951,19 +951,19 @@ class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
 
 
 class ContactBehavior(UnivariateBehavior):
-    def __init__(self, natural_measure, f0, u0):
-        super().__init__(natural_measure, f0=f0, u0=u0)
+    def __init__(self, natural_measure, f0, uc):
+        super().__init__(natural_measure, f0=f0, uc=uc)
         self._p = 3.0
 
     def elastic_energy(self, alpha: float) -> float:
         dalpha = alpha - self._natural_measure
         f0 = self._parameters['f0']
-        u0 = self._parameters['u0']
+        uc = self._parameters['uc']
         p = self._p
-        if dalpha >= u0:
+        if dalpha >= uc:
             return 0.0
         else:
-            return f0 * u0 / (p + 1) * ((u0 - dalpha) / u0) ** (p + 1)
+            return f0 * uc / (p + 1) * ((uc - dalpha) / uc) ** (p + 1)
 
     def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float | np.ndarray]:
         if isinstance(alpha, np.ndarray):
@@ -974,22 +974,22 @@ class ContactBehavior(UnivariateBehavior):
 
         dalpha = alpha - self._natural_measure
         f0 = self._parameters['f0']
-        u0 = self._parameters['u0']
+        uc = self._parameters['uc']
         p = self._p
-        if dalpha >= u0:
+        if dalpha >= uc:
             return 0.0,
         else:
-            return -f0 * ((u0 - dalpha) / u0) ** p,
+            return -f0 * ((uc - dalpha) / uc) ** p,
 
     def hessian_energy(self, alpha: float) -> tuple[float]:
         dalpha = alpha - self._natural_measure
         f0 = self._parameters['f0']
-        u0 = self._parameters['u0']
+        uc = self._parameters['uc']
         p = self._p
-        if dalpha >= u0:
+        if dalpha >= uc:
             return 0.0,
         else:
-            return +f0 / u0 * p * ((u0 - dalpha) / u0) ** (p - 1),
+            return +f0 / uc * p * ((uc - dalpha) / uc) ** (p - 1),
 
 
 class IdealGas(UnivariateBehavior):

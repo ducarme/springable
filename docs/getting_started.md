@@ -2,7 +2,9 @@
 
 Use `pip` to install. In the terminal simply enter
 
-    python -m pip install springable
+```
+python -m pip install springable
+```
 
 and you are good to go!
 
@@ -15,7 +17,8 @@ Try `springable` online, without any installation in an [interactive online note
 To start a simulation, we first create the file 
 that will describe the spring model we want to simulate. To do that, we create a simple
 [CSV file](https://en.wikipedia.org/wiki/Comma-separated_values),
-(a text file saved with extension *.csv*), that looks like this for example:
+(a text file saved with extension *.csv*), that looks like this for example.
+
 ```csv title="my_spring_model.csv"
 PARAMETERS
 stiffness, 1.0
@@ -25,7 +28,7 @@ NODES
 SPRINGS
 0-1, stiffness
 LOADING
-1, X, 2.0
+1, X, 1.5
 ```
 
 This file defines a spring structure composed of only one horizontal spring, clamped on the left and loaded in tension from the right.
@@ -56,9 +59,22 @@ that describes the model you want to simulate. In this case, we used the CSV fil
 It is an optional argument, if not specified, a folder will be created automatically in the working directory to store the result files.
 
 Finally, we run the Python script. This can be done in the terminal by simply executing
-
-    python my_first_spring_simulation.py
-
+```
+python my_first_spring_simulation.py
+```
 
 !!! tip
-    Many settings can be tuned before running a simulation. See paragraph [Configuring simulation settings](#configuring-simulation-settings) for more details.
+    Many settings can be tuned before running a simulation. See paragraph [Configuring simulation settings](configuring_simulation_settings.md) for more details.
+
+<div class="grid cards" markdown>
+- ![](assets/getting_started_example/model.png)
+- ![](assets/getting_started_example/fd_curve.png) 
+</div>
+
+<div class="grid cards" markdown>
+- ![](assets/getting_started_example/animation.mp4)
+- ![](https://github.com/user-attachments/assets/5c379275-2bdc-4fe8-88d2-05cefdd1d02b)
+</div>
+
+
+

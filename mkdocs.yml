@@ -1,10 +1,6 @@
 site_name: springable
 theme:
     name: material
-    icon:
-      logo: material/cat
-    favicon:
-      logo: material/cat
     language: en
     direction: ltr
     palette:
@@ -19,8 +15,12 @@ nav:
   - specifying_a_nonlinear_mechanical_behavior.md
   - configuring_simulation_settings.md
   - advanced_topics.md
+  - gallery_and_examples.md
+  - all_assets.md
 
 markdown_extensions:
+  - attr_list
+  - md_in_html
   - admonition
   - pymdownx.details
   - pymdownx.arithmatex:

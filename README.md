@@ -547,7 +547,7 @@ Example: `..., PIECEWISE(k_i=[1.0;-1.0;2.0]; u_i=[1.0;2.0]; us=0.2)`
 > and the transition between the second and third segment at `2.0`. The amount of smoothing is set to `0.2`.
 
 > [!NOTE]
-> The quantity $u_s$ must be positive and lower than $\min((u_1-0.0), (u_2-u_1), ..., (u_{n-1}-u_{n-2}))$.
+> The quantity $u_s$ must be positive and lower than $\min((2u_1-0.0), (u_2-u_1), ..., (u_{n-1}-u_{n-2}))/2$.
 > Also, the generalized force-displacement relation is defined for negative generalized displacements $U<0$
 > by imposing the symmetry $F(U<0)=-F(|U|)$.
 

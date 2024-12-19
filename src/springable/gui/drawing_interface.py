@@ -57,8 +57,8 @@ class DrawingSpace:
         self._yaxis_line, = self.ax.plot([0, 0], [ymin, ymax], 'k-', lw=1, animated=True)
 
         fig_frame = ttk.Frame(drawing_frame)
-        self.ax.set_xlabel("generalized displacement $\\Delta \\alpha$ ")
-        self.ax.set_ylabel("generalized force $\\nabla_{\\alpha} U$")
+        self.ax.set_xlabel("generalized displacement $U=\\alpha-\\alpha_0$ ")
+        self.ax.set_ylabel("generalized force $F=\\partial_{\\alpha} E$")
         self.canvas = FigureCanvasTkAgg(fig, master=fig_frame)
         toolbar = SimpleToolbar(self.canvas, fig_frame, self._reset_axis)
         toolbar.update()

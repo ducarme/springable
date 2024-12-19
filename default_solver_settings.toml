@@ -2,7 +2,7 @@ reference_load_parameter = 0.05
 radius = 0.05
 i_max = 5_000  # max number of increments to reach the prescribed force
 
-detect_critical_points = true
+detect_critical_points = false
 bifurcate_at_simple_bifurcations = false  # only has an effect if 'detect_critical_points' is enabled
 show_warnings = false
 verbose = true

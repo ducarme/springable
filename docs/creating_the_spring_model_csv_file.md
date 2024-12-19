@@ -56,15 +56,18 @@ The `PARAMETERS` section serves to define some parameters that can be used to in
 `<parameter name>, <parameter value>`.
 
 * `<parameter name>` is the name of the parameter (character string **without** quotes).
-
 * `<parameter value>` is the value of the parameter. It can be either a float or a string (**with** simple quotes)
-
-* `[range]` (optional) is a vector of possible values the parameter can have. This field is used only when [scanning the parameter space](#scanning-parameters). The range can be specified in two different ways:
-
-    * either as a vector of n regularly-spaced values between two float. Syntax: `[low bound; high bound; n]`. Example: `radius, 2.1, [2.0; 5.0; 4]`.
-  
-    * either as a list of possible values. Syntax: `{value1; value2; value3; ...}`. Example: `radius, 2.1, {1.0; 7.0; 8.0; 2.0}`.
-
+* `[range]` (optional) is a vector of possible values the parameter can have. This field is used only when [scanning the parameter space](advanced_topics.md/#scanning-parameters).
+The range can be specified in two different ways.
+    * Either as a vector of n regularly-spaced values between two float.
+    > Syntax: `[low bound; high bound; n]`
+    > 
+    > Example: `radius, 2.1, [2.0; 5.0; 4]`
+    * Either as a list of possible values.
+    > Syntax: `{value1; value2; value3; ...}`
+    > 
+    > Example: `radius, 2.1, {1.0; 7.0; 8.0; 2.0}`
+    
 Example:
 ```csv
 PARAMETERS
@@ -77,18 +80,20 @@ stiffness, 7.3
 
 #### The `NODES` section
 The `NODES` section serves to define the nodes composing the spring assembly, by specifying their index,
-their coordinates and the fact they are constrained or not. To define a node, a line with the following structure is added to the section `NODES`:\
-`<node index>, <x>, <y>, <constrained x>, <constrained y>`.
+their coordinates and the fact they are constrained or not. To define a node, a line with the following structure is added to the section `NODES`.
+
+`<node index>, <x>, <y>, <constrained x>, <constrained y>`
+
 * `<node index>` is a positive integer (`0`, `1`, `2`, ...) representing the index of the node being defined. Two nodes cannot have the same index.
 When nodes are defined, indices cannot be skipped (if there are four nodes in total, the indices must be `0`, `1`, `2` and `3`). The order in which the nodes are defined does not matter.
 * `<x>` is the horizontal coordinate of the node (float).
 * `<y>` is the vertical coordinate of the node (float).
 * `<constrained x>` is either
-  * `1` if the node cannot move horizontally,
-  * `0` if the node is free to move horizontally.
+    * `1` if the node cannot move horizontally,
+    * `0` if the node is free to move horizontally.
 * `<constrained y>` is either
-  * `1` if the node cannot move vertically,
-  * `0` if the node is free to move vertically.
+    * `1` if the node cannot move vertically,
+    * `0` if the node is free to move vertically.
 
 Example:
 ```csv
@@ -112,8 +117,10 @@ The mechanical behavior describes its intrinsic axial force-displacement relatio
 (the spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
 (see section [Specifying a nonlinear mechanical behavior](#specifying-a-nonlinear-mechanical-behavior)).
 
-To define a longitudinal spring, a line with the following structure is added to the section `SPRINGS`:\
-`<node index>-<node index>, <mechanical behavior>, [natural length]`.
+To define a longitudinal spring, a line with the following structure is added to the section `SPRINGS`.
+
+`<node index>-<node index>, <mechanical behavior>, [natural length]`
+
 * `<node index>` is the index of one of the node connected to the spring.
 * `<node index>` is the index of the other node connected to the spring.
 * `<mechanical behavior>` is the axial mechanical behavior of the spring. To specify a **linear** longitudinal spring,
@@ -128,9 +135,9 @@ SPRINGS
 0-2, stiffness
 1-2, stiffness
 ```
->Two linear longitudinal springs are defined. Both are characterized by the spring constant value `stiffness`.
-No natural length was provided, so their natural length will be automatically set to the distance between nodes `0`
-and `2`, and between nodes `1` and `2` as defined in the section `NODES`, respectively.
+> Two linear longitudinal springs are defined. Both are characterized by the spring constant value `stiffness`.
+> No natural length was provided, so their natural length will be automatically set to the distance between nodes `0`
+> and `2`, and between nodes `1` and `2` as defined in the section `NODES`, respectively.
 
 #### The `ROTATION SPRINGS` section
 The `ROTATION SPRINGS` section serves to define **rotation springs**
@@ -145,8 +152,10 @@ three specified nodes. The mechanical behavior describes its intrinsic (torque)-
 (the rotation spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
 (see section [Specifying a nonlinear mechanical behavior](#specifying-a-nonlinear-mechanical-behavior)).
 
-To define a rotation spring, a line with the following structure is added to the section `ROTATION SPRINGS`:\
-`<node index>-<node index>-<node index>, <mechanical behavior>, [natural angle]`.
+To define a rotation spring, a line with the following structure is added to the section `ROTATION SPRINGS`.
+
+`<node index>-<node index>-<node index>, <mechanical behavior>, [natural angle]`
+
 * `<node index>` is the index of node A.
 * `<node index>` is the index of node B.
 * `<node index>` is the index of node C.
@@ -180,8 +189,10 @@ n specified nodes. The mechanical behavior describes its intrinsic (2d-pressure)
 (the area spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
 (see section [Specifying a nonlinear mechanical behavior](#specifying-a-nonlinear-mechanical-behavior)).
 
-To define an area spring, a line with the following structure is added to the section `AREA SPRINGS`:\
-`<node index>-<node index>-<node index>-..., <mechanical behavior>, [natural area]`.
+To define an area spring, a line with the following structure is added to the section `AREA SPRINGS`.
+
+`<node index>-<node index>-<node index>-..., <mechanical behavior>, [natural area]`
+
 * `<node index>` is the index of a first node that form the boundary of the polygon,
 * `<node index>` is the index of the second node, following the first node along the boundary (clockwise or counter-clockwise),
 * `<node index>` is the index of the third node following the second node along the boundary (clockwise or counter-clockwise),
@@ -194,7 +205,7 @@ area defined by the n nodes as created in the `NODES` section.
 
 !!! note
     To define an area spring associated to a **[polygon with holes](https://en.wikipedia.org/wiki/Polygon_with_holes)**,
-    please refer to [Area springs with holes](#area-spring-with-holes) paragraph in the [Advanced topics](#advanced-topics).
+    please refer to [Area springs with holes](advanced_topics.md/#area-spring-with-holes) paragraph in the [Advanced topics](advanced_topics.md).
 
 
 Example:
@@ -220,8 +231,10 @@ n specified nodes. The mechanical behavior describes its intrinsic tension-displ
 (the line spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
 (see section [Specifying a nonlinear mechanical behavior](#specifying-a-nonlinear-mechanical-behavior)).
 
-To define a line spring, a line with the following structure is added to the section `LINE SPRINGS`:\
-`<node index>-<node index>-<node index>-..., <mechanical behavior>, [natural length]`.
+To define a line spring, a line with the following structure is added to the section `LINE SPRINGS`.
+
+`<node index>-<node index>-<node index>-..., <mechanical behavior>, [natural length]`
+
 * `<node index>` is the index of a first node that form the polygonal chain,
 * `<node index>` is the index of the second node, following the first node along the chain,
 * `<node index>` is the index of the third node following the second node along the chain,
@@ -264,7 +277,7 @@ LOADING
 2, Y, -10.0, -3.0
 ```
 >A force is applied on node `2`, along the `Y`-direction (vertical).
-The magnitude of the force is `-10` (it is a negative value, so the force points downwards).
+The magnitude of the force is `-10` (it is a negative value, so the force points downward).
 The maximum displacement is set to `-3.0`, meaning that if node `2` is displaced downward by more that `3.0`,
 the simulation is assumed to have completed.
 
