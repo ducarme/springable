@@ -1,5 +1,4 @@
-<div class="grid cards" markdown>
-- ![](assets/getting_started_example/model.png)
-- ![](assets/getting_started_example/fd_curve.png)
-- ![](https://github.com/user-attachments/assets/a66c2c8f-b28c-4e08-a679-454dc0414530)
-</div>
+![animation](https://github.com/user-attachments/assets/8b40afd1-db93-4bd7-adfb-1d106e96e740)
+![fd_curve](https://github.com/user-attachments/assets/6420086a-d87c-47ce-984e-ce98c6a475d7)
+![model](https://github.com/user-attachments/assets/0b51521f-87a2-43ca-a153-7252caca8942)
+
