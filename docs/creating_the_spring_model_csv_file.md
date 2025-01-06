@@ -179,11 +179,11 @@ the nodes `0`, `1` and `2` as defined in the section `NODES`.
 
 #### The `AREA SPRINGS` section
 The `AREA SPRINGS` section serves to define **area springs**, that is, springs whose elastic energy is a function of their area. They are useful when modelling mechanical systems involving fluids and pneumatic or hydraulic components.
-Those springs are defined by specifying **n nodes** (n>=3), which together define the area of a
+Those springs are defined by specifying $n$ **nodes** ($n \ge 3$), which together define the area of a
 [simple polygon](https://en.wikipedia.org/wiki/Simple_polygon). More precisely, the nodes are the vertices listed sequentially that form the single closed boundary of the polygon.
 The sequence of nodes should *not* be ending with the starting node. The polygon can be convex or concave, but not self-intersecting. The boundary of the polygon can be specified by listing the vertices clockwise or counterclockwise.
 
-Along with its n nodes, the **mechanical behavior** must be specified, and optionally the natural area of the area
+Along with its $n$ nodes, the **mechanical behavior** must be specified, and optionally the natural area of the area
 spring. If no natural area is provided, the natural area is automatically set to the area defined by the
 n specified nodes. The mechanical behavior describes its intrinsic (2d-pressure)-(area-change) relation. It can be a linear behavior
 (the area spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
@@ -222,10 +222,10 @@ the area of the polygon defined by the nodes `0`, `2`, and `1` as defined in the
 #### The `LINE SPRINGS` section
 The `LINE SPRINGS` section serves to define **line springs**, that is, springs whose elastic energy is a function of their [polygonal chain](https://en.wikipedia.org/wiki/Polygonal_chain)'s length.
 They are useful when modelling mechanical systems involving cable-driven actuation or [pulleys](https://en.wikipedia.org/wiki/Pulley).
-Those springs are defined by specifying **n nodes** (n>=2), which together define a polygonal chain. More precisely, the nodes are the vertices listed sequentially that form the chain.
+Those springs are defined by specifying  $n$ **nodes** ($n \ge 2$), which together define a polygonal chain. More precisely, the nodes are the vertices listed sequentially that form the chain.
 The sequence of nodes does not need to (but can) be closed (first and last node can be different or identical).
 
-Along with its n nodes, the **mechanical behavior** must be specified, and optionally the natural length of the line
+Along with its $n$ nodes, the **mechanical behavior** must be specified, and optionally the natural length of the line
 spring. If no natural length is provided, the natural length is automatically set to the length defined by the
 n specified nodes. The mechanical behavior describes its intrinsic tension-displacement relation. It can be a linear behavior
 (the line spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
@@ -259,8 +259,10 @@ the length of the polygonal chain defined by the nodes `0`, `2`, and `1` as defi
 
 #### The `LOADING` section
 The `LOADING` section serves to set the forces applied on some specific nodes along a specific direction (horizontal or vertical).
-To define a horizontal or vertical force on a node, a line with the following structure is added to the section `LOADING`:\
-`<node index>, <direction>, <force>, [max displacement]`.
+To define a horizontal or vertical force on a node, a line with the following structure is added to the section `LOADING`.
+
+`<node index>, <direction>, <force>, [max displacement]`
+
 * `<node index>` is the index of the node on which the force is applied.
 * `<direction>` is either:
   * `X` for a horizontal force,

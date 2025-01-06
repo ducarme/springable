@@ -50,7 +50,9 @@ For a **linear** generalized force-displacement curve $F=kU$, where $k$ is the s
 Example: `..., LINEAR(k=2.0)` or equivalently `..., 2.0`
 > A spring with a linear behavior characterized by a spring constant `2.0` is defined.
 
-The unit of $k$ should be the unit of the generalized force $F$ divided by the unit of the generalized displacement $U$.
+??? question "Units?"
+    The unit of $k$ should be the unit of the generalized force $F$
+    divided by the unit of the generalized displacement $U$.
 
 ## Logarithm behavior
 A **logarithm** behavior is defined by a generalized force-displacement curve given by
@@ -61,7 +63,7 @@ as the generalized force approaches infinity as the measure gets close to zero.
 `LOGARITHM(k=<spring constant>)`
 
 Example: `... , LOGARITHM(k=2.0)`
-> A spring with a natural behavior characterized by $k$ equals `2.0` is defined.
+> A spring with a logarithm behavior characterized by $k$ equals `2.0` is defined.
 
 The unit of $k$ should be the unit of the generalized force $F$ divided by the unit of the generalized displacement $U$.
 
@@ -74,6 +76,11 @@ The unit of $k$ should be the unit of the generalized force $F$ divided by the u
     Example: `... , LOGARITHM(k=2.0), 1.0`
 
     > A spring is defined with a behavior of type `LOGARITHM` with `k=2.0` and a natural measure `1.0`.
+
+??? question "Units?"
+    The unit of $k$ should be the unit of the generalized force $F$
+    divided by the unit of the generalized displacement $U$.
+
 
 
 ## Bezier behavior
@@ -89,12 +96,17 @@ Example: `..., BEZIER(u_i=[1.0;1.2;3.0];f_i=[2.0;-3.0;2.4])`
 > A spring is defined with a generalized force-displacement relation described as a Bezier curve of degree 3
 > with control points (0, 0), (`1.0`, `2.0`), (`1.2`, `-3.0`) and (`3.0`, `2.4`).
 
-The unit of each $u_i$ should be the unit of the generalized displacement $U$.
-The unit of each $f_i$ should be the unit of the generalized force $F$.
+
+??? question "Units?"
+    The unit of each $u_i$ should be the unit of the generalized displacement $U$.
+    The unit of each $f_i$ should be the unit of the generalized force $F$.
 
 !!! note
     For a generalized displacement $U$ larger than $u_n$, the corresponding generalized force is extrapolated linearly based on the slope at the last control point.
     Also, the generalized force-displacement relation is defined for negative generalized displacements $U<0$ by imposing the symmetry $F(U<0)=-F(|U|)$.
+
+
+
 
 ## Bezier2 behavior
 A **Bezier2** behavior is the same as a [Bezier behavior](#bezier-behavior).
@@ -108,6 +120,10 @@ Example: `..., BEZIER2(u_i=[2.5;-1.0;2.0];f_i=[2.0;-1.0;1.0])`
 > A spring is defined with a generalized force-displacement relation described as a Bezier curve of degree 3
 > with control points (0, 0), (`2.5`, `2.0`), (`-1.0`, `-1.0`) and (`2.0`, `1.0`).
 > This curve curves back; it cannot be described a function $F(U)$.
+
+??? question "Units?"
+    The unit of each $u_i$ should be the unit of the generalized displacement $U$.
+    The unit of each $f_i$ should be the unit of the generalized force $F$.
 
 !!! note "Important"
     Due to implementation details, the way the curve folds and unfolds should respect some conditions. First, the curve cannot have [cusps](https://en.wikipedia.org/wiki/Cusp_(singularity)).
@@ -137,8 +153,13 @@ Example: `..., PIECEWISE(k_i=[1.0;-1.0;2.0]; u_i=[1.0;2.0]; us=0.2)`
 > with the transition between the first and second segment at `1.0`
 > and the transition between the second and third segment at `2.0`. The amount of smoothing is set to `0.2`.
 
+??? question "Units?"
+    The unit of each $k_i$ should be the unit of the generalized force $F$
+    divided by the unit of the generalized displacement $U$.
+    The unit of each $u_i$ and the unit of $u_s$ should be the unit of the generalized displacement $U$.
+
 !!! note
-    The quantity $u_s$ must be positive and lower than $\min((u_1-0.0), (u_2-u_1), ..., (u_{n-1}-u_{n-2}))$.
+    The quantity $u_s$ must be positive and lower than $\min((u_1-0.0), (u_2-u_1)/2, ..., (u_{n-1}-u_{n-2})/2)$.
     Also, the generalized force-displacement relation is defined for negative generalized displacements $U<0$
     by imposing the symmetry $F(U<0)=-F(|U|)$.
 
@@ -155,6 +176,11 @@ Example: `..., ZIGZAG(u_i=[1.0; 2.0; 3.0]; f_i=[1.0; -0.5; 2.0]; epsilon=0.8)`
 > A spring is defined with a generalized force-displacement relation described as a smoothed zigzag curve
 > defined by 4 control points (0, 0), (`1.0`, `1.0`), (`2.0`, `-0.5`) and (`3.0`, `2.0`). The corners are smoothed using
 > $\epsilon=$`0.8`
+
+??? question "Units?"
+    The unit of each $u_i$ should be the unit of the generalized displacement $U$.
+    The unit of each $f_i$ should be the unit of the generalized force $F$.
+    The smoothing parameter $\epsilon$ has no dimension.
 
 !!! note
     The generalized force-displacement relation is defined for negative generalized displacements $U<0$
@@ -173,6 +199,11 @@ Example: `..., ZIGZAG2(u_i=[2.0; 1.0; 3.0]; f_i=[2.0; 0.0; 1.0]; epsilon=0.4)`
 > with control points (0, 0), (`2.0`, `2.0`), (`1.0`, `0.0`) and (`3.0`, `1.0`).
 > The corners are smoothed using $\epsilon=$`0.4`
 > This curve curves back; it cannot be described a function $F(U)$.
+
+??? question "Units?"
+    The unit of each $u_i$ should be the unit of the generalized displacement $U$.
+    The unit of each $f_i$ should be the unit of the generalized force $F$.
+    The smoothing parameter $\epsilon$ has no dimension.
 
 !!! note "Important"
     Due to implementation details, the way the curve folds and unfolds should respect some conditions. First, the curve cannot have [cusps](https://en.wikipedia.org/wiki/Cusp_(singularity)).
@@ -207,6 +238,10 @@ Example: `..., CONTACT(f0=5; uc=0.1)`
 > A spring is defined with a contact behavior. When the measure $\alpha$ of the spring becomes less than `0.1`,
 > a strong generalized repulsion force is generated, reaching -`5.0` when the measure $\alpha$ is zero.
 
+??? question "Units?"
+    The unit of $u_c$ should be the unit of the generalized displacement $U$.
+    The unit of $f_0$ should be the unit of the generalized force $F$.
+
 !!! note "Important"
     The natural measure $\alpha_0$ of a spring defined with a contact behavior is 0.0 by default.
     **This stands in stark contrast with all other types of behaviors**, where the default natural measure $\alpha_0$
@@ -216,5 +251,111 @@ Example: `..., CONTACT(f0=5; uc=0.1)`
     the generalized displacement and the measure are the same, $U=\alpha-\alpha_0=\alpha$.
 
 ## Isothermic behavior
+
+An **isothermic** behavior is described by a generalized force-displacement curve that respects the pressure-volume
+relation of an [ideal gas](https://en.wikipedia.org/wiki/Ideal_gas_law) during an isothermic process (constant temperature).
+That relation can be expressed as follows,
+
+$$
+p - p_0 = nRT_0 \left( 1/V - 1/V_0\right),
+$$
+
+where $p_0$ is the ambient pressure, $V_0$ is the volume of the gas at ambient pressure,
+$T_0$ is the temperature of the gas (constant), $p$ is the current pressure, $V$ is the current volume,
+$n$ is the amount of substance (constant), $R$ is the gas constant.
+
+More precisely, the generalized force $F$ plays the role of the pressure difference, $F=p_0-p$,
+while the generalized displacement plays the role of volume change, $U=V-V_0$. The measure $\alpha$ and
+natural measure $\alpha_0$ are mapped to $\alpha=V$ and $\alpha_0=V_0$, respectively. The $F-U$ curve is therefore given by
+
+$$
+F = nRT_0\frac{U}{(U+\alpha_0)\alpha_0}.
+$$
+
+`ISOTHERMIC(n=<n_value>; R=<R_value>; T0=<T0_value>)`
+
+Example: `..., ISOTHERMIC(n=1.0; R=8.3; T0=300)`
+> A spring is defined with an isothermic behavior. Its generalized force-displacement relation follows the behavior
+> of `1` mole of an ideal gas at constant temperature $T_0$=`300`K.
+
+??? question "Isn't the parameter $\alpha_0=V_0$ missing?"
+    It seems like we are missing the parameter $\alpha_0$, describing the volume $V_0$ at ambient pressure $p_0$, in the specification.
+    This is not a problem; remember that the value of $\alpha_0$ is
+    in fact automatically set to the value of the spring measure in the state defined by [the `NODES` section](creating_the_spring_model_csv_file.md/#the-nodes-section),
+    when not provided.
+    If you want to assign a value for $\alpha_0$, you can do it by adding a comma followed by the $\alpha_0$ value.
+
+    Example: `... , ISOTHERMIC(n=1.0; R=8.3; T0=300), 1.0`
+
+    > A spring is defined with an isothermic behavior. Its generalized force-displacement relation follows the behavior
+    > of `1` mole of an ideal gas at constant temperature $T_0$=`300`K. Its *volume*/measure at ambient pressure is `1.0`.
+
+??? question "Units?"
+    The unit of the quantity $nRT_0$ should be a unit of energy; more precisely,
+    it should be the unit of the generalized force $F$
+    multiplied by the unit of the generalized displacement $U$.
+
+!!! note
+    A negative generalized force $F<0$ corresponds to a compressed state
+    (the pressure is greater than the ambient pressure, $p>p_0$). A positive generalized force $F>0$ corresponds to
+    a *vacuumed* state (the pressure is smaller than the ambient pressure, $p<p_0$).
+
+
+
+
 ## Isentropic behavior
+An **isentropic** behavior is described by a generalized force-displacement curve that respects the pressure-volume
+relation of an [ideal gas](https://en.wikipedia.org/wiki/Ideal_gas_law) during an
+[isentropic process](https://en.wikipedia.org/wiki/Isentropic_process) (constant entropy).
+That relation can be expressed as follows,
+
+$$
+p - p_0 = nRT_0\left(1 - \frac{V}{V_0}\right) + \frac{nRT_0}{\gamma - 1} \left(1 - \left(\frac{V_0}{V}\right)^{\gamma - 1}\right),
+$$
+
+where $p_0$ is the ambient pressure, $V_0$ is the volume of the gas at ambient pressure,
+$T_0$ is the temperature of the gas at ambient pressure, $p$ is the current pressure, $V$ is the current volume,
+$n$ is the amount of substance (constant), $R$ is the gas constant and $\gamma$ is the
+[heat capacity ratio](https://en.wikipedia.org/wiki/Heat_capacity_ratio) (constant).
+
+More precisely, the generalized force $F$ plays the role of the pressure difference, $F=p_0-p$,
+while the generalized displacement plays the role of volume change, $U=V-V_0$. The measure $\alpha$ and
+natural measure $\alpha_0$ are mapped to $\alpha=V$ and $\alpha_0=V_0$, respectively. The $F-U$ curve is therefore given by
+
+$$
+F = nRT_0\left(\frac{U+\alpha_0}{\alpha_0} -1 \right) + \frac{nRT_0}{\gamma - 1} \left(\left(\frac{\alpha_0}{U+\alpha_0}\right)^{\gamma - 1} - 1 \right).
+$$
+
+`ISENTROPIC(n=<n_value>; R=<R_value>; T0=<T0_value>; gamma=<gamma_value>)`
+
+Example: `..., ISENTROPIC(n=1.0; R=8.3; T0=300; gamma=1.4)`
+> A spring is defined with an isentropic behavior. Its generalized force-displacement relation follows the behavior
+> of `1` mole of an ideal gas initially at $T_0$=`300`K, with $\gamma$=`1.4` (heat capacity ratio of air), at constant entropy.
+
+??? question "Isn't the parameter $\alpha_0=V_0$ missing?"
+    It seems like we are missing the parameter $\alpha_0$, describing the volume $V_0$ at ambient pressure $p_0$, in the specification.
+    This is not a problem; remember that the value of $\alpha_0$ is
+    in fact automatically set to the value of the spring measure in the state defined by [the `NODES` section](creating_the_spring_model_csv_file.md/#the-nodes-section),
+    when not provided.
+    If you want to assign a value for $\alpha_0$, you can do it by adding a comma followed by the $\alpha_0$ value.
+
+    Example: `... , ISENTROPIC(n=1.0; R=8.3; T0=300; gamma=1.4), 1.0`
+
+    > A spring is defined with an isentropic behavior. Its generalized force-displacement relation follows the behavior
+    > of `1` mole of an ideal gas initially at $T_0$=`300`K, with $\gamma$=`1.4`, at constant entropy.
+    > Its *volume*/measure at ambient pressure is `1.0`.
+
+??? question "Units?"
+    The unit of the quantity $nRT_0$ should be a unit of energy;
+    more precisely, it should be the unit of the generalized force $F$
+    multiplied by the unit of the generalized displacement $U$. The heat capacity ratio $\gamma$ has no dimension.
+
+!!! note
+    A negative generalized force $F<0$ corresponds to a compressed state
+    (the pressure is greater than the ambient pressure, $p>p_0$). A positive generalized force $F>0$ corresponds to
+    a *vacuumed* state (the pressure is smaller than the ambient pressure, $p<p_0$).
+
+
+
+
 ## Additional notes
