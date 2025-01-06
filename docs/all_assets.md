@@ -15,6 +15,10 @@ gif
 ![fd_curve](https://github.com/user-attachments/assets/6420086a-d87c-47ce-984e-ce98c6a475d7)
 ![model](https://github.com/user-attachments/assets/0b51521f-87a2-43ca-a153-7252caca8942)
 
+### behavior creation gui
+![image](https://github.com/user-attachments/assets/ee0ccc8b-a02e-418b-be0f-9bb68738fb0b)
+
+
 ### different behaviors
 ![LINEAR](https://github.com/user-attachments/assets/0dfeb1ca-3857-4d09-8bf5-36228dbc2a85)
 ![LOGARITHM](https://github.com/user-attachments/assets/c53f1391-81bb-467c-bf56-4a6ebf2f5306)
