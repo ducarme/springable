@@ -24,7 +24,7 @@ start()
 and run it (in the terminal, that would be done using `python start_behavior_creation_interface.py`).
 
 A window named *Behavior creation* should pop up on your screen
-<p align="center"><img src="https://github.com/user-attachments/assets/20f715f0-d1cb-405b-9760-65faf9dbd7ae" height="320px"/></p>
+<p align="center"><img src="https://github.com/user-attachments/assets/ee0ccc8b-a02e-418b-be0f-9bb68738fb0b" height="320px"/></p>
 
 By playing around with the interface, you will be able to create various generalized force-displacement curves and generate the corresponding code to use in the
 [spring model CSV file](#creating-a-csv-file-describing-the-spring-model). Herein below, more details are provided about the various types of mechanical behavior.
@@ -48,11 +48,23 @@ For a **linear** generalized force-displacement curve $F=kU$, where $k$ is the s
 `LINEAR(k=<value>)` or `<value>`
 
 Example: `..., LINEAR(k=2.0)` or equivalently `..., 2.0`
+
 > A spring with a linear behavior characterized by a spring constant `2.0` is defined.
+>
+> ![](https://github.com/user-attachments/assets/0dfeb1ca-3857-4d09-8bf5-36228dbc2a85){ width="300"}
+> ///caption
+> ///
+
+    
+
+
+
+
 
 ??? question "Units?"
     The unit of $k$ should be the unit of the generalized force $F$
     divided by the unit of the generalized displacement $U$.
+
 
 ## Logarithm behavior
 A **logarithm** behavior is defined by a generalized force-displacement curve given by
@@ -62,10 +74,16 @@ as the generalized force approaches infinity as the measure gets close to zero.
 
 `LOGARITHM(k=<spring constant>)`
 
-Example: `... , LOGARITHM(k=2.0)`
-> A spring with a logarithm behavior characterized by $k$ equals `2.0` is defined.
 
-The unit of $k$ should be the unit of the generalized force $F$ divided by the unit of the generalized displacement $U$.
+Example: `... , LOGARITHM(k=2.0)`
+
+> A spring with a logarithm behavior characterized by $k$ equals `2.0` is defined.
+> 
+> ![](https://github.com/user-attachments/assets/c53f1391-81bb-467c-bf56-4a6ebf2f5306){ width="300"}
+> /// caption
+> ///
+
+
 
 
 ??? question "Isn't the parameter $\alpha_0$ missing?"
@@ -73,9 +91,9 @@ The unit of $k$ should be the unit of the generalized force $F$ divided by the u
     in fact automatically set to the value of the spring measure in the state defined by [the `NODES` section](creating_the_spring_model_csv_file.md/#the-nodes-section), when not provided.
     If you want to assign a value for $\alpha_0$, you can do it by adding a comma followed by the $\alpha_0$ value.
 
-    Example: `... , LOGARITHM(k=2.0), 1.0`
+    Example: `... , LOGARITHM(k=2.0), 2.5`
 
-    > A spring is defined with a behavior of type `LOGARITHM` with `k=2.0` and a natural measure `1.0`.
+    > A spring is defined with a behavior of type `LOGARITHM` with `k=2.0` and a natural measure `2.5`.
 
 ??? question "Units?"
     The unit of $k$ should be the unit of the generalized force $F$
@@ -92,9 +110,15 @@ and $t$ is the curve parameter that runs from 0 to 1.
 
 `BEZIER(u_i=[<value_11>; <value_12>; ...;<value_1n>]; f_i=[<value_21>; <value_22>; ...; <value_2n>])`
 
+    
 Example: `..., BEZIER(u_i=[1.0;1.2;3.0];f_i=[2.0;-3.0;2.4])`
+
 > A spring is defined with a generalized force-displacement relation described as a Bezier curve of degree 3
 > with control points (0, 0), (`1.0`, `2.0`), (`1.2`, `-3.0`) and (`3.0`, `2.4`).
+> 
+> ![](https://github.com/user-attachments/assets/34446134-1988-4691-a261-865f25290b22){ width="300", align=right}
+> ///caption
+> ///
 
 
 ??? question "Units?"
@@ -116,10 +140,18 @@ meaning that at a certain generalized displacement value, multiple force values 
 
 `BEZIER2(u_i=[<value_11>; <value_12>; ...;<value_1n>]; f_i=[<value_21>; <value_22>; ...; <value_2n>])`
 
+
 Example: `..., BEZIER2(u_i=[2.5;-1.0;2.0];f_i=[2.0;-1.0;1.0])`
 > A spring is defined with a generalized force-displacement relation described as a Bezier curve of degree 3
 > with control points (0, 0), (`2.5`, `2.0`), (`-1.0`, `-1.0`) and (`2.0`, `1.0`).
 > This curve curves back; it cannot be described a function $F(U)$.
+> 
+> ![](https://github.com/user-attachments/assets/8f5dae45-7a2e-46bd-afe1-ff1ef5814a8c){ width="300"}
+> ///caption
+> ///
+
+
+
 
 ??? question "Units?"
     The unit of each $u_i$ should be the unit of the generalized displacement $U$.
@@ -145,13 +177,20 @@ with the segments they connect.
 
 `PIECEWISE(k_i=[<value_11>; <value_12>; ...;<value_1n>]; u_i=[<value_21>; <value_22>; ...; <value_2(n-1)>]; us=<value>])`
 
-
 Example: `..., PIECEWISE(k_i=[1.0;-1.0;2.0]; u_i=[1.0;2.0]; us=0.2)`
 
 > A spring is defined with a generalized force-displacement relation described as a smoothed piecewise linear curve
 > composed of three segments with slopes `1.0`, `-1.0` and `2.0`,
 > with the transition between the first and second segment at `1.0`
 > and the transition between the second and third segment at `2.0`. The amount of smoothing is set to `0.2`.
+> 
+>![](https://github.com/user-attachments/assets/66de0d4b-bd8a-4463-9c92-ef6190981e31){ width="300"}
+> ///caption
+> ///
+
+
+
+
 
 ??? question "Units?"
     The unit of each $k_i$ should be the unit of the generalized force $F$
@@ -176,6 +215,10 @@ Example: `..., ZIGZAG(u_i=[1.0; 2.0; 3.0]; f_i=[1.0; -0.5; 2.0]; epsilon=0.8)`
 > A spring is defined with a generalized force-displacement relation described as a smoothed zigzag curve
 > defined by 4 control points (0, 0), (`1.0`, `1.0`), (`2.0`, `-0.5`) and (`3.0`, `2.0`). The corners are smoothed using
 > $\epsilon=$`0.8`
+>
+> ![](https://github.com/user-attachments/assets/31c61352-53b9-4ab8-b190-0f4d326e4333){ width="300"}
+> ///caption
+> ///
 
 ??? question "Units?"
     The unit of each $u_i$ should be the unit of the generalized displacement $U$.
@@ -199,6 +242,10 @@ Example: `..., ZIGZAG2(u_i=[2.0; 1.0; 3.0]; f_i=[2.0; 0.0; 1.0]; epsilon=0.4)`
 > with control points (0, 0), (`2.0`, `2.0`), (`1.0`, `0.0`) and (`3.0`, `1.0`).
 > The corners are smoothed using $\epsilon=$`0.4`
 > This curve curves back; it cannot be described a function $F(U)$.
+> 
+> ![](https://github.com/user-attachments/assets/2e44e2ca-29eb-4298-88d8-537482379d6a){ width="300"}
+> ///caption
+> ///
 
 ??? question "Units?"
     The unit of each $u_i$ should be the unit of the generalized displacement $U$.
@@ -234,9 +281,13 @@ It is useful to model contact, as a relatively significant force is generated bu
 `CONTACT(f0=<value1>; uc=<value2>)`
 
 
-Example: `..., CONTACT(f0=5; uc=0.1)`
-> A spring is defined with a contact behavior. When the measure $\alpha$ of the spring becomes less than `0.1`,
-> a strong generalized repulsion force is generated, reaching -`5.0` when the measure $\alpha$ is zero.
+Example: `..., CONTACT(f0=3.0; uc=0.2)`
+> A spring is defined with a contact behavior. When the measure $\alpha$ of the spring becomes less than `0.2`,
+> a strong generalized repulsion force is generated, reaching -`3.0` when the measure $\alpha$ is zero.
+> 
+> ![](https://github.com/user-attachments/assets/a8f17fe5-cd4f-41fe-b7a1-65842625f7d9){width="300"}
+> ///caption
+> ///
 
 ??? question "Units?"
     The unit of $u_c$ should be the unit of the generalized displacement $U$.
@@ -272,11 +323,15 @@ $$
 F = nRT_0\frac{U}{(U+\alpha_0)\alpha_0}.
 $$
 
-`ISOTHERMIC(n=<n_value>; R=<R_value>; T0=<T0_value>)`
+`ISOTHERMIC_GAS(n=<n_value>; R=<R_value>; T0=<T0_value>)`
 
-Example: `..., ISOTHERMIC(n=1.0; R=8.3; T0=300)`
+Example: `..., ISOTHERMIC_GAS(n=1.0; R=8.3; T0=300)`
 > A spring is defined with an isothermic behavior. Its generalized force-displacement relation follows the behavior
 > of `1` mole of an ideal gas at constant temperature $T_0$=`300`K.
+> 
+> ![](https://github.com/user-attachments/assets/b9d2d7d8-b502-4249-9218-7e79cbf44ebd){width="300"}
+> ///caption
+> ///
 
 ??? question "Isn't the parameter $\alpha_0=V_0$ missing?"
     It seems like we are missing the parameter $\alpha_0$, describing the volume $V_0$ at ambient pressure $p_0$, in the specification.
@@ -285,7 +340,7 @@ Example: `..., ISOTHERMIC(n=1.0; R=8.3; T0=300)`
     when not provided.
     If you want to assign a value for $\alpha_0$, you can do it by adding a comma followed by the $\alpha_0$ value.
 
-    Example: `... , ISOTHERMIC(n=1.0; R=8.3; T0=300), 1.0`
+    Example: `... , ISOTHERMIC_GAS(n=1.0; R=8.3; T0=300), 1.0`
 
     > A spring is defined with an isothermic behavior. Its generalized force-displacement relation follows the behavior
     > of `1` mole of an ideal gas at constant temperature $T_0$=`300`K. Its *volume*/measure at ambient pressure is `1.0`.
@@ -326,11 +381,15 @@ $$
 F = nRT_0\left(\frac{U+\alpha_0}{\alpha_0} -1 \right) + \frac{nRT_0}{\gamma - 1} \left(\left(\frac{\alpha_0}{U+\alpha_0}\right)^{\gamma - 1} - 1 \right).
 $$
 
-`ISENTROPIC(n=<n_value>; R=<R_value>; T0=<T0_value>; gamma=<gamma_value>)`
+`ISENTROPIC_GAS(n=<n_value>; R=<R_value>; T0=<T0_value>; gamma=<gamma_value>)`
 
-Example: `..., ISENTROPIC(n=1.0; R=8.3; T0=300; gamma=1.4)`
+Example: `..., ISENTROPIC_GAS(n=1.0; R=8.3; T0=300; gamma=1.4)`
 > A spring is defined with an isentropic behavior. Its generalized force-displacement relation follows the behavior
 > of `1` mole of an ideal gas initially at $T_0$=`300`K, with $\gamma$=`1.4` (heat capacity ratio of air), at constant entropy.
+>
+> ![](https://github.com/user-attachments/assets/986d1eaf-9619-4750-924a-542f27a4c68c){width="300"}
+> ///caption
+> ///
 
 ??? question "Isn't the parameter $\alpha_0=V_0$ missing?"
     It seems like we are missing the parameter $\alpha_0$, describing the volume $V_0$ at ambient pressure $p_0$, in the specification.
@@ -339,7 +398,7 @@ Example: `..., ISENTROPIC(n=1.0; R=8.3; T0=300; gamma=1.4)`
     when not provided.
     If you want to assign a value for $\alpha_0$, you can do it by adding a comma followed by the $\alpha_0$ value.
 
-    Example: `... , ISENTROPIC(n=1.0; R=8.3; T0=300; gamma=1.4), 1.0`
+    Example: `... , ISENTROPIC_GAS(n=1.0; R=8.3; T0=300; gamma=1.4), 1.0`
 
     > A spring is defined with an isentropic behavior. Its generalized force-displacement relation follows the behavior
     > of `1` mole of an ideal gas initially at $T_0$=`300`K, with $\gamma$=`1.4`, at constant entropy.

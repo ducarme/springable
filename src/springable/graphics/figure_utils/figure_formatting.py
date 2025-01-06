@@ -27,12 +27,16 @@ def _adjust_spines(ax, offset, spines=("left", "bottom"), outward=True):
         ax.xaxis.set_visible(False)
 
 
-def save_fig(fig, save_dir, save_name, formats, transparent):
+def save_fig(fig, save_dir, save_name, formats, transparent, dpi=None):
     Path(save_dir).mkdir(parents=True, exist_ok=True)
     if not isinstance(formats, list):
         formats = [formats]
     for format in formats:
-        fig.savefig(os.path.join(save_dir, save_name + '.' + format), transparent=transparent)
+        if dpi is None:
+            fig.savefig(os.path.join(save_dir, save_name + '.' + format), transparent=transparent)
+        else:
+            fig.savefig(os.path.join(save_dir, save_name + '.' + format), transparent=transparent, dpi=dpi)
+
 
 
 def adjust_spines(axs, offset):

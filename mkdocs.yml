@@ -26,6 +26,8 @@ markdown_extensions:
   - pymdownx.arithmatex:
       generic: true
   - pymdownx.superfences
+  - pymdownx.blocks.caption:
+      prepend: true
 
 
 extra_javascript:
