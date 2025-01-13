@@ -8,9 +8,11 @@ import numpy as np
 import os.path
 
 
-def solve_model(_model: model.Model, solver_settings: dict | str = None) -> static_solver.Result:
+def solve_model(_model: model.Model | str, solver_settings: dict | str = None) -> static_solver.Result:
     if not isinstance(_model, model.Model):
-        raise ValueError('Invalid first argument. It should be the model file path or a Model object.')
+        _model = io.read_model(_model)
+        if not isinstance(_model, model.Model):
+            raise ValueError('Invalid first argument. It should be the model file path or a Model object.')
     if solver_settings is not None:
         if isinstance(solver_settings, str):
             solver_settings = io.read_solver_settings_file(solver_settings)
@@ -130,9 +132,11 @@ def scan_parameter_space(model_path, save_dir=None, scan_parameters_one_by_one=T
     par_name_to_sim_names = {}
     if scan_parameters_one_by_one:
         cnt = 0
+        nb_simulations = sum([design_parameter_data[par_name]['nb samples']] for par_name in design_parameter_names)
         par_name_to_sim_names = {design_parameter_name: [] for design_parameter_name in design_parameter_names}
         for design_parameter_index, design_parameter_name in enumerate(design_parameter_names):
             for design_parameter_value in design_parameter_vectors[design_parameter_index]:
+                print(f'Simulation {cnt+1}/{nb_simulations}')
                 # prepare saving folder
                 sim_name = f"sim{cnt}_{design_parameter_name}"
                 subsave_dir = io.mkdir(os.path.join(save_dir, sim_name))
@@ -165,6 +169,8 @@ def scan_parameter_space(model_path, save_dir=None, scan_parameters_one_by_one=T
         nb_combinations = design_parameter_combinations.shape[0]
         parameters = default_parameters.copy()
         for i in range(nb_combinations):
+            print(f'Simulation {i+1}/{nb_combinations}')
+
             # preparing for saving
             sim_name = f"sim{i}"
             subsave_dir = io.mkdir(os.path.join(save_dir, sim_name))

@@ -763,7 +763,7 @@ class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
                     return self._db(_t) * self._a(_t)
 
                 if t.ndim == 1:
-                    return solve_ivp(fun=adb, t_span=[np.min(t), np.max(t)], y0=[0.0], t_eval=t).y[0, :]
+                    return solve_ivp(fun=adb, t_span=[0, np.max(t)], y0=[0.0], t_eval=t).y[0, :]
                 # if t.ndim == 2:
                 #     int_adbdt = solve_ivp(fun=adb, t_span=[np.min(t), np.max(t)], y0=[0.0], t_eval=t[0, :]).y[0, :]
                 #     return int_adbdt.reshape(1, -1).repeat(t.shape[0], axis=0)
@@ -796,7 +796,7 @@ class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
         self._int_bda = int_bda
         self._hysteron_info = None
 
-        all_t = np.linspace(0, 1, 50)
+        all_t = np.linspace(0, 1, 250)
         da = self._da(all_t)
         db = self._db(all_t)
         db_da = db / da
@@ -842,13 +842,29 @@ class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
         self._d2k = d2k_fun
 
         # fig_, ax = plt.subplots()
-        # tt = np.linspace(-1, 0, 400)
-        # k = self._k(tt)
-        # da = self._da(tt)
-        # db = self._db(tt)
+        # tt = np.linspace(-0, 1, 400)
+        # e = self.elastic_energy(self._a(tt) + self.get_natural_measure(), tt)
+        # # k = self._k(tt)
+        # # da = self._da(tt)
+        # # db = self._db(tt)
         # a = self._a(tt)
         # b = self._b(tt)
-        # ax.plot(tt, a, 'o')
+        # ax.scatter(a, b, c=e)
+        # # ax.plot(tt, a, 'o')
+        # # ax.plot(tt, db/da, 'o')
+        # # ax.plot(tt, k, '-o')
+        # plt.show()
+        #
+        # a_extrema = spw.get_extrema_from_control_points(self._cp_t, self._cp_u, self._delta)
+        # b_extrema = spw.get_extrema_from_control_points(self._cp_t, self._cp_f, self._delta)
+        # fig_, (ax0, ax1) = plt.subplots(2, 1)
+        # ax0.scatter(a, b, c=e)
+        # ax0.plot(self._a(a_extrema), self._b(a_extrema), 'rs', markersize=5)
+        # ax0.plot(self._a(b_extrema), self._b(b_extrema), 'gs', markersize=5)
+        # ax1.scatter(tt, e, c=e)
+        # ax1.plot(a_extrema, self.elastic_energy(self._a(a_extrema) + self.get_natural_measure(), a_extrema), 'rs', markersize=5)
+        # ax1.plot(b_extrema, self.elastic_energy(self._a(b_extrema) + self.get_natural_measure(), b_extrema), 'gs', markersize=5)
+        # # ax.plot(tt, a, 'o')
         # # ax.plot(tt, db/da, 'o')
         # # ax.plot(tt, k, '-o')
         # plt.show()

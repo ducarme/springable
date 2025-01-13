@@ -47,6 +47,8 @@ lowest_eigval_colormap = "PuOr"
 # used when "color_mode" "min_eigval_fd" or "min_eigval_ud" is used, diverging colormap recommended
 nb_negative_eigval_colormap = "plasma"
 # used when "color_mode" "nb_neg_eigval_fd" or "nb_neg_eigval_ud" is used
+energy_colormap = "viridis"
+# used when "color_mode" "energy" is used
 
 max_nb_legend_entries_for_discrete_parameter = 4
 

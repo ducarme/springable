@@ -162,6 +162,36 @@ def read_design_parameters(save_dir, save_name='design_parameters.csv'):
     return parameters
 
 
+def write_solving_process_info(info: dict | None, save_dir, save_name='solving_process_info.csv'):
+    # save solving process information
+    if info is not None:
+        with open(os.path.join(save_dir, save_name), 'w', newline='') as output_file:
+            writer = csv.writer(output_file)
+            for k, v in info.items():
+                writer.writerow([k, v])
+
+def read_solving_process_info(save_dir, save_name='solving_process_info.csv'):
+    # get the solving process information
+    info = {}
+    try:
+        with open(os.path.join(save_dir, save_name), mode='r') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                if row[0] == 'duration (s)':
+                    try:
+                        info[row[0]] = float(row[1])
+                    except ValueError:
+                        info[row[0]] = None
+                else:
+                    try:
+                        info[row[0]] = int(row[1])
+                    except ValueError:
+                        info[row[0]] = None
+    except FileNotFoundError:
+        pass
+    return info
+
+
 def write_results(result: static_solver.Result, save_dir: str):
     np.savetxt(os.path.join(save_dir, 'displacements.csv'),
                result.get_displacements(include_preloading=True, check_usability=False), delimiter=',')
@@ -173,6 +203,7 @@ def write_results(result: static_solver.Result, save_dir: str):
                result.get_eigval_stats(include_preloading=True, check_usability=False), delimiter=',')
     np.savetxt(os.path.join(save_dir, 'step_indices.csv'),
                result.get_step_indices(), delimiter=',', fmt='%d')
+    write_solving_process_info(result.get_solving_process_info(), save_dir)
     write_model(result.get_model(), save_dir)
 
 
@@ -183,7 +214,9 @@ def read_results(save_dir):
     stability = np.loadtxt(os.path.join(save_dir, 'stability.csv'), delimiter=',', dtype=str)
     eigval_stats = np.loadtxt(os.path.join(save_dir, "eigval_stats.csv"), delimiter=',')
     step_indices = np.loadtxt(os.path.join(save_dir, "step_indices.csv"), delimiter=',', dtype=int)
-    return static_solver.Result(_model, displacements, forces, stability, eigval_stats, step_indices)
+    solving_process_info = read_solving_process_info(save_dir)
+    return static_solver.Result(_model, displacements, forces, stability, eigval_stats, step_indices,
+                                solving_process_info)
 
 
 def write_scanning_general_info(scanning_general_info: dict, save_dir, save_name='general_info.json'):

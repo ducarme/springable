@@ -31,6 +31,7 @@ DEFAULT_PLOT_OPTIONS = {
     "discrete_parameter_scan_colormap": 'tab10',
     "lowest_eigval_colormap": 'PuOr',
     "nb_negative_eigval_colormap": 'plasma',
+    "energy_colormap": 'viridis',
     "max_nb_legend_entries_for_discrete_parameter": 4,
     "default_plot_name": 'fd_curve',
     "default_xlabel": 'displacement',

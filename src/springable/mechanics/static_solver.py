@@ -18,7 +18,7 @@ from .shape import IllDefinedShape
 class Result:
     def __init__(self, model: Model,
                  equilibrium_displacements, equilibrium_forces, equilibrium_stability, equilibrium_eigval_stats,
-                 step_indices):
+                 step_indices, solving_process_info: dict | None = None):
         self._model = model
         self._u = equilibrium_displacements
         self._f = equilibrium_forces
@@ -26,6 +26,7 @@ class Result:
         self._eigval_stats = equilibrium_eigval_stats
         self._step_indices = step_indices if step_indices is not None else np.zeros(equilibrium_displacements.shape[0],
                                                                                     dtype=int)
+        self._solving_process_info = solving_process_info
 
         nb_steps = len(self._model.get_loading())
         self._starting_index = None
@@ -158,6 +159,9 @@ class Result:
     def get_starting_index(self):
         return self._starting_index
 
+    def get_solving_process_info(self):
+        return self._solving_process_info
+
 
 class UnusableSolution(Exception):
     """ raise this when one attempts to get a solution from a Result instance, but it is not usable """
@@ -221,15 +225,15 @@ class StaticSolver:
         max_displacement_map_step_list = self._model.get_max_displacement_map_preloading_step_list() + [
             self._model.get_max_displacement_map()]
         blocked_nodes_directions_step_list = self._model.get_blocked_nodes_directions_step_list()
-        u, f, stability, eigval_stats, step_indices = self._solve_with_arclength(step_force_vectors,
-                                                                                 max_displacement_map_step_list,
-                                                                                 blocked_nodes_directions_step_list,
-                                                                                 **self._solver_settings)
+        u, f, stability, eigval_stats, step_indices, info = self._solve_with_arclength(step_force_vectors,
+                                                                                       max_displacement_map_step_list,
+                                                                                       blocked_nodes_directions_step_list,
+                                                                                       **self._solver_settings)
         if u.ndim == 2:
             self._assembly.set_coordinates(initial_coordinates)
         for blocked_nodes, directions in blocked_nodes_directions_step_list:
             self._assembly.release_nodes_along_directions(blocked_nodes, directions)
-        return Result(self._model, u, f, stability, eigval_stats, step_indices)
+        return Result(self._model, u, f, stability, eigval_stats, step_indices, solving_process_info=info)
 
     def guide_spring_assembly_to_natural_configuration(self):
         if not self._free_dof_indices:
@@ -536,7 +540,8 @@ class StaticSolver:
                                                     initial_coordinates + equilibrium_displacements[-1])
                                                 f_ext = equilibrium_forces[-1].copy()
 
-                                                perturbation_magnitude = np.linalg.norm(equilibrium_displacements[-1]) / 100
+                                                perturbation_magnitude = np.linalg.norm(
+                                                    equilibrium_displacements[-1]) / 100
                                                 null_vector = self._get_structural_displacements(singular_mode)
                                                 bifurcation_perturbation = perturbation_magnitude * null_vector
 
@@ -711,12 +716,20 @@ class StaticSolver:
                                                         nb_limit_points_detected, nb_bifurcation_points_detected)
 
         end = time.time()
+        duration = end - start
         if verbose:
-            print(f"Solving duration: {end - start:.4f} s")
+            print(f"Solving duration: {duration:.4f} s")
+
+        solving_process_info = {'duration (s)': duration,
+                                '# stiffness matrix evals': stiffness_matrix_eval_counter,
+                                '# linear system resolutions': linear_system_solving_counter,
+                                '# increment retries': total_nb_increment_retries,
+                                '# avoided singular stiffness matrices': total_nb_singular_matrices_avoided,
+                                }
 
         return (np.array(equilibrium_displacements), np.array(equilibrium_forces),
                 np.array(equilibrium_stability, dtype=str), np.array(equilibrium_eigval_stats),
-                np.array(step_indices, dtype=int))
+                np.array(step_indices, dtype=int), solving_process_info)
 
     def _compute_lowest_eigenvalues(self, ks, loaded_dof_indices):
         # force-driven case
@@ -802,6 +815,7 @@ class MaxNbIterationReached(Exception):
 
 class MaxDisplacementReached(Exception):
     """ raise this when the max displacement is reached """
+
 
 class NonfiniteMechanicalQuantity(Exception):
     """ raise this when the reduced force vector or the reduced stiffness matrix have nonfinite components

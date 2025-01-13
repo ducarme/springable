@@ -4,7 +4,7 @@ from ..mechanics.mechanical_behavior import BivariateBehavior
 from ..mechanics.assembly import Assembly
 from ..mechanics.model import Model
 from ..mechanics import shape
-from .visual_helpers import compute_zigzag_line, compute_arc_line, compute_pathpatch_vertices
+from .visual_helpers import compute_zigzag_line, compute_arc_line, compute_pathpatch_vertices, compute_coil_line, compute_coil_arc
 from scipy.interpolate import interp1d
 from matplotlib.colors import to_rgba
 import matplotlib.pyplot as plt
@@ -84,8 +84,11 @@ class SegmentDrawing(ShapeDrawing):
                  aa: dict):
         super().__init__(segment, width, is_hysteron, ax, color, opacity, aa)
         x0, y0, x1, y1 = self._shape.get_nodal_coordinates()
-        x_coords, y_coords = compute_zigzag_line((x0, y0), (x1, y1), 8 + 2 * self._aa['nb_spring_coils'],
-                                                 self._size * self._aa['spring_width_scaling'])
+        # x_coords, y_coords = compute_zigzag_line((x0, y0), (x1, y1), 8 + 2 * self._aa['nb_spring_coils'],
+        #                                          self._size * self._aa['spring_width_scaling'])
+
+        x_coords, y_coords = compute_coil_line((x0, y0), (x1, y1), self._aa['nb_spring_coils'],
+                             self._size * self._aa['spring_width_scaling']/2)
         self._graphics = self._ax.plot(x_coords, y_coords, lw=self._aa['spring_linewidth'],
                                        color=self._color, alpha=self._opacity, zorder=0.1)[0]
         self._hysteron_label_position = ((x0 + x1) / 2, (y0 + y1) / 2) if self._is_hysteron else None
@@ -93,8 +96,10 @@ class SegmentDrawing(ShapeDrawing):
     def update(self, color: str, opacity: float):
         super().update(color, opacity)
         x0, y0, x1, y1 = self._shape.get_nodal_coordinates()
-        x_coords, y_coords = compute_zigzag_line((x0, y0), (x1, y1), 8 + 2 * self._aa['nb_spring_coils'],
-                                                 self._size * self._aa['spring_width_scaling'])
+        # x_coords, y_coords = compute_zigzag_line((x0, y0), (x1, y1), 8 + 2 * self._aa['nb_spring_coils'],
+        #                                          self._size * self._aa['spring_width_scaling'])
+        x_coords, y_coords = compute_coil_line((x0, y0), (x1, y1), self._aa['nb_spring_coils'],
+                                                 self._size * self._aa['spring_width_scaling']/2)
         self._graphics.set_xdata(x_coords)
         self._graphics.set_ydata(y_coords)
         if color is not None:
@@ -114,8 +119,10 @@ class AngleDrawing(ShapeDrawing):
         angle = shape.Angle.calculate_angle(x0, y0, x1, y1, x2, y2)
         end_angle = shape.Angle.calculate_angle(x1 + 1, y1, x1, y1, x2, y2)
         start_angle = end_angle - angle
-        x_coords, y_coords = compute_arc_line(center, self._size * self._aa['rotation_spring_radius_scaling'],
-                                              start_angle, end_angle)
+        # x_coords, y_coords = compute_arc_line(center, self._size * self._aa['rotation_spring_radius_scaling'],
+        #                                       start_angle, end_angle)
+        x_coords, y_coords = compute_coil_arc(center, self._size * self._aa['rotation_spring_radius_scaling'],
+                                              start_angle, end_angle, 7, 6.0, 0.3)
         self._graphics = self._ax.plot(x_coords, y_coords, lw=self._aa['rotation_spring_linewidth'],
                                        color=self._color, alpha=self._opacity, zorder=0)[0]
         if self._is_hysteron:
@@ -134,9 +141,11 @@ class AngleDrawing(ShapeDrawing):
         angle = shape.Angle.calculate_angle(x0, y0, x1, y1, x2, y2)
         end_angle = shape.Angle.calculate_angle(x1 + 1, y1, x1, y1, x2, y2)
         start_angle = end_angle - angle
-        x_coords, y_coords = compute_arc_line(center, self._size * self._aa['rotation_spring_radius_scaling'],
-                                              start_angle,
-                                              end_angle)
+        # x_coords, y_coords = compute_arc_line(center, self._size * self._aa['rotation_spring_radius_scaling'],
+        #                                       start_angle,
+        #                                       end_angle)
+        x_coords, y_coords = compute_coil_arc(center, self._size * self._aa['rotation_spring_radius_scaling'],
+                                              start_angle, end_angle, 7, 6.0, 0.3)
         self._graphics.set_xdata(x_coords)
         self._graphics.set_ydata(y_coords)
         if color is not None:

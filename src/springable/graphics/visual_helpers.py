@@ -141,6 +141,73 @@ def compute_zigzag_line(start, end, nb_nodes, width) -> tuple[np.ndarray, np.nda
     return spring_coords[0, :], spring_coords[1, :]
 
 
+def compute_coil_line(start, end, nb_coils, radius, straight_ratio=0.4, aspect=0.25):
+    x1, y1 = start
+    x2, y2 = end
+    dx, dy = x2 - x1, y2 - y1
+    angle = np.arctan2(dy, dx)
+    length = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
+    x1_ = x1 + straight_ratio / 2 * length * np.cos(angle)
+    y1_ = y1 + straight_ratio / 2 * length * np.sin(angle)
+    x2_ = x2 - straight_ratio / 2 * length * np.cos(angle)
+    y2_ = y2 - straight_ratio / 2 * length * np.sin(angle)
+
+    omega = (2 * nb_coils - 1) * np.pi
+    length_ = (1 - straight_ratio) * length
+    coil_length = omega * radius
+    min_radius = 0.4 * radius
+
+    r_squared = max((coil_length ** 2 - length_ ** 2) / omega ** 2, min_radius ** 2)
+    r = np.sqrt(r_squared)
+
+    # Generate points along the path
+    t = np.linspace(0, 1, nb_coils * 50)
+    path_x = np.linspace(x1_, x2_, t.size)
+    path_y = np.linspace(y1_, y2_, t.size)
+
+    # Generate coil coordinates
+    theta = np.linspace(np.pi, 2 * np.pi * nb_coils, t.size)
+    coil_x = r * np.cos(theta) * aspect
+    coil_y = r * np.sin(theta)
+
+    # Rotate the coil to align with the start-end direction
+
+    rotation_matrix = np.array([[np.cos(angle), -np.sin(angle)],
+                                [np.sin(angle), np.cos(angle)]])
+    coil = np.dot(rotation_matrix, np.array([coil_x, coil_y]))
+
+    # Combine the coil with the path
+    x_ = path_x + coil[0]
+    y_ = path_y + coil[1]
+
+    x = np.insert(x_, 0, x1)
+    x = np.append(x, [x2])
+
+    y = np.insert(y_, 0, y1)
+    y = np.append(y, [y2])
+
+    return x, y
+
+
+def compute_coil_arc(center, radius, start_angle, end_angle, nb_coils, radii_ratio=2, aspect=0.0, nb_points_per_coil=50):
+    nb_points = nb_coils * nb_points_per_coil
+    arc_x, arc_y = compute_arc_line(center, radius, start_angle, end_angle, nb_points=nb_points)
+    angle = np.linspace(start_angle, end_angle, nb_points) + np.pi/2
+
+    # Generate coil coordinates
+    theta = np.linspace(np.pi, 2 * np.pi * nb_coils, nb_points)
+    coil_x = radius / radii_ratio * np.cos(theta) * aspect
+    coil_y = radius / radii_ratio * np.sin(theta)
+
+    curved_coil_x = np.cos(angle) * coil_x - np.sin(angle) * coil_y
+    curved_coil_y = np.sin(angle) * coil_x + np.cos(angle) * coil_y
+
+    x = arc_x + curved_coil_x
+    y = arc_y + curved_coil_y
+    return x, y
+
+
 def compute_arc_line(center, radius, start_angle, end_angle, nb_points=30) -> tuple[np.ndarray, np.ndarray]:
     # generate the silhouette points
     theta = np.linspace(start_angle, end_angle, nb_points)
@@ -149,6 +216,48 @@ def compute_arc_line(center, radius, start_angle, end_angle, nb_points=30) -> tu
     points[:, 1] = center[1] + radius * np.sin(theta)
     return points[:, 0], points[:, 1]
 
+
+# def compute_coil_line(start, end, nb_coils, radius, straight_ratio=0.4, aspect=0.5):
+#     x1, y1 = start
+#     x2, y2 = end
+#     dx, dy = x2 - x1, y2 - y1
+#     angle = np.arctan2(dy, dx)
+#     l = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+#
+#     x1_ = x1 + straight_ratio/2 * l * np.cos(angle)
+#     y1_ = y1 + straight_ratio/2 * l * np.sin(angle)
+#     x2_ = x2 - straight_ratio/2 * l * np.cos(angle)
+#     y2_ = y2 - straight_ratio/2 * l * np.sin(angle)
+#
+#
+#     # Number of coils (segments)
+#     num_coils = nb_coils
+#
+#     # Generate points along the path
+#     t = np.linspace(0, 1, num_coils * 50)
+#     path_x = np.linspace(x1_, x2_, len(t))
+#     path_y = np.linspace(y1_, y2_, len(t))
+#
+#     # Generate the sine wave with a softened start and end
+#     sine_wave = radius * np.sin(2 * np.pi * num_coils * t)
+#     # softening = 0.5 * (1 - np.cos(2 * np.pi * t))  # Scales the amplitude smoothly from 0 to 1 to 0
+#     snake_wave = sine_wave * 1.0
+#
+#     # Rotate the sine wave to align with the path
+#     snake_x = snake_wave * np.cos(angle + np.pi / 2)
+#     snake_y = snake_wave * np.sin(angle + np.pi / 2)
+#
+#     # Combine the snake wave with the path
+#     x_ = path_x + snake_x
+#     y_ = path_y + snake_y
+#
+#     x = np.insert(x_, 0, x1)
+#     x = np.append(x, [x2])
+#
+#     y = np.insert(y_, 0, y1)
+#     y = np.append(y, [y2])
+#
+#     return x, y
 
 def _reorder(poly, cw=True):
     """Reorders the polygon to run clockwise or counter-clockwise

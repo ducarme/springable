@@ -167,6 +167,28 @@ def curve_in_ax(processing_fun: callable, result: static_solver.Result, ax: plt.
                     cbar.ax.set_title('$\\sum_i (\\lambda_i < 0)$', loc='left')
                 else:
                     cbar.ax.set_title('$\\sum_i (\\bar{\\lambda}_i < 0)$', loc='left')
+            elif po['color_mode'] == 'energy':
+                # then each point is colored by the elastic energy stored at that state
+                a = result.get_model().get_assembly()
+                x0 = a.get_coordinates()
+                u = result.get_displacements()
+                energies = []
+                for i in range(u.shape[0]):
+                    xi = x0 + u[i, :]
+                    a.set_coordinates(xi)
+                    energies.append(a.compute_elastic_energy())
+                a.set_coordinates(x0)
+                energies = np.array(energies)
+
+                max_energy = np.max(energies)
+                min_energy = np.min(energies)
+                cm = po['energy_colormap']
+                cn = plt.Normalize(vmin=min_energy, vmax=max_energy, clip=True)
+                sm = mcm.ScalarMappable(norm=cn, cmap=cm)
+                ax.scatter(x, y, c=sm.to_rgba(energies), s=po['default_markersize'],
+                           marker=po['default_marker'], label=label if label is not None else '', zorder=1)
+                cbar = plt.colorbar(sm, cax=None, ax=ax)
+                cbar.ax.set_title('energy', loc='left')
 
             else:  # 'color_mode' is 'none' or something else
                 # then the default color is used
