@@ -4,6 +4,7 @@ i_max = 5_000  # max number of increments to reach the prescribed force
 
 detect_critical_points = false
 bifurcate_at_simple_bifurcations = false  # only has an effect if 'detect_critical_points' is enabled
+critical_point_epsilon = 1e-3  # when detecting critical points, a point is assumed to be critical if the ratio eig_val / initial_stiffness < critical_point_epsilon
 show_warnings = false
 verbose = true
 detail_verbose = false

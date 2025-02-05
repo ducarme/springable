@@ -64,3 +64,5 @@ def compute_requirements_for_animation(mdl: dynamics.DynamicModel, t, q, dqdt, f
     _assembly.set_velocities(dqdt[0, :])
 
     return (xmin, ymin, xmax, ymax), characteristic_length, color_handler, opacity_handler
+
+
