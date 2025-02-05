@@ -1,6 +1,7 @@
 from ..mechanics.static_solver import Result
 from ..mechanics.element import Element
 from ..mechanics import shape
+from .default_graphics_settings import AssemblyAppearanceOptions
 from scipy.interpolate import interp1d
 from scipy.integrate import cumulative_trapezoid, trapezoid
 import numpy as np
@@ -141,12 +142,13 @@ def compute_zigzag_line(start, end, nb_nodes, width) -> tuple[np.ndarray, np.nda
     return spring_coords[0, :], spring_coords[1, :]
 
 
-def compute_coil_line(start, end, nb_coils, radius, straight_ratio=0.4, aspect=0.25):
+def compute_coil_line(start, end, nb_coils, diameter, straight_ratio=0.4, aspect=0.4):
     x1, y1 = start
     x2, y2 = end
     dx, dy = x2 - x1, y2 - y1
     angle = np.arctan2(dy, dx)
     length = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+    radius = diameter / 2.
 
     x1_ = x1 + straight_ratio / 2 * length * np.cos(angle)
     y1_ = y1 + straight_ratio / 2 * length * np.sin(angle)
@@ -190,7 +192,7 @@ def compute_coil_line(start, end, nb_coils, radius, straight_ratio=0.4, aspect=0
     return x, y
 
 
-def compute_coil_arc(center, radius, start_angle, end_angle, nb_coils, radii_ratio=2, aspect=0.0, nb_points_per_coil=50):
+def compute_coil_arc(center, radius, start_angle, end_angle, nb_coils, radii_ratio=2, aspect=0.4, nb_points_per_coil=50):
     nb_points = nb_coils * nb_points_per_coil
     arc_x, arc_y = compute_arc_line(center, radius, start_angle, end_angle, nb_points=nb_points)
     angle = np.linspace(start_angle, end_angle, nb_points) + np.pi/2
@@ -324,7 +326,7 @@ def compute_pathpatch_vertices(polys, compute_code=True):
     return vertices, codes
 
 
-def compute_requirements_for_animation(_result: Result, assembly_appearance):
+def compute_requirements_for_animation(_result: Result, assembly_appearance: AssemblyAppearanceOptions):
     aa = assembly_appearance
 
     _assembly = _result.get_model().get_assembly()
@@ -342,8 +344,9 @@ def compute_requirements_for_animation(_result: Result, assembly_appearance):
     assembly_scanned = False
     start = _result.get_starting_index()
     n = u.shape[0] - start
-    if aa['coloring_mode'] != 'none':
-        if aa['show_forces'] and aa['color_forces']:
+    characteristic_lengths = []
+    if aa.coloring_mode != 'none':
+        if aa.show_forces and aa.color_forces:
             loaded_nodes = _result.get_model().get_loaded_nodes()
             preloaded_nodes = _result.get_model().get_preloaded_nodes()
             node_nb_to_dof_indices = _result.get_model().get_assembly().get_nodes_dof_indices()
@@ -353,7 +356,7 @@ def compute_requirements_for_animation(_result: Result, assembly_appearance):
                 final_force = final_force_vector[dof_indices]
                 direction = final_force / np.linalg.norm(final_force)
                 if not np.isnan(direction).any():
-                    match aa['coloring_mode']:
+                    match aa.coloring_mode:
                         case 'energy':
                             forces = np.inner(f[start:, dof_indices] - f[start, dof_indices], direction)
                             displacements = np.inner(u[start:, dof_indices], direction)
@@ -371,7 +374,7 @@ def compute_requirements_for_animation(_result: Result, assembly_appearance):
                 preforce_vector = f[start, dof_indices]
                 direction = preforce_vector / np.linalg.norm(preforce_vector)
                 if not np.isnan(direction).any():
-                    match aa['coloring_mode']:
+                    match aa.coloring_mode:
                         case 'energy':
                             preforces = np.inner(f[:start, dof_indices], direction)
                             predisplacements = np.inner(u[:start, dof_indices], direction)
@@ -384,14 +387,14 @@ def compute_requirements_for_animation(_result: Result, assembly_appearance):
                             preforce_amounts[_node] = np.inner(preforce_vector, direction) * np.ones(n)
                         case 'generalized_stiffness':
                             preforce_amounts[_node] = np.zeros(n)
-        if aa['color_elements'] or (aa['color_forces'] and aa['show_forces']):
+        if aa.color_elements or (aa.color_forces and aa.show_forces):
             unit_dimensions = set()
-            if aa['color_elements']:
+            if aa.color_elements:
                 existing_shape_unit_dimensions = set()
                 for _el in _assembly.get_elements():
                     existing_shape_unit_dimensions.add(shape_unit_dimensions[type(_el.get_shape())])
                 unit_dimensions |= existing_shape_unit_dimensions
-            if aa['color_forces'] and aa['show_forces']:
+            if aa.color_forces and aa.show_forces:
                 unit_dimensions |= {1}
 
             energy_maxs = []
@@ -400,26 +403,26 @@ def compute_requirements_for_animation(_result: Result, assembly_appearance):
 
             for i in range(n):
                 _assembly.set_coordinates(_initial_coordinates + u[start + i, :])
-                match aa['coloring_mode']:
+                match aa.coloring_mode:
                     case 'energy':
                         energies = []
-                        if aa['color_elements']:
+                        if aa.color_elements:
                             element_energies = list(_assembly.compute_elemental_energies().values())
                             energies += element_energies
-                        if aa['color_forces'] and aa['show_forces']:
+                        if aa.color_forces and aa.show_forces:
                             force_works = [force_amount[i] for force_amount in force_amounts.values()]
                             preforce_works = [preforce_amount[i] for preforce_amount in preforce_amounts.values()]
                             energies += force_works + preforce_works
                         energy_maxs.append(np.max(np.abs(energies)))
                     case 'generalized_force':
                         generalized_forces = {dim: [] for dim in unit_dimensions}
-                        if aa['color_elements']:
+                        if aa.color_elements:
                             element_to_generalized_forces = _assembly.compute_elemental_generalized_forces()
                             for dim in unit_dimensions:
                                 generalized_forces[dim] += [element_to_generalized_forces[el]
                                                             for el in _assembly.get_elements()
                                                             if shape_unit_dimensions[type(el.get_shape())] == dim]
-                        if aa['color_forces'] and aa['show_forces']:
+                        if aa.color_forces and aa.show_forces:
                             generalized_forces[1] += [force_amount[i] for force_amount in force_amounts.values()]
                             generalized_forces[1] += [preforce_amount[i]
                                                       for preforce_amount in preforce_amounts.values()]
@@ -428,13 +431,13 @@ def compute_requirements_for_animation(_result: Result, assembly_appearance):
 
                     case 'generalized_stiffness':
                         generalized_stiffnesses = {dim: [] for dim in unit_dimensions}
-                        if aa['color_elements']:
+                        if aa.color_elements:
                             element_to_generalized_stiffnesses = _assembly.compute_elemental_generalized_stiffnesses()
                             for dim in unit_dimensions:
                                 generalized_stiffnesses[dim] += [element_to_generalized_stiffnesses[el]
                                                                  for el in _assembly.get_elements()
                                                                  if shape_unit_dimensions[type(el.get_shape())] == dim]
-                        if aa['color_forces'] and aa['show_forces']:
+                        if aa.color_forces and aa.show_forces:
                             generalized_stiffnesses[1] += [force_amount[i] for force_amount in force_amounts.values()]
                             generalized_stiffnesses[1] += [preforce_amount[i]
                                                            for preforce_amount in preforce_amounts.values()]
@@ -447,10 +450,11 @@ def compute_requirements_for_animation(_result: Result, assembly_appearance):
                 ymin = min(ymin, bounds[1])
                 xmax = max(xmax, bounds[2])
                 ymax = max(ymax, bounds[3])
+                characteristic_lengths.append(_assembly.compute_characteristic_length())
             _assembly.set_coordinates(_initial_coordinates)
             assembly_scanned = True
 
-            match aa['coloring_mode']:
+            match aa.coloring_mode:
                 case 'energy':
                     high_value = np.quantile(energy_maxs, .9)
                 case 'generalized_force':
@@ -462,14 +466,14 @@ def compute_requirements_for_animation(_result: Result, assembly_appearance):
                 case _:
                     high_value = None
 
-            element_color_handler = (ColorHandler(high_value, mode=aa['coloring_mode'], cmap=aa['colormap'])
-                                     if aa['color_elements'] else None)
+            element_color_handler = (ColorHandler(high_value, mode=aa.coloring_mode, cmap=aa.colormap)
+                                     if aa.color_elements else None)
 
-            element_opacity_handler = (OpacityHandler(high_value, mode=aa['coloring_mode'])
-                                       if aa['color_elements'] else None)
+            element_opacity_handler = (OpacityHandler(high_value, mode=aa.coloring_mode)
+                                       if aa.color_elements else None)
 
-            force_color_handler = (ColorHandler(high_value, mode=aa['coloring_mode'], cmap=aa['colormap'])
-                                   if aa['color_forces'] and aa['show_forces'] else None)
+            force_color_handler = (ColorHandler(high_value, mode=aa.coloring_mode, cmap=aa.colormap)
+                                   if aa.color_forces and aa.show_forces else None)
 
     if not assembly_scanned:
         for i in range(n):
@@ -479,11 +483,13 @@ def compute_requirements_for_animation(_result: Result, assembly_appearance):
             ymin = min(ymin, bounds[1])
             xmax = max(xmax, bounds[2])
             ymax = max(ymax, bounds[3])
+            characteristic_lengths.append(_assembly.compute_characteristic_length())
         _assembly.set_coordinates(_initial_coordinates)
 
+    characteristic_length = np.quantile(characteristic_lengths, 0.75)
     force_amounts = force_amounts if force_amounts else None
     preforce_amounts = preforce_amounts if preforce_amounts else None
-    return ((xmin, ymin, xmax, ymax), element_color_handler, element_opacity_handler,
+    return ((xmin, ymin, xmax, ymax), characteristic_length, element_color_handler, element_opacity_handler,
             force_color_handler, force_amounts, preforce_amounts)
 
 

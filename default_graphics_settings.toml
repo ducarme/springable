@@ -120,21 +120,27 @@ hysteron_state_label_size = 10
 hysteron_state_bg_color = "#e0e0e0"
 hysteron_state_txt_color = "#101010"
 show_forces = true
-hide_low_preloading_forces = false  # low forces are defined by parameter 'low_force_threshold'
+hide_low_preloading_forces = false  # low forces are defined by parameter 'low_preloading_force_threshold'
 low_preloading_force_threshold = 0.0  # preloading load with magnitude below this value will not be depicted if 'hide_low_preloading_forces' is true.
 force_vector_scaling = 1.0
-nb_spring_coils = 4
-spring_linewidth = 3
+spring_style = "simple"  # "simple", "elegant", "line"
+spring_nb_coils = 4  # has no effect if "spring_style" = "line"
+spring_aspect = 0.4  # is only used when "spring_style" = "elegant"
+spring_linewidth = 2
 spring_width_scaling = 1.0
 spring_default_opacity = 1.0
 spring_default_color = "#cecece"
-rotation_spring_linewidth = 3
+rotation_spring_style = "line"  # "elegant", "line"
+rotation_spring_nb_coils = 6  # has no effect if "rotation_spring_style" = "line"
+rotation_spring_radii_ratio = 6  # ratio between the rotation spring radius and the coil radius. Is only used when "rotation_spring_style" = "elegant"
+rotation_spring_aspect = 0.4  # is only used when "rotation_spring_style" = "elegant"
+rotation_spring_linewidth = 2
 rotation_spring_radius_scaling = 1.0
 rotation_spring_default_opacity = 1.0
 rotation_spring_default_color = "#cecece"
 area_spring_default_opacity = 0.5
 area_spring_default_color = "#cecece"
-line_spring_linewidth = 3
+line_spring_linewidth = 2
 line_spring_default_opacity = 1.0
 line_spring_default_color = "#cecece"
 distance_spring_line_linewidth = 1.0

@@ -281,7 +281,10 @@ def text_to_assembly(assembly_text: str, evaluator: se.SimpleEval = None) -> Ass
             current_shape_type = line.rstrip('S')
             continue
         if reading_nodes:
-            nodes.add(text_to_node(line, evaluator))
+            new_node = text_to_node(line, evaluator)
+            nodes.add(new_node)
+            node_nb = new_node.get_node_nb()
+            evaluator.names.update({f'X{node_nb}': new_node.get_x(), f'Y{node_nb}': new_node.get_y()})
         if reading_elements:
             element_text = current_shape_type + '\n' + line
             elements.append(text_to_element(element_text, nodes, evaluator))

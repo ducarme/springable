@@ -174,7 +174,7 @@ class BehaviorTab:
         self._save_btn = ttk.Button(save_pnl, text='Save...',
                                     command=self._on_save_button_clicked)
 
-        self._specify_natural_measure_var = tk.BooleanVar(value=True)
+        self._specify_natural_measure_var = tk.BooleanVar(value=False)
         self._specify_natural_measure_btn = ttk.Checkbutton(save_pnl,
                                                             text='specify alpha 0',
                                                             variable=self._specify_natural_measure_var,

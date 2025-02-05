@@ -4,6 +4,13 @@ from .control_panel_interface import BehaviorNotebook
 from .drawing_interface import DrawingSpace
 from .gui_event_handler import GUIEventHandler
 import warnings
+import sys
+import os
+
+
+def suppress_output():
+    sys.stderr = open(os.devnull, 'w')
+
 
 # Suppress RuntimeWarnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -11,6 +18,7 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 def start_behavior_creation():
     window = tk.Tk()
+    suppress_output()
     window.wm_title('Behavior creation')
     handler = GUIEventHandler()
     main_frame = ttk.Frame(window, padding=(3, 3, 12, 12))

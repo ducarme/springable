@@ -4,7 +4,9 @@ from ..mechanics.mechanical_behavior import BivariateBehavior
 from ..mechanics.assembly import Assembly
 from ..mechanics.model import Model
 from ..mechanics import shape
-from .visual_helpers import compute_zigzag_line, compute_arc_line, compute_pathpatch_vertices, compute_coil_line, compute_coil_arc
+from .default_graphics_settings import AssemblyAppearanceOptions
+from .visual_helpers import compute_zigzag_line, compute_arc_line, compute_pathpatch_vertices, compute_coil_line, \
+    compute_coil_arc
 from scipy.interpolate import interp1d
 from matplotlib.colors import to_rgba
 import matplotlib.pyplot as plt
@@ -14,7 +16,7 @@ import numpy as np
 
 
 class Drawing:
-    def __init__(self, ax: plt.Axes, assembly_appearance: dict):
+    def __init__(self, ax: plt.Axes, assembly_appearance: AssemblyAppearanceOptions):
         self._ax = ax
         self._aa = assembly_appearance
 
@@ -24,7 +26,7 @@ class Drawing:
 
 class NodeDrawing(Drawing):
 
-    def __init__(self, ax: plt.Axes, _node: Node, assembly_appearance):
+    def __init__(self, ax: plt.Axes, _node: Node, assembly_appearance: AssemblyAppearanceOptions):
         super().__init__(ax, assembly_appearance)
         self._node = _node
         if self._node.is_fixed_horizontally() and self._node.is_fixed_vertically():
@@ -35,12 +37,12 @@ class NodeDrawing(Drawing):
             marker = '^'
         else:
             marker = 'o'
-        markersize = self._aa['node_size']
-        markercolor = self._aa['node_color']
+        markersize = self._aa.node_size
+        markercolor = self._aa.node_color
         self._text = None
-        if self._aa['show_node_numbers']:
+        if self._aa.show_node_numbers:
             self._text = self._ax.text(self._node.get_x(), self._node.get_y(), f'{self._node.get_node_nb()}',
-                                       color=self._aa['node_nb_color'])
+                                       color=self._aa.node_nb_color, weight='bold')
         self._node_graphic = self._ax.plot([self._node.get_x()], [self._node.get_y()], zorder=2.0,
                                            marker=marker,
                                            markersize=markersize,
@@ -49,14 +51,14 @@ class NodeDrawing(Drawing):
     def update(self, *args):
         self._node_graphic.set_xdata([self._node.get_x()])
         self._node_graphic.set_ydata([self._node.get_y()])
-        if self._aa['show_node_numbers']:
+        if self._aa.show_node_numbers:
             self._text.set_x(self._node.get_x())
             self._text.set_y(self._node.get_y())
 
 
 class ShapeDrawing(Drawing):
     def __init__(self, _shape: shape.Shape, size: float | None, is_hysteron,
-                 ax: plt.Axes, color: str, opacity: float, aa: dict):
+                 ax: plt.Axes, color: str, opacity: float, aa: AssemblyAppearanceOptions):
         super().__init__(ax, aa)
         self._shape = _shape
         self._size = size
@@ -81,25 +83,35 @@ class ShapeDrawing(Drawing):
 class SegmentDrawing(ShapeDrawing):
 
     def __init__(self, segment: shape.Segment, width: float, is_hysteron, ax: plt.Axes, color: str, opacity: float,
-                 aa: dict):
+                 aa: AssemblyAppearanceOptions):
         super().__init__(segment, width, is_hysteron, ax, color, opacity, aa)
         x0, y0, x1, y1 = self._shape.get_nodal_coordinates()
-        # x_coords, y_coords = compute_zigzag_line((x0, y0), (x1, y1), 8 + 2 * self._aa['nb_spring_coils'],
-        #                                          self._size * self._aa['spring_width_scaling'])
 
-        x_coords, y_coords = compute_coil_line((x0, y0), (x1, y1), self._aa['nb_spring_coils'],
-                             self._size * self._aa['spring_width_scaling']/2)
-        self._graphics = self._ax.plot(x_coords, y_coords, lw=self._aa['spring_linewidth'],
+        if self._aa.spring_style == 'elegant':
+            x_coords, y_coords = compute_coil_line((x0, y0), (x1, y1), self._aa.spring_nb_coils,
+                                                   self._size * self._aa.spring_width_scaling,
+                                                   aspect=self._aa.spring_aspect)
+        elif self._aa.spring_style == 'line':
+            x_coords, y_coords = [x0, x1], [y0, y1]
+        else:  # "basic" or anything else
+            x_coords, y_coords = compute_zigzag_line((x0, y0), (x1, y1), 8 + 2 * self._aa.spring_nb_coils,
+                                                     self._size * self._aa.spring_width_scaling)
+
+        self._graphics = self._ax.plot(x_coords, y_coords, lw=self._aa.spring_linewidth,
                                        color=self._color, alpha=self._opacity, zorder=0.1)[0]
         self._hysteron_label_position = ((x0 + x1) / 2, (y0 + y1) / 2) if self._is_hysteron else None
 
     def update(self, color: str, opacity: float):
         super().update(color, opacity)
         x0, y0, x1, y1 = self._shape.get_nodal_coordinates()
-        # x_coords, y_coords = compute_zigzag_line((x0, y0), (x1, y1), 8 + 2 * self._aa['nb_spring_coils'],
-        #                                          self._size * self._aa['spring_width_scaling'])
-        x_coords, y_coords = compute_coil_line((x0, y0), (x1, y1), self._aa['nb_spring_coils'],
-                                                 self._size * self._aa['spring_width_scaling']/2)
+        if self._aa.spring_style == 'elegant':
+            x_coords, y_coords = compute_coil_line((x0, y0), (x1, y1), self._aa.spring_nb_coils,
+                                                   self._size * self._aa.spring_width_scaling)
+        elif self._aa.spring_style == 'line':
+            x_coords, y_coords = [x0, x1], [y0, y1]
+        else:  # "basic" or anything else
+            x_coords, y_coords = compute_zigzag_line((x0, y0), (x1, y1), 8 + 2 * self._aa.spring_nb_coils,
+                                                     self._size * self._aa.spring_width_scaling)
         self._graphics.set_xdata(x_coords)
         self._graphics.set_ydata(y_coords)
         if color is not None:
@@ -112,24 +124,32 @@ class SegmentDrawing(ShapeDrawing):
 
 class AngleDrawing(ShapeDrawing):
 
-    def __init__(self, _angle: shape.Angle, radius, is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: dict):
+    def __init__(self, _angle: shape.Angle, radius, is_hysteron, ax: plt.Axes,
+                 color: str, opacity: float, aa: AssemblyAppearanceOptions):
         super().__init__(_angle, radius, is_hysteron, ax, color, opacity, aa)
         x0, y0, x1, y1, x2, y2 = self._shape.get_nodal_coordinates()
         center = (x1, y1)
         angle = shape.Angle.calculate_angle(x0, y0, x1, y1, x2, y2)
         end_angle = shape.Angle.calculate_angle(x1 + 1, y1, x1, y1, x2, y2)
         start_angle = end_angle - angle
-        # x_coords, y_coords = compute_arc_line(center, self._size * self._aa['rotation_spring_radius_scaling'],
-        #                                       start_angle, end_angle)
-        x_coords, y_coords = compute_coil_arc(center, self._size * self._aa['rotation_spring_radius_scaling'],
-                                              start_angle, end_angle, 7, 6.0, 0.3)
-        self._graphics = self._ax.plot(x_coords, y_coords, lw=self._aa['rotation_spring_linewidth'],
+
+        if self._aa.rotation_spring_style == 'elegant':
+            x_coords, y_coords = compute_coil_arc(center, 0.8 * self._size * self._aa.rotation_spring_radius_scaling,
+                                                  start_angle, end_angle,
+                                                  self._aa.rotation_spring_nb_coils,
+                                                  self._aa.rotation_spring_radii_ratio,
+                                                  self._aa.rotation_spring_aspect)
+        else:  # "line" or anything else
+            x_coords, y_coords = compute_arc_line(center, self._size * self._aa.rotation_spring_radius_scaling,
+                                                  start_angle, end_angle)
+
+        self._graphics = self._ax.plot(x_coords, y_coords, lw=self._aa.rotation_spring_linewidth,
                                        color=self._color, alpha=self._opacity, zorder=0)[0]
         if self._is_hysteron:
             mid_angle = (start_angle + end_angle) / 2
             self._hysteron_label_position = (
-                center[0] + self._size * self._aa['rotation_spring_radius_scaling'] * np.cos(mid_angle),
-                center[0] + self._size * self._aa['rotation_spring_radius_scaling'] * np.sin(mid_angle)
+                center[0] + self._size * self._aa.rotation_spring_radius_scaling * np.cos(mid_angle),
+                center[0] + self._size * self._aa.rotation_spring_radius_scaling * np.sin(mid_angle)
             )
         else:
             self._hysteron_label_position = None
@@ -141,11 +161,16 @@ class AngleDrawing(ShapeDrawing):
         angle = shape.Angle.calculate_angle(x0, y0, x1, y1, x2, y2)
         end_angle = shape.Angle.calculate_angle(x1 + 1, y1, x1, y1, x2, y2)
         start_angle = end_angle - angle
-        # x_coords, y_coords = compute_arc_line(center, self._size * self._aa['rotation_spring_radius_scaling'],
-        #                                       start_angle,
-        #                                       end_angle)
-        x_coords, y_coords = compute_coil_arc(center, self._size * self._aa['rotation_spring_radius_scaling'],
-                                              start_angle, end_angle, 7, 6.0, 0.3)
+
+        if self._aa.rotation_spring_style == 'elegant':
+            x_coords, y_coords = compute_coil_arc(center, self._size * self._aa.rotation_spring_radius_scaling,
+                                                  start_angle, end_angle,
+                                                  self._aa.rotation_spring_nb_coils,
+                                                  self._aa.rotation_spring_radii_ratio,
+                                                  self._aa.rotation_spring_aspect)
+        else:  # "line" or anything else
+            x_coords, y_coords = compute_arc_line(center, self._size * self._aa.rotation_spring_radius_scaling,
+                                                  start_angle, end_angle)
         self._graphics.set_xdata(x_coords)
         self._graphics.set_ydata(y_coords)
         if color is not None:
@@ -156,13 +181,14 @@ class AngleDrawing(ShapeDrawing):
         if self._is_hysteron:
             mid_angle = (start_angle + end_angle) / 2
             self._hysteron_label_position = (
-                center[0] + self._size * self._aa['rotation_spring_radius_scaling'] * np.cos(mid_angle),
-                center[0] + self._size * self._aa['rotation_spring_radius_scaling'] * np.sin(mid_angle)
+                center[0] + self._size * self._aa.rotation_spring_radius_scaling * np.cos(mid_angle),
+                center[0] + self._size * self._aa.rotation_spring_radius_scaling * np.sin(mid_angle)
             )
 
 
 class AreaDrawing(ShapeDrawing):
-    def __init__(self, area: shape.Area, is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: dict):
+    def __init__(self, area: shape.Area, is_hysteron, ax: plt.Axes,
+                 color: str, opacity: float, aa: AssemblyAppearanceOptions):
         super().__init__(area, None, is_hysteron, ax, color, opacity, aa)
         coordinates = self._shape.get_nodal_coordinates()
         x, y = coordinates[::2], coordinates[1::2]
@@ -183,7 +209,8 @@ class AreaDrawing(ShapeDrawing):
 
 
 class PathDrawing(ShapeDrawing):
-    def __init__(self, path: shape.Path, is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: dict):
+    def __init__(self, path: shape.Path, is_hysteron, ax: plt.Axes,
+                 color: str, opacity: float, aa: AssemblyAppearanceOptions):
         super().__init__(path, None, is_hysteron, ax, color, opacity, aa)
         coordinates = self._shape.get_nodal_coordinates()
         x, y = coordinates[::2], coordinates[1::2]
@@ -193,9 +220,9 @@ class PathDrawing(ShapeDrawing):
         t = np.linspace(0, 1, 10) * lengths[-1]
         xx = interp1d(lengths, x)(t[1:-1])
         yy = interp1d(lengths, y)(t[1:-1])
-        graphic0 = self._ax.plot(x, y, lw=self._aa['line_spring_linewidth'],
+        graphic0 = self._ax.plot(x, y, lw=self._aa.line_spring_linewidth,
                                  color=self._color, alpha=self._opacity, zorder=0)[0]
-        graphic1 = self._ax.plot(xx, yy, ls='', markersize=self._aa['line_spring_linewidth'] * 0.4,
+        graphic1 = self._ax.plot(xx, yy, ls='', markersize=self._aa.line_spring_linewidth * 0.4,
                                  marker='o', color='#CECECE', zorder=0.1)[0]
         self._graphics = (graphic0, graphic1)
         self._hysteron_label_position = (np.mean(x), np.mean(y)) if self._is_hysteron else None
@@ -224,16 +251,17 @@ class PathDrawing(ShapeDrawing):
 
 
 class DistanceDrawing(ShapeDrawing):
-    def __init__(self, dist: shape.DistancePointLine | shape.SquaredDistancePointSegment | shape.SignedDistancePointLine,
-                 is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: dict):
+    def __init__(self,
+                 dist: shape.DistancePointLine | shape.SquaredDistancePointSegment | shape.SignedDistancePointLine,
+                 is_hysteron, ax: plt.Axes,color: str, opacity: float, aa: AssemblyAppearanceOptions):
         super().__init__(dist, None, is_hysteron, ax, color, opacity, aa)
         x0, y0, x1, y1, x2, y2 = self._shape.get_nodal_coordinates()
-        graphic0 = self._ax.plot(x0, y0, zorder=2.1, marker='.', markersize=self._aa['node_size'] / 2.0,
+        graphic0 = self._ax.plot(x0, y0, zorder=2.1, marker='.', markersize=self._aa.node_size / 2.0,
                                  alpha=self._opacity, color=self._color)[0]
-        graphic1 = self._ax.plot([x1, x2], [y1, y2], lw=self._aa['distance_spring_line_linewidth'],
+        graphic1 = self._ax.plot([x1, x2], [y1, y2], lw=self._aa.distance_spring_line_linewidth,
                                  alpha=self._opacity, color=self._color, zorder=0)[0]
         graphic2 = self._ax.plot([x1, x2], [y1, y2], lw=0.75,
-                                 color=self._aa['distance_spring_line_default_color'], zorder=0)[0]
+                                 color=self._aa.distance_spring_line_default_color, zorder=0)[0]
         self._graphics = (graphic0, graphic1, graphic2)
         self._hysteron_label_position = ((x1 + x2) / 2, (y1 + y2) / 2) if self._is_hysteron else None
 
@@ -259,7 +287,7 @@ class DistanceDrawing(ShapeDrawing):
 
 class HoleyAreaDrawing(ShapeDrawing):
     def __init__(self, holey_area: shape.HoleyArea,
-                 is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: dict):
+                 is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: AssemblyAppearanceOptions):
         super().__init__(holey_area, None, is_hysteron, ax, color, opacity, aa)
         self._bulk = holey_area.get_bulk_area()
         self._holes = holey_area.get_holes()
@@ -307,7 +335,7 @@ class CompoundDrawing(ShapeDrawing):
                        }
 
     def __init__(self, cs: shape.CompoundShape,
-                 is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: dict):
+                 is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: AssemblyAppearanceOptions):
         super().__init__(cs, None, is_hysteron, ax, color, opacity, aa)
         self._drawings = []
         for subshape in cs.get_shapes():
@@ -335,7 +363,7 @@ class CompoundDrawing(ShapeDrawing):
 
 class ElementDrawing(Drawing):
 
-    def __init__(self, ax: plt.Axes, _element: Element, width, assembly_appearance,
+    def __init__(self, ax: plt.Axes, _element: Element, width, assembly_appearance: AssemblyAppearanceOptions,
                  color_handler=None, opacity_handler=None):
         super().__init__(ax, assembly_appearance)
         self._element = _element
@@ -368,42 +396,44 @@ class ElementDrawing(Drawing):
         hysteron_state_drawing_position = None
         _shape = self._element.get_shape()
         if isinstance(_shape, shape.Segment):
-            color = color if color is not None else self._aa['spring_default_color']
-            opacity = opacity if opacity is not None else self._aa['spring_default_opacity']
+            color = color if color is not None else self._aa.spring_default_color
+            opacity = opacity if opacity is not None else self._aa.spring_default_opacity
             shape_drawing = SegmentDrawing(_shape, self._width, self._is_hysteron,
                                            self._ax, color, opacity, self._aa)
 
         elif isinstance(_shape, shape.Angle):
-            color = color if color is not None else self._aa['rotation_spring_default_color']
-            opacity = opacity if opacity is not None else self._aa['rotation_spring_default_opacity']
+            color = color if color is not None else self._aa.rotation_spring_default_color
+            opacity = opacity if opacity is not None else self._aa.rotation_spring_default_opacity
             shape_drawing = AngleDrawing(_shape, self._width, self._is_hysteron,
                                          self._ax, color, opacity, self._aa)
         elif isinstance(_shape, shape.Area):
-            color = color if color is not None else self._aa['area_spring_default_color']
-            opacity = opacity if opacity is not None else self._aa['area_spring_default_opacity']
+            color = color if color is not None else self._aa.area_spring_default_color
+            opacity = opacity if opacity is not None else self._aa.area_spring_default_opacity
             shape_drawing = AreaDrawing(_shape, self._is_hysteron,
                                         self._ax, color, opacity, self._aa)
 
         elif isinstance(_shape, shape.Path):
-            color = color if color is not None else self._aa['line_spring_default_color']
-            opacity = opacity if opacity is not None else self._aa['line_spring_default_opacity']
+            color = color if color is not None else self._aa.line_spring_default_color
+            opacity = opacity if opacity is not None else self._aa.line_spring_default_opacity
             shape_drawing = PathDrawing(_shape, self._is_hysteron,
                                         self._ax, color, opacity, self._aa)
-        elif isinstance(_shape, (shape.DistancePointLine, shape.SquaredDistancePointSegment, shape.SignedDistancePointLine)):
-            color = color if color is not None else self._aa['distance_spring_line_default_color']
-            opacity = opacity if opacity is not None else self._aa['distance_spring_line_default_opacity']
+        elif isinstance(_shape,
+                        (shape.DistancePointLine, shape.SquaredDistancePointSegment, shape.SignedDistancePointLine)):
+            color = color if color is not None else self._aa.distance_spring_line_default_color
+            opacity = opacity if opacity is not None else self._aa.distance_spring_line_default_opacity
             shape_drawing = DistanceDrawing(_shape, self._is_hysteron,
                                             self._ax, color, opacity, self._aa)
         elif isinstance(_shape, shape.HoleyArea):
-            color = color if color is not None else self._aa['distance_spring_line_default_color']
-            opacity = opacity if opacity is not None else self._aa['distance_spring_line_default_opacity']
+            color = color if color is not None else self._aa.area_spring_default_color
+            opacity = opacity if opacity is not None else self._aa.area_spring_default_opacity
             shape_drawing = HoleyAreaDrawing(_shape, self._is_hysteron, self._ax, color, opacity, self._aa)
         else:
-            raise NotImplementedError(f'Cannot draw element because no implementation of how to draw its shape {_shape}')
+            raise NotImplementedError(
+                f'Cannot draw element because no implementation of how to draw its shape {_shape}')
 
         hysteron_state_drawing_position = shape_drawing.get_hysteron_label_position()
 
-        if self._aa['show_state_of_hysterons'] and self._hysteron_info:
+        if self._aa.show_state_of_hysterons and self._hysteron_info:
             internal_coord = self._element.get_internal_coordinates()
             for i, interval in enumerate(self._hysteron_info['branch_intervals']):
                 if interval[0] <= internal_coord <= interval[1]:
@@ -412,13 +442,12 @@ class ElementDrawing(Drawing):
             else:
                 raise ValueError('Cannot determine state of hysteron')
             hysteron_state_bg_graphic = self._ax.plot(*hysteron_state_drawing_position, 'o', zorder=1.0,
-                                                      markersize=self._aa['hysteron_state_label_size'],
-                                                      color=self._aa['hysteron_state_bg_color'], markeredgecolor=color,
-                                                      markeredgewidth=self._aa['spring_linewidth'])[0]
+                                                      markersize=self._aa.hysteron_state_label_size,
+                                                      color=self._aa.hysteron_state_bg_color, markeredgecolor=color,
+                                                      markeredgewidth=self._aa.spring_linewidth)[0]
             hysteron_state_id_graphic = self._ax.annotate(state_id, xy=hysteron_state_drawing_position,
-                                                          color=self._aa['hysteron_state_txt_color'],
-                                                          fontsize=0.65 / min(2, len(state_id)) * self._aa[
-                                                              'hysteron_state_label_size'],
+                                                          color=self._aa.hysteron_state_txt_color,
+                                                          fontsize=0.65 / min(2, len(state_id)) * self._aa.hysteron_state_label_size,
                                                           weight='bold',
                                                           verticalalignment="center",
                                                           horizontalalignment="center",
@@ -435,7 +464,8 @@ class ElementDrawing(Drawing):
             color = self._color_handler.determine_property_value(self._element)
         if (self._opacity_handler is not None
                 and isinstance(self._element.get_shape(),
-                               (shape.DistancePointLine, shape.SquaredDistancePointSegment, shape.SignedDistancePointLine))):
+                               (shape.DistancePointLine, shape.SquaredDistancePointSegment,
+                                shape.SignedDistancePointLine))):
             opacity = self._opacity_handler.determine_property_value(self._element)
 
         self._shape_drawing.update(color, opacity)
@@ -455,7 +485,7 @@ class ElementDrawing(Drawing):
             self._hysteron_state_id_graphic.xy = hysteron_state_graphic_position
             self._hysteron_state_id_graphic.set_text(state_id)
             self._hysteron_state_id_graphic.set_fontsize(
-                0.65 / min(2, len(state_id)) * self._aa['hysteron_state_label_size'])
+                0.65 / min(2, len(state_id)) * self._aa.hysteron_state_label_size)
             self._hysteron_state_bg_graphic.set_xdata([hysteron_state_graphic_position[0]])
             self._hysteron_state_bg_graphic.set_ydata([hysteron_state_graphic_position[1]])
             if color is not None:
@@ -502,7 +532,7 @@ class ForceDrawing(Drawing):
         super().__init__(ax, assembly_appearance)
         self._node = _node
         self._force_info = force_info
-        self._vector_size = vector_size * self._aa['force_vector_scaling']
+        self._vector_size = vector_size * self._aa.force_vector_scaling
         self._color_handler = color_handler
         self._is_preload = is_preload
 
@@ -512,15 +542,15 @@ class ForceDrawing(Drawing):
     def _make(self) -> plt.Annotation:
         if self._force_info is not None:
             direction = self._force_info['direction']
-            if self._aa['force_vector_connection'] == 'head':
+            if self._aa.force_vector_connection == 'head':
                 destination = np.array((self._node.get_x(), self._node.get_y()))
                 origin = destination - self._vector_size * direction
             else:
                 origin = np.array((self._node.get_x(), self._node.get_y()))
                 destination = origin + self._vector_size * direction
             color = (self._color_handler.determine_property_value(self._force_info['amount'])
-                     if self._color_handler is not None else self._aa['force_default_outer_color'])
-            facecolor = self._aa['force_inner_color'] if not self._is_preload else self._aa['preload_force_inner_color']
+                     if self._color_handler is not None else self._aa.force_default_outer_color)
+            facecolor = self._aa.force_inner_color if not self._is_preload else self._aa.preload_force_inner_color
             force_graphic = self._ax.annotate('',
                                               xytext=(origin[0], origin[1]),
                                               xy=(destination[0], destination[1]),
@@ -536,7 +566,7 @@ class ForceDrawing(Drawing):
     def update(self, *args):
         if self._force_graphic is not None:
             direction = self._force_info['direction']
-            if self._aa['force_vector_connection'] == 'head':
+            if self._aa.force_vector_connection == 'head':
                 destination = np.array((self._node.get_x(), self._node.get_y()))
                 origin = destination - self._vector_size * direction
             else:
@@ -552,7 +582,7 @@ class ForceDrawing(Drawing):
 
 
 class ModelDrawing(Drawing):
-    def __init__(self, ax: plt.Axes, _model: Model, assembly_appearance: dict,
+    def __init__(self, ax: plt.Axes, _model: Model, assembly_appearance: AssemblyAppearanceOptions,
                  characteristic_length=None, assembly_span=None,
                  element_color_handler=None, element_opacity_handler=None,
                  force_color_handler=None, force_amounts: dict = None,
@@ -600,15 +630,15 @@ class ModelDrawing(Drawing):
         self._preforce_directions = {}
         for preloaded_node in self._preloaded_nodes:
             initial_force = self._initial_force_vector[self._node_to_dof_indices[preloaded_node]]
-            initial_force_norm  = np.linalg.norm(initial_force)
+            initial_force_norm = np.linalg.norm(initial_force)
             direction = initial_force / initial_force_norm
-            if np.isnan(direction).any() or (self._aa['hide_low_preloading_forces']
-                                             and initial_force_norm < self._aa['low_preloading_force_threshold']):
+            if np.isnan(direction).any() or (self._aa.hide_low_preloading_forces
+                                             and initial_force_norm < self._aa.low_preloading_force_threshold):
                 direction = None
             self._preforce_directions[preloaded_node] = direction
 
         self._all_forces_info = {}
-        if self._aa['show_forces']:
+        if self._aa.show_forces:
             for _node in self._loaded_nodes:
                 if self._force_directions[_node] is not None:
                     self._all_forces_info[_node] = {'direction': self._force_directions[_node],
@@ -617,7 +647,7 @@ class ModelDrawing(Drawing):
                     self._all_forces_info[_node] = None
 
         self._all_preforces_info = {}
-        if self._aa['show_forces']:
+        if self._aa.show_forces:
             for _node in self._preloaded_nodes:
                 if self._preforce_directions[_node] is not None:
                     self._all_preforces_info[_node] = {'direction': self._preforce_directions[_node],
@@ -632,7 +662,7 @@ class ModelDrawing(Drawing):
         assembly_drawing = AssemblyDrawing(self._ax, self._assembly, self._characteristic_length, self._aa,
                                            self._element_color_handler, self._element_opacity_handler)
         force_drawings = set()
-        if self._aa['show_forces']:
+        if self._aa.show_forces:
             for _node in self._loaded_nodes:
                 force_drawings.add(ForceDrawing(self._ax, _node, self._all_forces_info[_node],
                                                 0.1 * self._assembly_span, self._aa, self._force_color_handler,
@@ -647,7 +677,7 @@ class ModelDrawing(Drawing):
     def update(self, *args):
         self._assembly_drawing.update()
 
-        if self._aa['show_forces']:
+        if self._aa.show_forces:
             for loaded_node in self._loaded_nodes:
                 if self._all_forces_info[loaded_node] is not None:
                     self._all_forces_info[loaded_node]['direction'] = self._force_directions[loaded_node]

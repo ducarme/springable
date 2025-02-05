@@ -67,6 +67,7 @@ class DrawingSpace:
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
         self.curves: dict[str, Line2D] = {}
+        # self._extra_curves: dict[str, Line2D] = {}
         self.curve_interactors: dict[str, CurveInteractor] = {}
         self.curve_control_points: dict[str, tuple[np.ndarray, np.ndarray] | None] = {}
         self._active_curve_interactor: CurveInteractor | None = None
@@ -172,8 +173,12 @@ class DrawingSpace:
             self._active_curve_interactor.disconnect()
         if u is not None and f is not None:
             self.curves[name], = self.ax.plot(u, f, animated=True, lw=1.5)
+            # energy = [np.trapezoid(f[u > 0][:i], u[u > 0][:i]) for i in range(u[u > 0].shape[0])]
+            # self._extra_curves[name], = self.ax.plot(u[u>0], energy, animated=True, lw=1.5)
         else:
             self.curves[name], = self.ax.plot([], [], animated=True, lw=1.5)
+            # self._extra_curves[name], = self.ax.plot([], [], animated=True, lw=1.5)
+
         if not is_controllable:
             self.curve_control_points[name] = None
         else:
@@ -249,7 +254,10 @@ class DrawingSpace:
         if u is not None and f is not None:
             self.curves[name].set_data(u, f)
             self.curves[name].set_linestyle('-')
+            # energy = [np.trapezoid(f[u > 0][:i], u[u > 0][:i]) for i in range(u[u > 0].shape[0])]
+            # self._extra_curves[name].set_data(u[u>0], energy)
         else:
+            # self._extra_curves[name], = self.ax.plot([], [], animated=True, lw=1.5)
             self.curves[name].set_linestyle('--')
         self.update()
 
@@ -259,8 +267,11 @@ class DrawingSpace:
             if u is not None and f is not None:
                 self.curves[name].set_data(u, f)
                 self.curves[name].set_linestyle('-')
+                # energy = [np.trapezoid(f[u > 0][:i], u[u > 0][:i]) for i in range(u[u > 0].shape[0])]
+                # self._extra_curves[name].set_data(u[u>0], energy)
             else:
                 self.curves[name].set_linestyle('--')
+                # self._extra_curves[name], = self.ax.plot([], [], animated=True, lw=1.5)
         self.update()
 
     def on_draw(self, event):
@@ -277,6 +288,8 @@ class DrawingSpace:
         for name, line in self.curves.items():
             if name != self._current_curve_name:
                 fig.draw_artist(line)
+        # for name, line in self._extra_curves.items():
+        #     fig.draw_artist(line)
         if self._current_curve_name is not None:
             fig.draw_artist(self.curves[self._current_curve_name])
         if self._active_curve_interactor is not None:
@@ -497,6 +510,7 @@ class CurveInteractor:
         self.line.set_data(cp_x, cp_y)
         self.ds.curve_control_points[self.name] = cp_x, cp_y
         self.handler.update_behavior_parameter_from_control_points(self.name)
+
 
     def get_control_points(self):
         cp_x, cp_y = zip(*self.poly.xy)

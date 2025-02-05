@@ -1,4 +1,4 @@
-from .graphics.default_graphics_settings import DEFAULT_GENERAL_OPTIONS
+from .graphics.default_graphics_settings import GeneralOptions
 from .graphics import plot, animation
 from .readwrite import fileio as io
 from .mechanics import static_solver, model
@@ -56,8 +56,8 @@ def load_result(_result: str | static_solver.Result) -> static_solver.Result:
 def visualize_scan_results(scan_results_dir: str, save_dir: str = '',
                            graphics_settings: list[dict] | tuple[dict] | str = None, postprocessing = None):
     general_options, plot_options, animation_options, assembly_appearance = _load_graphics_settings(graphics_settings)
-    go = DEFAULT_GENERAL_OPTIONS.copy()
-    go.update(general_options)
+    go = GeneralOptions()
+    go.update(**general_options)
 
     # Somehow, the variables herein below should be automatically read from scan_results_directory
     general_info = io.read_scanning_general_info(scan_results_dir)
@@ -68,7 +68,7 @@ def visualize_scan_results(scan_results_dir: str, save_dir: str = '',
     # MAKE GRAPHICS
     if scan_parameters_one_by_one:
         par_name_to_sim_names = general_info['PARAMETER_NAME_TO_SIM_NAMES_MAPPING']
-        if go['generate_parametric_fd_plots'] or postprocessing is not None:
+        if go.generate_parametric_fd_plots or postprocessing is not None:
             _, par_name_to_par_data = io.read_parameters_from_model_file(model_path)
 
             for design_parameter_name, sim_names in par_name_to_sim_names.items():
@@ -79,19 +79,19 @@ def visualize_scan_results(scan_results_dir: str, save_dir: str = '',
                 plot.parametric_force_displacement_curve(_results(subsave_dirs), design_parameter_name,
                                                          par_name_to_par_data[design_parameter_name], parameter_values,
                                                          save_dir, save_name=f'fd_curve_{design_parameter_name}',
-                                                         show=go['show_parametric_fd_plots'], **plot_options)
+                                                         show=go.show_parametric_fd_plots, **plot_options)
                 if postprocessing is not None:
                     for pp in postprocessing:
                         plot.parametric_curve(pp['postprocessing_fun'], _results(subsave_dirs), design_parameter_name,
                                               par_name_to_par_data[design_parameter_name], parameter_values,
                                               save_dir, save_name=f'{pp["save_name"]}_{design_parameter_name}',
                                               xlabel=pp['xlabel'], ylabel=pp['ylabel'],
-                                              show=go['show_parametric_custom_plots'], **plot_options
+                                              show=go.show_parametric_custom_plots, **plot_options
                                               )
 
     # first scanning of result folders to obtain axes limits for force-displacement plots
     min_u, max_u, min_f, max_f = [None] * 4
-    if go['generate_all_fd_plots']:
+    if go.generate_all_fd_plots:
         min_u, max_u, min_f, max_f = +np.inf, -np.inf, +np.inf, -np.inf
         for sim_name in all_sim_names:
             res = io.read_results(os.path.join(scan_results_dir, sim_name))
@@ -105,11 +105,11 @@ def visualize_scan_results(scan_results_dir: str, save_dir: str = '',
                 pass
 
     # scanning result folders to make necessary graphics
-    if go['generate_all_model_drawings'] or go['generate_all_fd_plots'] or go['generate_all_animations']:
+    if go.generate_all_model_drawings or go.generate_all_fd_plots or go.generate_all_animations:
         print('Generating all graphics...')
-        drawings_dir = io.mkdir(os.path.join(save_dir, 'all_drawings')) if go['generate_all_model_drawings'] else None
-        fd_plots_dir = io.mkdir(os.path.join(save_dir, 'all_fd_plots')) if go['generate_all_fd_plots'] else None
-        animations_dir = io.mkdir(os.path.join(save_dir, 'all_animations')) if go['generate_all_animations'] else None
+        drawings_dir = io.mkdir(os.path.join(save_dir, 'all_drawings')) if go.generate_all_model_drawings else None
+        fd_plots_dir = io.mkdir(os.path.join(save_dir, 'all_fd_plots')) if go.generate_all_fd_plots else None
+        animations_dir = io.mkdir(os.path.join(save_dir, 'all_animations')) if go.generate_all_animations else None
 
         for i, sim_name in enumerate(all_sim_names):
             try:
@@ -135,34 +135,34 @@ def visualize_result(result: static_solver.Result | str, save_dir: str = '',
     result = load_result(result)
     general_options, plot_options, animation_options, assembly_appearance = _load_graphics_settings(graphics_settings)
 
-    go = DEFAULT_GENERAL_OPTIONS.copy()
-    go.update(general_options)
+    go = GeneralOptions()
+    go.update(**general_options)
     print(f"Post-processing starts...")
     try:
         at_least_one = False
-        if go['generate_model_drawing']:
+        if go.generate_model_drawing:
             at_least_one = True
-            if go['show_model_drawing']:
+            if go.show_model_drawing:
                 print("Spring model is drawn in a new window. Close the window to continue...")
-            animation.draw_model(result.get_model(), save_dir, 'model', show=go['show_model_drawing'],
+            animation.draw_model(result.get_model(), save_dir, 'model', show=go.show_model_drawing,
                                  **assembly_appearance)
-        if go['generate_fd_plot']:
+        if go.generate_fd_plot:
             at_least_one = True
-            if go['show_fd_plot']:
+            if go.show_fd_plot:
                 print("Force-displacement curve is drawn in a new window. Close the window to continue...")
-            plot.force_displacement_curve(result, save_dir, show=go['show_fd_plot'], **plot_options)
+            plot.force_displacement_curve(result, save_dir, show=go.show_fd_plot, **plot_options)
 
         if postprocessing is not None:
             for pp in postprocessing:
                 at_least_one = True
-                if go['show_custom_plot']:
+                if go.show_custom_plot:
                     print(f"Custom '{pp['save_name']}' plot is drawn in a new window. Close the window to continue...")
                 plot.curve(pp['postprocessing_fun'], result, save_dir, save_name=pp['save_name'],
-                           show=go['show_custom_plot'], xlabel=pp['xlabel'], ylabel=pp['ylabel'], **plot_options)
+                           show=go.show_custom_plot, xlabel=pp['xlabel'], ylabel=pp['ylabel'], **plot_options)
 
-        if go['generate_animation']:
+        if go.generate_animation:
             at_least_one = True
-            animation.animate(result, save_dir, show=go['show_animation'],
+            animation.animate(result, save_dir, show=go.show_animation,
                               plot_options=plot_options, assembly_appearance=assembly_appearance,
                               **animation_options)
         if at_least_one:

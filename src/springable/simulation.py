@@ -1,6 +1,6 @@
 from .mechanics import static_solver
 from .readwrite import fileio as io
-from .graphics.default_graphics_settings import DEFAULT_GENERAL_OPTIONS
+from .graphics.default_graphics_settings import GeneralOptions
 from .graphics import animation
 from .mechanics import model
 from . import visualization
@@ -45,7 +45,7 @@ def simulate_model(model_path, save_dir=None, solver_settings_path=None, graphic
 
     # READ INPUT FILES
     mdl = io.read_model(model_path)
-    general_options = DEFAULT_GENERAL_OPTIONS.copy()
+    general_options = GeneralOptions()
     if graphics_settings_path is not None:
         graphics_settings = io.read_graphics_settings_file(graphics_settings_path)
         (custom_general_options,
@@ -57,17 +57,18 @@ def simulate_model(model_path, save_dir=None, solver_settings_path=None, graphic
          custom_plot_options,
          custom_animation_options,
          custom_assembly_appearance) = {}, {}, {}, {}
-    general_options.update(custom_general_options)
+    general_options.update(**custom_general_options)
 
-    if general_options['generate_model_drawing']:
-        if general_options['show_model_drawing']:
+    if general_options.generate_model_drawing:
+        if general_options.show_model_drawing:
             print("Model is drawn in new window. Close the window to continue with the simulation...")
-        animation.draw_model(mdl, save_dir, show=general_options['show_model_drawing'], **custom_assembly_appearance)
-        custom_general_options['generate_model_drawing'] = False
-        custom_general_options['show_model_drawing'] = False
+        animation.draw_model(mdl, save_dir, show=general_options.show_model_drawing, **custom_assembly_appearance)
+
     result = solve_model(mdl, solver_settings_path)
     save_results(result, save_dir)
     print(f"Simulation results have been saved in {save_dir}.")
+    custom_general_options['generate_model_drawing'] = False
+    custom_general_options['show_model_drawing'] = False
     visualization.visualize_result(result, save_dir,
                                    graphics_settings=[custom_general_options,
                                                       custom_plot_options,
@@ -85,7 +86,7 @@ def scan_parameter_space(model_path, save_dir=None, scan_parameters_one_by_one=T
     else:
         solver_settings = {}
 
-    general_options = DEFAULT_GENERAL_OPTIONS.copy()
+    general_options = GeneralOptions()
     if graphics_settings_path is not None:
         graphics_settings = io.read_graphics_settings_file(graphics_settings_path)
         (custom_general_options,
@@ -97,7 +98,7 @@ def scan_parameter_space(model_path, save_dir=None, scan_parameters_one_by_one=T
          custom_plot_options,
          custom_animation_options,
          custom_assembly_appearance) = {}, {}, {}, {}
-    general_options.update(custom_general_options)
+    general_options.update(**custom_general_options)
 
     # CREATE MAIN DIRECTORY WHERE ALL SIMULATIONS WILL BE SAVED
     # + SUBDIRECTORY TO STORE MODEL DRAWINGS
@@ -107,7 +108,7 @@ def scan_parameter_space(model_path, save_dir=None, scan_parameters_one_by_one=T
     else:
         save_dir = io.mkdir(save_dir)
     model_drawings_dir = None
-    if general_options['generate_all_model_drawings']:
+    if general_options.generate_all_model_drawings:
         model_drawings_dir = io.mkdir(os.path.join(save_dir, 'all_model_drawings'))
     io.copy_model_file(save_dir, model_path)
     if solver_settings_path is not None:
@@ -146,9 +147,9 @@ def scan_parameter_space(model_path, save_dir=None, scan_parameters_one_by_one=T
                 parameters[design_parameter_name] = design_parameter_value
                 mdl = io.read_model(model_path, parameters)
 
-                if general_options['generate_all_model_drawings']:
+                if general_options.generate_all_model_drawings:
                     animation.draw_model(mdl, model_drawings_dir, save_name=sim_name,
-                                         show=general_options['show_all_model_drawings'], **custom_assembly_appearance)
+                                         show=general_options.show_all_model_drawings, **custom_assembly_appearance)
 
                 # run simulation
                 res = solve_model(mdl, solver_settings)
@@ -180,9 +181,9 @@ def scan_parameter_space(model_path, save_dir=None, scan_parameters_one_by_one=T
             parameters.update(design_parameters)
             mdl = io.read_model(model_path, parameters)
 
-            if general_options['generate_all_model_drawings']:
+            if general_options.generate_all_model_drawings:
                 animation.draw_model(mdl, model_drawings_dir, save_name=sim_name,
-                                     show=general_options['show_all_model_drawings'], **custom_assembly_appearance)
+                                     show=general_options.show_all_model_drawings, **custom_assembly_appearance)
 
             # run simulation
             res = solve_model(mdl, solver_settings)

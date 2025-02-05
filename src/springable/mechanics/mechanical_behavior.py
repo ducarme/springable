@@ -1,5 +1,5 @@
-from .math_utils.bezier_curve import *
-from .math_utils import smooth_piecewise_linear_curve as spw
+from ..utils import bezier_curve
+from ..utils import smooth_piecewise_linear_curve as spw
 from scipy.interpolate import interp1d, griddata
 from scipy.integrate import quad, solve_ivp, cumulative_trapezoid
 from scipy.optimize import minimize, LinearConstraint
@@ -123,7 +123,7 @@ class LogarithmBehavior(UnivariateBehavior):
 
 class BezierBehavior(UnivariateBehavior, ControllableByPoints):
     def __init__(self, natural_measure, u_i: list[float], f_i: list[float],
-                 sampling: int = 100):
+                 sampling: int = 250):
         super().__init__(natural_measure, u_i=u_i, f_i=f_i)
         self._sampling = sampling
         self._check()
@@ -141,16 +141,21 @@ class BezierBehavior(UnivariateBehavior, ControllableByPoints):
 
     def _check(self):
         u_coefs = np.array([0.0] + self._parameters['u_i'])
-        if not is_monotonic(u_coefs):
+        if not bezier_curve.is_monotonic(u_coefs):
             raise InvalidBehaviorParameters("The Bezier behavior does not describe a function, try Bezier2 instead.")
+
+    def is_monotonic(self):
+        f_coefs = np.array([0.0] + self._parameters['f_i'])
+        return bezier_curve.is_monotonic(f_coefs)
+
 
     def _make(self):
         u_coefs = np.array([0.0] + self._parameters['u_i'])
         f_coefs = np.array([0.0] + self._parameters['f_i'])
         t = np.linspace(0, 1, self._sampling)
-        u = evaluate_poly(t, u_coefs)
+        u = bezier_curve.evaluate_poly(t, u_coefs)
 
-        def fdu(_t, _): return evaluate_poly(_t, f_coefs) * evaluate_derivative_poly(_t, u_coefs)
+        def fdu(_t, _): return bezier_curve.evaluate_poly(_t, f_coefs) * bezier_curve.evaluate_derivative_poly(_t, u_coefs)
 
         energy = solve_ivp(fun=fdu, t_span=[0.0, 1.0], y0=[0.0], t_eval=t).y[0, :]
         self._energy = lambda uu: ((uu < u[-1]) * interp1d(u, energy, kind='linear',
@@ -159,12 +164,12 @@ class BezierBehavior(UnivariateBehavior, ControllableByPoints):
                                                               + 0.5 * generalized_stiffness[-1] * (
                                                                       np.abs(uu) - u[-1]) ** 2))
 
-        generalized_force = evaluate_poly(t, f_coefs)
+        generalized_force = bezier_curve.evaluate_poly(t, f_coefs)
         self._first_der_energy = lambda uu: np.sign(uu) * interp1d(u, generalized_force, kind='linear',
                                                                    bounds_error=False, fill_value='extrapolate')(
             np.abs(uu))
 
-        generalized_stiffness = evaluate_derivative_poly(t, f_coefs) / evaluate_derivative_poly(t, u_coefs)
+        generalized_stiffness = bezier_curve.evaluate_derivative_poly(t, f_coefs) / bezier_curve.evaluate_derivative_poly(t, u_coefs)
         self._second_der_energy = lambda uu: interp1d(u, generalized_stiffness, kind='linear',
                                                       bounds_error=False, fill_value=generalized_stiffness[-1])(
             np.abs(uu))
@@ -264,13 +269,13 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
         b_coefs = np.array([0.0] + self._parameters['f_i'])
 
         # checking validity of behavior
-        da0 = evaluate_derivative_poly(0.0, a_coefs)
-        db0 = evaluate_derivative_poly(0.0, b_coefs)
+        da0 = bezier_curve.evaluate_derivative_poly(0.0, a_coefs)
+        db0 = bezier_curve.evaluate_derivative_poly(0.0, b_coefs)
         if da0 == 0.0 or db0 == 0.0:
             raise InvalidBehaviorParameters('The initial slope of the behavior'
                                             'cannot be perfectly horizontal or vertical')
-        a_extrema = get_extrema(a_coefs)
-        b_extrema = get_extrema(b_coefs)
+        a_extrema = bezier_curve.get_extrema(a_coefs)
+        b_extrema = bezier_curve.get_extrema(b_coefs)
         if any(x in set(b_extrema) for x in a_extrema):
             raise InvalidBehaviorParameters('The behavior curve cannot have cusps.')
         a_extrema = [(a_extremum, 'a_max' if i % 2 == (0 if da0 > 0 else 1) else 'a_min')
@@ -327,22 +332,22 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
     def _make(self):
         a_coefs = np.array([0.0] + self._parameters['u_i'])
         b_coefs = np.array([0.0] + self._parameters['f_i'])
-        a1 = evaluate_poly(1.0, a_coefs)
-        da1 = evaluate_derivative_poly(1.0, a_coefs)
-        b1 = evaluate_poly(1.0, b_coefs)
-        db1 = evaluate_derivative_poly(1.0, b_coefs)
-        self._a = lambda t: ((np.abs(t) <= 1) * np.sign(t) * evaluate_poly(np.abs(t), a_coefs)
+        a1 = bezier_curve.evaluate_poly(1.0, a_coefs)
+        da1 = bezier_curve.evaluate_derivative_poly(1.0, a_coefs)
+        b1 = bezier_curve.evaluate_poly(1.0, b_coefs)
+        db1 = bezier_curve.evaluate_derivative_poly(1.0, b_coefs)
+        self._a = lambda t: ((np.abs(t) <= 1) * np.sign(t) * bezier_curve.evaluate_poly(np.abs(t), a_coefs)
                              + (np.abs(t) > 1) * np.sign(t) * (a1 + da1 * (np.abs(t) - 1)))
-        self._b = lambda t: ((np.abs(t) <= 1) * np.sign(t) * evaluate_poly(np.abs(t), b_coefs)
+        self._b = lambda t: ((np.abs(t) <= 1) * np.sign(t) * bezier_curve.evaluate_poly(np.abs(t), b_coefs)
                              + (np.abs(t) > 1) * np.sign(t) * (b1 + db1 * (np.abs(t) - 1)))
-        self._da = lambda t: ((np.abs(t) <= 1) * evaluate_derivative_poly(np.abs(t), a_coefs)
+        self._da = lambda t: ((np.abs(t) <= 1) * bezier_curve.evaluate_derivative_poly(np.abs(t), a_coefs)
                               + (np.abs(t) > 1) * da1)
-        self._db = lambda t: ((np.abs(t) <= 1) * evaluate_derivative_poly(np.abs(t), b_coefs)
+        self._db = lambda t: ((np.abs(t) <= 1) * bezier_curve.evaluate_derivative_poly(np.abs(t), b_coefs)
                               + (np.abs(t) > 1) * db1)
-        self._d2a = lambda t: (np.abs(t) <= 1) * np.sign(t) * evaluate_second_derivative_poly(np.abs(t), a_coefs)
-        self._d2b = lambda t: (np.abs(t) <= 1) * np.sign(t) * evaluate_second_derivative_poly(np.abs(t), b_coefs)
-        self._d3a = lambda t: (np.abs(t) <= 1) * evaluate_third_derivative_poly(np.abs(t), a_coefs)
-        self._d3b = lambda t: (np.abs(t) <= 1) * evaluate_third_derivative_poly(np.abs(t), b_coefs)
+        self._d2a = lambda t: (np.abs(t) <= 1) * np.sign(t) * bezier_curve.evaluate_second_derivative_poly(np.abs(t), a_coefs)
+        self._d2b = lambda t: (np.abs(t) <= 1) * np.sign(t) * bezier_curve.evaluate_second_derivative_poly(np.abs(t), b_coefs)
+        self._d3a = lambda t: (np.abs(t) <= 1) * bezier_curve.evaluate_third_derivative_poly(np.abs(t), a_coefs)
+        self._d3b = lambda t: (np.abs(t) <= 1) * bezier_curve.evaluate_third_derivative_poly(np.abs(t), b_coefs)
         self._dbda = lambda t: self._db(t) / self._da(t)
         self._d_dbda = lambda t: (self._d2b(t) * self._da(t) - self._db(t) * self._d2a(t)) / self._da(t) ** 2
 
@@ -492,7 +497,7 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
 
     def _compute_hysteron_info(self):
         a_coefs = np.array([0.0] + self._parameters['u_i'])
-        extrema = np.sort(get_extrema(a_coefs))
+        extrema = np.sort(bezier_curve.get_extrema(a_coefs))
         extrema = np.hstack((-extrema[::-1], extrema))
         nb_extrema = extrema.shape[0]
         if nb_extrema == 0:  # not a hysteron
@@ -509,7 +514,7 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
                     branch_id = str(abs(int((i - len(branch_intervals) // 2) / 2))) + '-' + str(
                         abs(int((i - len(branch_intervals) // 2) / 2)) + 1)
                 branch_ids.append(branch_id)
-            self._hysteron_info = {'nb_stable_branches': nb_extrema,
+            self._hysteron_info = {'nb_stable_branches': 2*((nb_extrema/2)//2 + 1)-1,
                                    'branch_intervals': branch_intervals,
                                    'is_branch_stable': is_branch_stable,
                                    'branch_ids': branch_ids}
@@ -929,7 +934,7 @@ class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
                     branch_id = str(abs(int((i - len(branch_intervals) // 2) / 2))) + '-' + str(
                         abs(int((i - len(branch_intervals) // 2) / 2)) + 1)
                 branch_ids.append(branch_id)
-            self._hysteron_info = {'nb_stable_branches': nb_extrema,
+            self._hysteron_info = {'nb_stable_branches': 2*((nb_extrema/2)//2 + 1)-1,
                                    'branch_intervals': branch_intervals,
                                    'is_branch_stable': is_branch_stable,
                                    'branch_ids': branch_ids}

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from tkinter import filedialog, messagebox
 from .gui_utils import show_popup
 from ..mechanics.mechanical_behavior import *
-from ..mechanics.math_utils import bezier_curve
+from ..utils import bezier_curve
 from ..readwrite.interpreting import behavior_to_text
 from ..readwrite import fileio
 from .gui_settings import DEFAULT_BEHAVIORS, DEFAULT_NATURAL_MEASURE, XLIM, YLIM, NB_SAMPLES

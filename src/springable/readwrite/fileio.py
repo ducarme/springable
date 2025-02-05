@@ -8,6 +8,7 @@ import csv
 import shutil
 import json
 import sys
+from collections.abc import Iterator
 
 if sys.version_info >= (3, 11):
     from tomllib import load as load_toml_file
@@ -48,15 +49,18 @@ def write_model(_model: Model, save_dir, save_name='model'):
         writer.writerows(rows)
 
 
-def write_behavior(_behavior: MechanicalBehavior, filepath, fmt, specify_natural_measure):
-    with open(filepath, 'w', newline='') as file:
+def write_behavior(_behavior: MechanicalBehavior | None, filepath, fmt, specify_natural_measure, writing_mode='w'):
+    with open(filepath, writing_mode, newline='') as file:
         writer = csv.writer(file)
-        b_txt = behavior_to_text(_behavior, fmt, True, specify_natural_measure)
+        if _behavior is None:
+            b_txt = 'NONE'
+        else:
+            b_txt = behavior_to_text(_behavior, fmt, True, specify_natural_measure)
         row = smart_split(b_txt, ',')
         writer.writerow(row)
 
 
-def read_behavior(behavior_path, natural_measure=1.0) -> MechanicalBehavior:
+def read_behavior(behavior_path: str, natural_measure=1.0) -> MechanicalBehavior:
     """ Reads behavior file.
     Only if an UnknownNaturalMeasure is triggered, the natural_measure argument will be used"""
     with open(behavior_path, 'r') as file:
@@ -69,6 +73,26 @@ def read_behavior(behavior_path, natural_measure=1.0) -> MechanicalBehavior:
             except UnknownNaturalMeasure:
                 return text_to_behavior(', '.join(row), natural_measure=natural_measure)
         raise InvalidBehaviorParameters("No text to read as behavior")
+
+
+def stream_behaviors(behaviors_path: str, natural_measure=1.0) -> Iterator[MechanicalBehavior | None]:
+    """ Read and yield behaviors (one by one) listed in csv file"""
+    with open(behaviors_path, 'r') as file:
+        file_reader = csv.reader(file)
+        for row in file_reader:
+            if len(row) == 0 or (len(row) == 1 and not row[0].strip('')) or row[0].lstrip().startswith('#'):
+                continue
+            if row[0] == 'NONE':
+                _behavior = None
+            else:
+                try:
+                    try:
+                        _behavior = text_to_behavior(', '.join(row))
+                    except UnknownNaturalMeasure:
+                        _behavior = text_to_behavior(', '.join(row), natural_measure=natural_measure)
+                except InvalidBehaviorParameters:
+                    _behavior = None
+            yield _behavior
 
 
 def read_parameters_from_model_file(model_path) -> tuple[dict[str, float | str], dict[str, dict]]:
@@ -169,6 +193,7 @@ def write_solving_process_info(info: dict | None, save_dir, save_name='solving_p
             writer = csv.writer(output_file)
             for k, v in info.items():
                 writer.writerow([k, v])
+
 
 def read_solving_process_info(save_dir, save_name='solving_process_info.csv'):
     # get the solving process information

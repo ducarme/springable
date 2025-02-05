@@ -27,7 +27,7 @@ def _adjust_spines(ax, offset, spines=("left", "bottom"), outward=True):
         ax.xaxis.set_visible(False)
 
 
-def save_fig(fig, save_dir, save_name, formats, transparent, dpi=None):
+def save_fig(fig, save_dir, save_name, formats, transparent=False, dpi=None):
     Path(save_dir).mkdir(parents=True, exist_ok=True)
     if not isinstance(formats, list):
         formats = [formats]
