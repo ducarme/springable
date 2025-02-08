@@ -175,8 +175,8 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                            'o', color=ao.animated_equilibrium_point_color,
                            markersize=ao.animated_equilibrium_point_size * po.default_markersize,
                            zorder=1.1)[0]
-            ax2.set_xlabel('displacement')
-            ax2.set_ylabel('force')
+            ax2.set_xlabel(po.default_xlabel)
+            ax2.set_ylabel(po.default_ylabel)
             if ((po.show_stability_legend and po.color_mode == 'stability' and not (
                     po.show_driven_path and po.driven_path_only))
                     or (po.show_driven_path and po.show_driven_path_legend and po.drive_mode in (

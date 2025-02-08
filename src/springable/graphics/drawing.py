@@ -5,6 +5,7 @@ from ..mechanics.assembly import Assembly
 from ..mechanics.model import Model
 from ..mechanics import shape
 from .default_graphics_settings import AssemblyAppearanceOptions
+from .custom_markers import HORIZONTAL_CART, VERTICAL_CART, ANCHOR
 from .visual_helpers import compute_zigzag_line, compute_arc_line, compute_pathpatch_vertices, compute_coil_line, \
     compute_coil_arc
 from scipy.interpolate import interp1d
@@ -29,24 +30,45 @@ class NodeDrawing(Drawing):
     def __init__(self, ax: plt.Axes, _node: Node, assembly_appearance: AssemblyAppearanceOptions):
         super().__init__(ax, assembly_appearance)
         self._node = _node
-        if self._node.is_fixed_horizontally() and self._node.is_fixed_vertically():
-            marker = 's'
-        elif self._node.is_fixed_horizontally():
-            marker = '<'
-        elif self._node.is_fixed_vertically():
-            marker = '^'
-        else:
+
+        if self._aa.node_style == 'elegant':
             marker = 'o'
-        markersize = self._aa.node_size
-        markercolor = self._aa.node_color
+            if self._node.is_fixed_horizontally() and self._node.is_fixed_vertically():
+                triangle_marker = ANCHOR
+            elif self._node.is_fixed_horizontally():
+                triangle_marker = VERTICAL_CART
+            elif self._node.is_fixed_vertically():
+                triangle_marker = HORIZONTAL_CART
+            else:
+                triangle_marker = None
+        else:
+            triangle_marker = None
+            if self._node.is_fixed_horizontally() and self._node.is_fixed_vertically():
+                marker = 's'
+            elif self._node.is_fixed_horizontally():
+                marker = '<'
+            elif self._node.is_fixed_vertically():
+                marker = '^'
+            else:
+                marker = 'o'
+
         self._text = None
         if self._aa.show_node_numbers:
             self._text = self._ax.text(self._node.get_x(), self._node.get_y(), f'{self._node.get_node_nb()}',
-                                       color=self._aa.node_nb_color, weight='bold')
-        self._node_graphic = self._ax.plot([self._node.get_x()], [self._node.get_y()], zorder=2.0,
+                                       color=self._aa.node_nb_color, weight='bold', zorder=5.5)
+
+        self._triangle_graphic = None
+        if triangle_marker is not None:  # do not use node_style for this conditional
+            self._triangle_graphic = self._ax.plot([self._node.get_x()], [self._node.get_y()], zorder=4.0,
+                                                   marker=triangle_marker,
+                                                   markersize=6 * self._aa.node_size,
+                                                   markerfacecolor='#cecece',
+                                                   markeredgecolor=self._aa.node_color)[0]
+
+        self._node_graphic = self._ax.plot([self._node.get_x()], [self._node.get_y()], zorder=5.0,
                                            marker=marker,
-                                           markersize=markersize,
-                                           color=markercolor)[0]
+                                           markersize=self._aa.node_size,
+                                           color=self._aa.node_color)[0]
 
     def update(self, *args):
         self._node_graphic.set_xdata([self._node.get_x()])
@@ -54,6 +76,10 @@ class NodeDrawing(Drawing):
         if self._aa.show_node_numbers:
             self._text.set_x(self._node.get_x())
             self._text.set_y(self._node.get_y())
+        if self._triangle_graphic is not None:
+            self._triangle_graphic.set_xdata([self._node.get_x()])
+            self._triangle_graphic.set_ydata([self._node.get_y()])
+
 
 
 class ShapeDrawing(Drawing):
@@ -253,7 +279,7 @@ class PathDrawing(ShapeDrawing):
 class DistanceDrawing(ShapeDrawing):
     def __init__(self,
                  dist: shape.DistancePointLine | shape.SquaredDistancePointSegment | shape.SignedDistancePointLine,
-                 is_hysteron, ax: plt.Axes,color: str, opacity: float, aa: AssemblyAppearanceOptions):
+                 is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: AssemblyAppearanceOptions):
         super().__init__(dist, None, is_hysteron, ax, color, opacity, aa)
         x0, y0, x1, y1, x2, y2 = self._shape.get_nodal_coordinates()
         graphic0 = self._ax.plot(x0, y0, zorder=2.1, marker='.', markersize=self._aa.node_size / 2.0,
@@ -447,7 +473,8 @@ class ElementDrawing(Drawing):
                                                       markeredgewidth=self._aa.spring_linewidth)[0]
             hysteron_state_id_graphic = self._ax.annotate(state_id, xy=hysteron_state_drawing_position,
                                                           color=self._aa.hysteron_state_txt_color,
-                                                          fontsize=0.65 / min(2, len(state_id)) * self._aa.hysteron_state_label_size,
+                                                          fontsize=0.65 / min(2,
+                                                                              len(state_id)) * self._aa.hysteron_state_label_size,
                                                           weight='bold',
                                                           verticalalignment="center",
                                                           horizontalalignment="center",
@@ -505,18 +532,18 @@ class AssemblyDrawing(Drawing):
         # CREATE GRAPHICS FOR ASSEMBLY DRAWING
         self._node_drawings, self._element_drawings = self._make()
 
-    def _make(self) -> tuple[set[NodeDrawing], set[ElementDrawing]]:
-        node_drawings = set()
-        element_drawings = set()
-        for _node in self._assembly.get_nodes():
-            node_drawings.add(NodeDrawing(self._ax, _node, self._aa))
+    def _make(self) -> tuple[list[NodeDrawing], list[ElementDrawing]]:
+        node_drawings = []
+        element_drawings = []
         for _element in self._assembly.get_elements():
-            element_drawings.add(ElementDrawing(self._ax, _element,
-                                                0.15 * self._characteristic_length,
-                                                self._aa,
-                                                self._el_color_handler,
-                                                self._el_opacity_handler,
-                                                ))
+            element_drawings.append(ElementDrawing(self._ax, _element,
+                                                   0.15 * self._characteristic_length,
+                                                   self._aa,
+                                                   self._el_color_handler,
+                                                   self._el_opacity_handler,
+                                                   ))
+        for _node in self._assembly.get_nodes():
+            node_drawings.append(NodeDrawing(self._ax, _node, self._aa))
         return node_drawings, element_drawings
 
     def update(self, *args):
@@ -589,6 +616,7 @@ class ModelDrawing(Drawing):
                  force_vector_after_preloading=None, preforce_amounts: dict = None
                  ):
         super().__init__(ax, assembly_appearance)
+
         if characteristic_length is None:
             characteristic_length = _model.get_assembly().compute_characteristic_length()
         if assembly_span is None:

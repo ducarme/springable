@@ -133,7 +133,7 @@ def scan_parameter_space(model_path, save_dir=None, scan_parameters_one_by_one=T
     par_name_to_sim_names = {}
     if scan_parameters_one_by_one:
         cnt = 0
-        nb_simulations = sum([design_parameter_data[par_name]['nb samples']] for par_name in design_parameter_names)
+        nb_simulations = sum([design_parameter_data[par_name]['nb samples'] for par_name in design_parameter_names])
         par_name_to_sim_names = {design_parameter_name: [] for design_parameter_name in design_parameter_names}
         for design_parameter_index, design_parameter_name in enumerate(design_parameter_names):
             for design_parameter_value in design_parameter_vectors[design_parameter_index]:

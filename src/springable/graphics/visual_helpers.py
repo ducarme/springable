@@ -193,6 +193,7 @@ def compute_coil_line(start, end, nb_coils, diameter, straight_ratio=0.4, aspect
 
 
 def compute_coil_arc(center, radius, start_angle, end_angle, nb_coils, radii_ratio=2, aspect=0.4, nb_points_per_coil=50):
+    nb_coils += 4
     nb_points = nb_coils * nb_points_per_coil
     arc_x, arc_y = compute_arc_line(center, radius, start_angle, end_angle, nb_points=nb_points)
     angle = np.linspace(start_angle, end_angle, nb_points) + np.pi/2
@@ -205,8 +206,11 @@ def compute_coil_arc(center, radius, start_angle, end_angle, nb_coils, radii_rat
     curved_coil_x = np.cos(angle) * coil_x - np.sin(angle) * coil_y
     curved_coil_y = np.sin(angle) * coil_x + np.cos(angle) * coil_y
 
-    x = arc_x + curved_coil_x
-    y = arc_y + curved_coil_y
+    nb_circular_points = int(round(np.pi / 2 * nb_points_per_coil))
+    x = arc_x
+    y = arc_y
+    x[nb_circular_points:-nb_circular_points] += curved_coil_x[nb_circular_points:-nb_circular_points]
+    y[nb_circular_points:-nb_circular_points] += curved_coil_y[nb_circular_points:-nb_circular_points]
     return x, y
 
 

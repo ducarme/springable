@@ -146,6 +146,7 @@ line_spring_default_color = "#cecece"
 distance_spring_line_linewidth = 1.0
 distance_spring_line_default_color = "#cecece"
 distance_spring_line_default_opacity = 0.7
+node_style = "elegant"  # "basic", "elegant"
 node_size = 3
 node_color = "#101010"
 show_node_numbers = false
