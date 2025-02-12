@@ -5,7 +5,7 @@ import os
 
 def show_examples(filename=None):
     save_dir = fileio.mkdir('examples_results')
-    folder = os.path.join('src', 'examples-spring-model-CSV-files')
+    folder = 'examples-spring-model-CSV-files'
     filenames = os.listdir(folder)
 
     if filename is not None:
@@ -36,7 +36,7 @@ def show_examples(filename=None):
 
 def show_gallery(filename):
     save_dir = fileio.mkdir('gallery_results')
-    folder = os.path.join('src', 'gallery-spring-model-CSV-files')
+    folder = 'gallery-spring-model-CSV-files'
     filenames = os.listdir(folder)
 
     if filename is not None:
