@@ -45,7 +45,7 @@ It will show you a lot of examples that will help you create and simulate your o
 from springable.discover import show_examples
 
 show_examples()
-'''
+```
 
 
 ## How to use
