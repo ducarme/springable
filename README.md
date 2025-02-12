@@ -302,7 +302,7 @@ area defined by the n nodes as created in the `NODES` section.
 
 > [!NOTE]
 > To define an area spring associated to a **[polygon with holes](https://en.wikipedia.org/wiki/Polygon_with_holes)**,
-please refer to [Area springs with holes](#area-spring-with-holes) paragraph in the [Advanced topics](#advanced-topics).*
+please refer to the [full documentation](#documentation)
 
 Example:
 ```csv
