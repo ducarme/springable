@@ -30,7 +30,7 @@ def show_examples(filename=None):
 
     print()
     print("To run your own simulation, create your own CSV file and run:")
-    print("\timport spring.simulation as ss")
+    print("\timport springable.simulation as ss")
     print("\tss.simulate_model('my_spring_model.csv')")
 
 
@@ -61,5 +61,5 @@ def show_gallery(filename):
 
     print()
     print("Inspired? Create your own CSV file and run:")
-    print("\timport spring.simulation as ss")
+    print("\timport springable.simulation as ss")
     print("\tss.simulate_model('my_spring_model.csv')")
