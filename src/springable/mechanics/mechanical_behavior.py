@@ -521,13 +521,13 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
 
 
 class PiecewiseBehavior(UnivariateBehavior, ControllableByPoints):
-    def __init__(self, natural_measure, k, u, us):
-        super().__init__(natural_measure, k=k, u=u, us=us)
+    def __init__(self, natural_measure, k_i, u_i, us):
+        super().__init__(natural_measure, k_i=k_i, u_i=u_i, us=us)
         self._check()
         self._make()
 
     def _check(self):
-        k, u, us = self._parameters['k'], self._parameters['u'], self._parameters['us']
+        k, u, us = self._parameters['k_i'], self._parameters['u_i'], self._parameters['us']
         if u[0] - 0.0 < us or (len(u) > 1 and np.min(np.diff(u)) < 2 * us):
             raise InvalidBehaviorParameters(
                 f'us ({us:.3E}) is too large for the piecewise intervals provided. '
@@ -536,7 +536,7 @@ class PiecewiseBehavior(UnivariateBehavior, ControllableByPoints):
             raise InvalidBehaviorParameters(f'Expected {len(k) - 1} transitions, but only {len(k)} were provided.')
 
     def _make(self):
-        k, u, us = self._parameters['k'], self._parameters['u'], self._parameters['us']
+        k, u, us = self._parameters['k_i'], self._parameters['u_i'], self._parameters['us']
         self._u_i, self._f_i = spw.compute_piecewise_control_points(k, u, extra=4 * us)
         self._generalized_force_function = spw.create_smooth_piecewise_function(k, u, us)
         self._generalized_stiffness_function = spw.create_smooth_piecewise_derivative_function(k, u, us)
@@ -548,7 +548,7 @@ class PiecewiseBehavior(UnivariateBehavior, ControllableByPoints):
         if (np.diff(cp_x) < 0).any():
             raise InvalidBehaviorParameters(f'Each control point must be on the right of the previous one.')
         k, u = spw.compute_piecewise_slopes_and_transitions_from_control_points(cp_x, cp_y)
-        self.update(k=k, u=u)
+        self.update(k_i=k, u_i=u)
 
     def elastic_energy(self, alpha: float) -> float:
         return quad(self._generalized_force_function, 0.0, alpha - self._natural_measure)[0]

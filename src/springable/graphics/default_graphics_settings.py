@@ -117,7 +117,7 @@ class AssemblyAppearanceOptions(Updatable):
     distance_spring_line_linewidth: float = 1.0
     distance_spring_line_default_color: str = '#CECECE'
     distance_spring_line_default_opacity: float = 0.7
-    node_style: str = 'elegant'
+    node_style: str = 'basic'
     node_size: float = 3.
     node_color: str = '#101010'
     show_node_numbers: bool = False

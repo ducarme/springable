@@ -16,6 +16,22 @@ else:
     from tomli import load as load_toml_file
 
 
+def print_model_file(model_path, print_title=True):
+    title = ''
+    if print_title:
+        title = f'MODEL: {os.path.basename(model_path)}'
+        print(''.join(['-']*(len(title) + 4)))
+        print(f'| {title} |')
+        print(''.join(['-']*(len(title) + 4)))
+    with open(model_path, 'r') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            print(", ".join(row))
+    if print_title:
+        print(''.join(['-'] * (len(title) + 4)))
+
+
+
 def read_model(model_path, parameters: dict[str, float | str] = None) -> Model:
     _parameters, _ = read_parameters_from_model_file(model_path)
     if parameters is not None:

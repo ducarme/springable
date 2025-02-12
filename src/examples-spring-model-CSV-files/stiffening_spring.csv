@@ -6,6 +6,6 @@ NODES
 0, 0.0, 0.0, 1, 1
 1, 1.0, 0.0, 0, 1
 SPRINGS
-0-1, PIECEWISE(a=[initial_stiffness;final_stiffness];x=[transition_displacement];delta=0.2)
+0-1, PIECEWISE(k_i=[initial_stiffness;final_stiffness];u_i=[transition_displacement];us=0.2)
 LOADING
 1, X, 2.50

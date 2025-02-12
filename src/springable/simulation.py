@@ -30,8 +30,8 @@ def save_results(result: static_solver.Result, save_dir):
     io.write_results(result, save_dir)
 
 
-def simulate_model(model_path, save_dir=None, solver_settings_path=None, graphics_settings_path=None,
-                   postprocessing=None):
+def simulate_model(model_path, save_dir=None, solver_settings_path: str = None, graphics_settings_path: str = None,
+                   print_model_file=False, postprocessing=None):
     # CREATE MAIN DIRECTORY WHERE RESULT WILL BE SAVED + COPY INPUT FILES
     if save_dir is None:
         save_dir = io.mkdir(os.path.splitext(os.path.basename(model_path))[0])
@@ -42,6 +42,9 @@ def simulate_model(model_path, save_dir=None, solver_settings_path=None, graphic
         io.copy_solver_settings_file(save_dir, solver_settings_path)
     if graphics_settings_path is not None:
         io.copy_graphics_settings_file(save_dir, graphics_settings_path)
+
+    if print_model_file:
+        io.print_model_file(model_path)
 
     # READ INPUT FILES
     mdl = io.read_model(model_path)
@@ -80,7 +83,8 @@ def simulate_model(model_path, save_dir=None, solver_settings_path=None, graphic
 
 
 def scan_parameter_space(model_path, save_dir=None, scan_parameters_one_by_one=True,
-                         solver_settings_path=None, graphics_settings_path=None, postprocessing=None):
+                         solver_settings_path=None, graphics_settings_path=None, print_model_file=False,
+                         postprocessing=None):
     if solver_settings_path is not None:
         solver_settings = io.read_solver_settings_file(solver_settings_path)
     else:
@@ -117,6 +121,9 @@ def scan_parameter_space(model_path, save_dir=None, scan_parameters_one_by_one=T
         io.copy_graphics_settings_file(save_dir, graphics_settings_path)
 
     # READ DEFAULT AND DESIGN PARAMETERS
+    if print_model_file:
+        io.print_model_file(model_path)
+
     default_parameters, design_parameter_data = io.read_parameters_from_model_file(model_path)
     design_parameter_names = list(design_parameter_data.keys())
     design_parameter_vectors = []

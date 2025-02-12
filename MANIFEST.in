@@ -1,1 +1,3 @@
 exclude src/springable/optimization.py
+include src/springable/examples-spring-model-CSV-files/*.csv
+include src/springable/gallery-spring-model-CSV-files/*.csv
