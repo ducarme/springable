@@ -57,7 +57,7 @@ def show_gallery(filename):
 
     if len(filenames) > 1:
         print()
-        print("You have seen the entire gallery.")
+        print("You have visited the entire gallery.")
 
     print()
     print("Inspired? Create your own CSV file and run:")
