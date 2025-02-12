@@ -10,6 +10,17 @@ exclude = ["springable.my_package_to_exclude"]
 * to exclude modules (.py files): in MANIFEST.in
 exclude src/springable/my_module_to_exclude.py
 
+* to include data files:
+in pyproject.toml:
+[tool.setuptools]
+include-package-data = true
+in MANIFEST.in:
+include src/springable/examples-spring-model-CSV-files/*.csv
+include src/springable/gallery-spring-model-CSV-files/*.csv
+
+
+
+
 * commit and push
 
 * python packages build and twine must be installed in the developer environment
@@ -120,7 +131,7 @@ Version a.b.c
 
 Paul Ducarme, AMOLF, Amsterdam (NL), 2024
 
-* if everythin ok, upload to PyPI
+* if everything ok, upload to PyPI
 >>> twine upload dist/*
 
 
@@ -140,3 +151,4 @@ Paul Ducarme, AMOLF, Amsterdam (NL), 2024
 useful resources:
 [1] https://realpython.com/pypi-publish-python-package/
 [2] https://stackoverflow.com/questions/34514703/pip-install-from-pypi-works-but-from-testpypi-fails-cannot-find-requirements
+[3] https://setuptools.pypa.io/en/latest/userguide/datafiles.html

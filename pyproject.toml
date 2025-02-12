@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "springable-test"
-version = "0.1.1"
+version = "0.1.2"
 authors = [
     {name="Paul Ducarme"},
     {email="paulducarme@hotmail.com" },
@@ -28,9 +28,8 @@ classifiers = [
 ]
 keywords = ["nonlinear", "spring", "simulation", "animation", "instability", "snap-through"]
 
-[too.setuptools]
+[tool.setuptools]
 include-package-data = true  # is true by default for setuptools v >= 61.0.0
-# the
 
 [tool.setuptools.packages.find]
 where = ["src"]
