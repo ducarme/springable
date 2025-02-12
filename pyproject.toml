@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "springable"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
     {name="Paul Ducarme"},
     {email="paulducarme@hotmail.com" },
@@ -34,7 +34,8 @@ exclude = ["springable.dynamics"]
 
 
 [project.urls]
-Homepage = "https://github.com/ducarme/springable"
+Homepage = "https://ducarme.github.io/springable/"
+Source = "https://github.com/ducarme/springable"
 Issues = "https://github.com/ducarme/springable/issues"
 
 

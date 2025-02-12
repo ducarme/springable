@@ -1,4 +1,4 @@
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = 'Paul Ducarme'
 __credits__ = 'AMOLF, ARCNL'
 
@@ -13,5 +13,5 @@ print(f"""
 Springable - Explore the richness of nonlinear mechanics with simple springs!
 Version {__version__}
 
-Paul Ducarme, AMOLF, Amsterdam (NL), 2024
+Paul Ducarme, AMOLF, Amsterdam (NL), 2024-2025
 """)
