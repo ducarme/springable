@@ -23,16 +23,6 @@ In its core, `springable` deals with **springs**, that we define as any entity t
 rotation springs (bending), area springs (useful to model fluids and pneumatic loading), line springs (useful to model cable-driven systems), and more!
 On top of that, the library allows you to define the energy potential of each individual spring to make them intrinsically linear or nonlinear, thereby generating a whole ecosystem of springs, ready to be assembled and simulated!
 
-**Table of contents**
-
-- [Installation](#installation)
-- [Don't want to install it right now? Try the Online Notebook](#dont-want-to-install-it-right-now-try-the-online-notebook)
-- [How to use](#how-to-use)
-   * [Running a simulation](#running-a-simulation)
-   * [Creating a CSV file describing the spring model (+ examples)](#creating-a-csv-file-describing-the-spring-model)
-   * [Specifying a nonlinear mechanical behavior (+examples)](#specifying-a-nonlinear-mechanical-behavior)
-   * [Configuring simulation settings (+examples)](#configuring-simulation-settings)
-   * [Advanced topics](#advanced-topics)
    
 ## Installation
 
@@ -46,6 +36,16 @@ It is supported on **Python 3.10 and above**.
 
 ## Don't want to install it right now? Try the Online Notebook
 Try `springable` online, without any installation in an [interactive online notebook](https://colab.research.google.com/github/ducarme/springable/blob/main/docs/examples/example01_getting_started/example01_getting_started.ipynb)
+
+## Getting started with examples
+After you've installed the library, run the following python script.
+It will show you a lot of examples that will help you create and simulate your own spring models!
+
+```python
+from springable.discover import show_examples
+
+show_examples()
+'''
 
 
 ## How to use
@@ -72,7 +72,7 @@ This file defines a spring structure composed of only one horizontal spring, cla
 
 How to read or make such a file is described in the paragraph [Creating a CSV file describing the spring model](#creating-a-csv-file-describing-the-spring-model).
 Many CSV file examples that describe spring structures are already available
-[here on GitHub](https://github.com/ducarme/springable/tree/main/examples-spring-model-CSV-files) for inspiration or to download.
+[here on GitHub](https://github.com/ducarme/springable/tree/main/src/examples-spring-model-CSV-files) for inspiration or to download.
 
 Next, we create a Python script (a text file saved with the extension *.py*), with the following content
 
@@ -99,9 +99,14 @@ Finally, we run the Python script. This can be done in the terminal by simply ex
 
 
 
-
 >[!TIP]
 > Many settings can be tuned before running a simulation. See paragraph [Configuring simulation settings](#configuring-simulation-settings) for more details.
+
+
+## Documentation
+The full documentation is available on our website [https://ducarme.github.io/springable/](https://ducarme.github.io/springable/)
+
+Herein below, the essentials!
 
 ### Creating a CSV file describing the spring model
 
@@ -678,14 +683,6 @@ ss.simulate_model(model_path='my_spring_model.csv', save_dir='my_simulation_resu
   * plot options (determines _how_ plots will look like)
   * animation options (determines _how_ animations will look like)
   * assembly appearance (determines _how_ the spring assembly will be depicted)
-
-### Advanced topics
-+ [Area spring with holes](#area-spring-with-holes)
-+ [Complex loading descriptions](#complex-loading-descriptions)
-+ [Scanning parameters](#scanning-parameters)
-#### Area spring with holes
-#### Complex loading descriptions
-#### Scanning parameters
 
 
 
