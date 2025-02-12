@@ -377,8 +377,7 @@ the simulation is assumed to have completed.
 
 > [!NOTE]
 > More complex loading can be specified (preloading, multiple loading steps, blocking nodes).
-Please refer to [Complex loading descriptions](#complex-loading-descriptions) paragraph in the [Advanced topics](#advanced-topics) for more details.*
-
+Please refer to the [full documentation](#documentation) for more info
 
 #### A complete example
 This example describes a spring structure composed of two inclined linear longitudinal springs connected in the center,
