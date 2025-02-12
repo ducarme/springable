@@ -30,6 +30,10 @@ def show_examples(filename=None):
         print("You have seen all the basic examples.")
         print()
 
+    print('Examples CSV files can be viewed at:')
+    print('https://github.com/ducarme/springable/tree/main/src/springable/data/examples_csv_models')
+    print()
+
     print("To run your own simulation, create your own CSV file and run:")
     print("\timport springable.simulation as ss")
     print("\tss.simulate_model('my_spring_model.csv')")
@@ -57,6 +61,10 @@ def show_gallery(filename=None):
     if len(filenames) > 1:
         print("You have visited the entire gallery.")
         print()
+
+    print('Gallery CSV files can be viewed at:')
+    print('https://github.com/ducarme/springable/tree/main/src/springable/data/gallery_csv_models')
+    print()
 
     print("Inspired? Create your own CSV file and run:")
     print("\timport springable.simulation as ss")
