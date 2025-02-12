@@ -72,7 +72,7 @@ This file defines a spring structure composed of only one horizontal spring, cla
 
 How to read or make such a file is described in the paragraph [Creating a CSV file describing the spring model](#creating-a-csv-file-describing-the-spring-model).
 Many CSV file examples that describe spring structures are already available
-[here on GitHub](https://github.com/ducarme/springable/tree/main/src/examples-spring-model-CSV-files) for inspiration or to download.
+[here on GitHub](https://github.com/ducarme/springable/tree/main/src/springable/examples-spring-model-CSV-files) for inspiration or to download.
 
 Next, we create a Python script (a text file saved with the extension *.py*), with the following content
 
