@@ -41,6 +41,11 @@ class NodeDrawing(Drawing):
                 triangle_marker = HORIZONTAL_CART
             else:
                 triangle_marker = None
+
+        elif self._aa.node_style == 'minimalist':
+            marker = 'o'
+            triangle_marker = None
+
         else:
             triangle_marker = None
             if self._node.is_fixed_horizontally() and self._node.is_fixed_vertically():
@@ -62,12 +67,15 @@ class NodeDrawing(Drawing):
             self._triangle_graphic = self._ax.plot([self._node.get_x()], [self._node.get_y()], zorder=4.0,
                                                    marker=triangle_marker,
                                                    markersize=6 * self._aa.node_size,
-                                                   markerfacecolor='#cecece',
-                                                   markeredgecolor=self._aa.node_color)[0]
+                                                   markerfacecolor=self._aa.node_color,
+                                                   markeredgecolor=self._aa.node_edgecolor,
+                                                   markeredgewidth=self._aa.node_edgewidth*0.5)[0]
 
         self._node_graphic = self._ax.plot([self._node.get_x()], [self._node.get_y()], zorder=5.0,
                                            marker=marker,
                                            markersize=self._aa.node_size,
+                                           markeredgecolor=self._aa.node_edgecolor,
+                                           markeredgewidth=self._aa.node_edgewidth,
                                            color=self._aa.node_color)[0]
 
     def update(self, *args):
@@ -79,7 +87,6 @@ class NodeDrawing(Drawing):
         if self._triangle_graphic is not None:
             self._triangle_graphic.set_xdata([self._node.get_x()])
             self._triangle_graphic.set_ydata([self._node.get_y()])
-
 
 
 class ShapeDrawing(Drawing):
@@ -132,7 +139,8 @@ class SegmentDrawing(ShapeDrawing):
         x0, y0, x1, y1 = self._shape.get_nodal_coordinates()
         if self._aa.spring_style == 'elegant':
             x_coords, y_coords = compute_coil_line((x0, y0), (x1, y1), self._aa.spring_nb_coils,
-                                                   self._size * self._aa.spring_width_scaling)
+                                                   self._size * self._aa.spring_width_scaling,
+                                                   aspect=self._aa.spring_aspect)
         elif self._aa.spring_style == 'line':
             x_coords, y_coords = [x0, x1], [y0, y1]
         else:  # "basic" or anything else
@@ -562,6 +570,7 @@ class ForceDrawing(Drawing):
         self._vector_size = vector_size * self._aa.force_vector_scaling
         self._color_handler = color_handler
         self._is_preload = is_preload
+        self._alpha = self._aa.preload_force_opacity if self._is_preload else 1.0
 
         # CREATE GRAPHICS FOR FORCE DRAWING
         self._force_graphic = self._make()
@@ -576,16 +585,14 @@ class ForceDrawing(Drawing):
                 origin = np.array((self._node.get_x(), self._node.get_y()))
                 destination = origin + self._vector_size * direction
             color = (self._color_handler.determine_property_value(self._force_info['amount'])
-                     if self._color_handler is not None else self._aa.force_default_outer_color)
-            facecolor = self._aa.force_inner_color if not self._is_preload else self._aa.preload_force_inner_color
+                     if self._color_handler is not None else self._aa.force_default_color)
             force_graphic = self._ax.annotate('',
                                               xytext=(origin[0], origin[1]),
                                               xy=(destination[0], destination[1]),
                                               verticalalignment="center",
-                                              arrowprops=dict(width=4, headwidth=10, lw=1.5, headlength=10, shrink=0.1,
-                                                              facecolor=to_rgba(facecolor, alpha=0.65),
-                                                              edgecolor=color),
-                                              zorder=2 if not self._is_preload else 1.9)
+                                              arrowprops=dict(width=1.5, headwidth=6, headlength=7, shrink=0.15,
+                                                              color=to_rgba(color, alpha=self._alpha)),
+                                              zorder=6 if not self._is_preload else 5.9)
         else:
             force_graphic = None
         return force_graphic
@@ -603,7 +610,7 @@ class ForceDrawing(Drawing):
             self._force_graphic.xy = (destination[0], destination[1])
             if self._color_handler is not None:
                 color = self._color_handler.determine_property_value(self._force_info['amount'])
-                self._force_graphic.arrow_patch.set_edgecolor(color)
+                self._force_graphic.arrow_patch.set_color(to_rgba(color, alpha=self._alpha))
         else:
             pass
 

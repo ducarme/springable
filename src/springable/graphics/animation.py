@@ -61,7 +61,12 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             ax2 = fig.add_subplot(grid[0, 1])
             ax2.xaxis.set_major_locator(plt.MaxNLocator(4))
             ax2.yaxis.set_major_locator(plt.MaxNLocator(4))
-            ff.adjust_spines(ax2, po.spine_offset)
+            spines = []
+            spines += ['left'] if po.show_left_spine else []
+            spines += ['right'] if po.show_right_spine else []
+            spines += ['top'] if po.show_top_spine else []
+            spines += ['bottom'] if po.show_bottom_spine else []
+            ff.adjust_spines(ax2, po.spine_offset, spines)
         else:
             fig, ax1 = plt.subplots()
             ax2 = None
@@ -177,10 +182,12 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                            zorder=1.1)[0]
             ax2.set_xlabel(po.default_xlabel)
             ax2.set_ylabel(po.default_ylabel)
-            if ((po.show_stability_legend and po.color_mode == 'stability' and not (
-                    po.show_driven_path and po.driven_path_only))
-                    or (po.show_driven_path and po.show_driven_path_legend and po.drive_mode in (
-                            'force', 'displacement'))):
+            if ((((po.show_stability_legend and po.color_mode == 'stability') or
+                  (po.show_stability_legend and po.plot_style == 'line')) and
+                 not (po.show_driven_path and po.driven_path_only))
+                or (po.show_driven_path
+                    and po.show_driven_path_legend
+                    and po.drive_mode in ('force', 'displacement'))):
                 ax2.legend(numpoints=5, markerscale=1.5)
 
         def update(i):

@@ -1,49 +1,65 @@
 from ..mechanics.static_solver import Result, UnusableSolution
-from ..mechanics.result_processing import extract_loading_path, extract_unloading_path, LoadingPathEmpty
+from ..mechanics.result_processing import extract_branches, extract_loading_path, extract_unloading_path, LoadingPathEmpty
 from ..mechanics.stability_states import StabilityStates
 from .default_graphics_settings import PlotOptions
 from . import figure_formatting as ff
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as mcm
-import matplotlib.patches as mpatches
+from matplotlib.patches import ArrowStyle
 import typing
 
 
 def curve_in_ax(processing_fun: callable, result: Result, ax: plt.Axes, plot_options: PlotOptions, color, label):
     po = plot_options
     x, y = processing_fun(result)
+    stability_colors = [po.color_for_stable_points,
+                        po.color_for_stabilizable_points,
+                        po.color_for_unstable_points]
+
+    stability_styles = [po.style_for_stable_branches,
+                        po.style_for_stabilizable_branches,
+                        po.style_for_unstable_branches]
+
     stability_markersizes = [po.size_for_stable_points,
                              po.size_for_stabilizable_points,
                              po.size_for_unstable_points]
+
+    stability_labels = [po.label_for_stable_points,
+                        po.label_for_stabilizable_points,
+                        po.label_for_unstable_points]
+
     if not po.driven_path_only:
-        stability = result.get_stability()
-        ax.plot(x, y, 'k-', linewidth=0.5, zorder=1.05)
+        branches = extract_branches(result)
+
+        if po.plot_style == 'points':
+            ax.plot(x, y, 'k-', linewidth=0.5, zorder=1.05)
+
         if color is None:  # then color is determined by 'color_mode' set in the plot options
 
             if po.color_mode == 'stability':
                 # then each point is colored by its stability
-                stability_colors = [po.color_for_stable_points,
-                                    po.color_for_stabilizable_points,
-                                    po.color_for_unstable_points]
                 zorder = 1.0
                 for i, stability_state in enumerate([StabilityStates.STABLE,
                                                      StabilityStates.STABILIZABLE,
                                                      StabilityStates.UNSTABLE]):
-                    current_stability = stability == stability_state
                     if po.show_stability_legend and label is None:
-                        lbl_i = stability_state
+                        lbl_i = stability_labels[i]
                     elif label is not None and i == 0:
                         lbl_i = label
                     else:
                         lbl_i = ''
-                    ax.plot(x[current_stability], y[current_stability], ls='',
-                            color=stability_colors[i],
-                            marker=po.default_marker,
-                            markersize=po.default_markersize * stability_markersizes[i],
-                            zorder=zorder,
-                            label=lbl_i)
-                    zorder -= 0.1
+                    for j, branch in enumerate(branches[stability_state]):
+                        ax.plot(x[branch], y[branch],
+                                ls='' if po.plot_style == 'points' else stability_styles[i],
+                                lw=po.default_linewidth,
+                                solid_capstyle='round',
+                                color=stability_colors[i],
+                                marker=po.default_marker if po.plot_style == 'points' else None,
+                                markersize=po.default_markersize * stability_markersizes[i],
+                                zorder=zorder,
+                                label=lbl_i if j == 0 else '')
+                        zorder -= 0.1
 
             elif po.color_mode in ('min_eigval_fd', 'min_eigval_ud'):
                 # then each point is colored by the lowest eigenvalue in the stiffness matrix
@@ -103,9 +119,26 @@ def curve_in_ax(processing_fun: callable, result: Result, ax: plt.Axes, plot_opt
 
             else:  # 'color_mode' is 'none' or something else
                 # then the default color is used
-                ax.plot(x, y, po.default_marker, color=po.default_color,
-                        markersize=po.default_markersize,
-                        label=label if label is not None else '', zorder=1)
+                if po.plot_style == 'points':
+                    ax.plot(x, y, po.default_marker,
+                            color=po.default_color,
+                            alpha=po.default_opacity,
+                            markersize=po.default_markersize,
+                            label=label if label is not None else '', zorder=1)
+                else:
+                    for i, stability_state in enumerate([StabilityStates.STABLE,
+                                                         StabilityStates.STABILIZABLE,
+                                                         StabilityStates.UNSTABLE]):
+                        for j, branch in enumerate(branches[stability_state]):
+                            ax.plot(x[branch], y[branch],
+                                    ls=stability_styles[i],
+                                    lw=po.default_linewidth,
+                                    solid_capstyle='round',
+                                    color=po.default_color,
+                                    alpha=po.default_opacity,
+                                    zorder=1,
+                                    label=stability_labels[i] if j == 0 else '')
+
         else:  # a color has been specified as input
             zorder = 1.0
             for i, stability_state in enumerate([StabilityStates.STABLE,
@@ -114,15 +147,18 @@ def curve_in_ax(processing_fun: callable, result: Result, ax: plt.Axes, plot_opt
                 if label is not None and i == 0:
                     lbl_i = label
                 else:
-                    lbl_i = ''
-                current_stability = stability == stability_state
-                ax.plot(x[current_stability], y[current_stability], ls='',
-                        color=color,
-                        marker=po.default_marker,
-                        markersize=po.default_markersize * stability_markersizes[i],
-                        zorder=zorder,
-                        label=lbl_i)
-                zorder -= 0.1
+                    lbl_i = '' if not po.show_stability_legend else stability_labels[i]
+                for j, branch in enumerate(branches[stability_state]):
+                    ax.plot(x[branch], y[branch],
+                            ls='' if po.plot_style == 'points' else stability_styles[i],
+                            lw=po.default_linewidth,
+                            solid_capstyle='round',
+                            color=color,
+                            marker=po.default_marker if po.plot_style == 'points' else None,
+                            markersize=po.default_markersize * stability_markersizes[i],
+                            zorder=zorder,
+                            label=lbl_i if j == 0 else '')
+                    zorder -= 0.1
 
     if po.drive_mode != 'none' and (po.show_driven_path or po.show_snapping_arrows):
         try:
@@ -161,31 +197,37 @@ def curve_in_ax(processing_fun: callable, result: Result, ax: plt.Axes, plot_opt
                         zorder=1.1, alpha=0.75)
             nb_transitions = min(len(critical_indices), len(restabilization_indices))
             if po.show_snapping_arrows:
-                match po.drive_mode:
-                    case 'force':
-                        for i in range(nb_transitions):
-                            arrow = mpatches.FancyArrowPatch((x[critical_indices[i]],
-                                                              y[critical_indices[i]]),
-                                                             (x[restabilization_indices[i]],
-                                                              y[restabilization_indices[i]]),
-                                                             edgecolor='none',
-                                                             facecolor=po.snapping_arrow_color if color is None else color,
-                                                             mutation_scale=15,
-                                                             alpha=po.snapping_arrow_opacity,
-                                                             zorder=1.2)
-                            ax.add_patch(arrow)
-                    case 'displacement':
-                        for i in range(nb_transitions):
-                            arrow = mpatches.FancyArrowPatch((x[critical_indices[i]],
-                                                              y[critical_indices[i]]),
-                                                             (x[restabilization_indices[i]],
-                                                              y[restabilization_indices[i]]),
-                                                             edgecolor='none',
-                                                             facecolor=po.snapping_arrow_color if color is None else color,
-                                                             mutation_scale=15,
-                                                             alpha=po.snapping_arrow_opacity,
-                                                             zorder=1.2)
-                            ax.add_patch(arrow)
+                if po.drive_mode in ('force', 'displacement'):
+                    for i in range(nb_transitions):
+                        start = np.array((x[critical_indices[i]], y[critical_indices[i]]))
+                        end = np.array((x[restabilization_indices[i]], y[restabilization_indices[i]]))
+                        dir_ = (end-start) / np.linalg.norm(end-start)
+
+                        ax.annotate(
+                            "",
+                            xy=start,
+                            xytext=end,
+                            arrowprops=dict(
+                                arrowstyle=ArrowStyle.BracketA(widthA=0, lengthA=0, angleA=0),
+                                shrinkA=10,
+                                shrinkB=3,
+                                mutation_scale=20,
+                                color=po.snapping_arrow_color,
+                                alpha=po.snapping_arrow_opacity,
+                                linewidth=2.5,
+                                ls=po.snapping_arrow_style,
+                            ))
+                        ax.annotate(
+                            "",
+                            xy=end - dir_ / 100,
+                            xytext=end,
+                            arrowprops=dict(
+                                arrowstyle="<|-",
+                                mutation_scale=20,
+                                facecolor=po.snapping_arrow_color,
+                                edgecolor='none',
+                                alpha=po.snapping_arrow_opacity
+                            ))
         except LoadingPathEmpty:
             print(f"Cannot draw the {po.drive_mode}-driven path, "
                   f"because not stable points have been found under these loading conditions")
@@ -258,7 +300,14 @@ def parametric_curve(processing_fun: callable,
             ax.set_xlim(xlim)
         if ylim is not None:
             ax.set_ylim(ylim)
-        ff.adjust_spines(ax, po.spine_offset)
+
+        spines = []
+        spines += ['left'] if po.show_left_spine else []
+        spines += ['right'] if po.show_right_spine else []
+        spines += ['top'] if po.show_top_spine else []
+        spines += ['bottom'] if po.show_bottom_spine else []
+
+        ff.adjust_spines(ax, po.spine_offset, spines)
         ff.adjust_figure_layout(fig)
 
         if save_dir is not None:
@@ -305,6 +354,7 @@ def curve(processing_fun: callable, result: Result,
 
         if (label is not None
                 or (po.show_stability_legend and po.color_mode == 'stability')
+                or (po.show_stability_legend and po.color_mode == 'none' and po.plot_style == 'line')
                 or (po.show_driven_path_legend and po.show_driven_path and po.drive_mode in ('force', 'displacement'))):
             ax.legend(numpoints=5, markerscale=1.5)
 
@@ -314,7 +364,12 @@ def curve(processing_fun: callable, result: Result,
             ax.set_xlim(xlim)
         if ylim is not None:
             ax.set_ylim(ylim)
-        ff.adjust_spines(ax, po.spine_offset)
+        spines = []
+        spines += ['left'] if po.show_left_spine else []
+        spines += ['right'] if po.show_right_spine else []
+        spines += ['top'] if po.show_top_spine else []
+        spines += ['bottom'] if po.show_bottom_spine else []
+        ff.adjust_spines(ax, po.spine_offset, spines)
         ff.adjust_figure_layout(fig)
         if save_dir is not None:
             if save_name is None:

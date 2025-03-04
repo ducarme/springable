@@ -22,8 +22,12 @@ driven_path_only = false
 loading_sequence = "cycle"
 # "loading", "cycle", "loading_unloading"
 show_snapping_arrows = true
+snapping_arrow_style = '-'
 drive_mode = "none"
 # "none" (nothing driven), "force" (force-driven), "displacement" (displacement-driven)
+
+plot_style = 'points' # points, line
+# will use points instead of line anyway in case the color mode is different from 'none' or 'stability'
 
 color_mode = "stability"
 # is *not* used when showing multiple equilibrium paths after a parameter scan
@@ -56,14 +60,28 @@ default_plot_name = "fd_curve"
 default_xlabel = "displacement"
 default_ylabel = "force"
 default_color = "#a0a0a0"
+default_opacity = 1.0
 default_marker = "o"
 default_markersize = 2.5
+default_linewidth = 2.0
+
 
 # herein below colors to indicate the stability of an equilibrium point,
 # only used when "color_mode" "stability" is used.
 color_for_stable_points = "#86a7fc"
 color_for_stabilizable_points = "#ffdd95"
 color_for_unstable_points = "#dd9843"
+
+# herein below colors to indicate the stability of equilibrium branches
+# only used when 'plot_style=lines'
+style_for_stable_branches = '-'
+style_for_stabilizable_branches = '--'
+style_for_unstable_branches = ':'
+
+# herein below labels used to indicate the stability of equilibrium branches
+label_for_stable_points = 'stable'
+label_for_stabilizable_points = 'stabilizable'
+label_for_unstable_points = 'unstable'
 
 driven_path_color = "#444444"
 size_for_driven_path = 0.4
@@ -83,6 +101,10 @@ stylesheet = "default"
 # one of the style names of matplotlib (see https://matplotlib.org/stable/gallery/style_sheets/style_sheets_reference.html)
 # or the path/url to a stylesheet, such as "my_style_sheets/my_favorite_style.mplstyle" (see https://matplotlib.org/stable/users/explain/customizing.html#defining-your-own-style)
 spine_offset = 10
+show_top_spine = false
+show_bottom_spine = true
+show_left_spine = true
+show_right_spine = false
 
 
 [animation_options]
@@ -146,13 +168,15 @@ line_spring_default_color = "#cecece"
 distance_spring_line_linewidth = 1.0
 distance_spring_line_default_color = "#cecece"
 distance_spring_line_default_opacity = 0.7
-node_style = "basic"  # "basic", "elegant"
+node_style = "simple"  # "minimalist", "simple", "elegant"
 node_size = 3
 node_color = "#101010"
+node_edgecolor = "#101010"
+node_edgewidth = 1.0
 show_node_numbers = false
 node_nb_color = "#cecece"
-force_inner_color = "#101010"
-preload_force_inner_color = "#a0a0a0"
-force_default_outer_color = "#cecece"
+preload_force_opacity = 0.65
+preload_force_default_color = '#cecece'
+force_default_color = '#cecece'
 force_vector_length_scaling = 1.0
 force_vector_connection = "tail"

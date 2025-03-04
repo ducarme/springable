@@ -39,12 +39,12 @@ def save_fig(fig, save_dir, save_name, formats, transparent=False, dpi=None):
 
 
 
-def adjust_spines(axs, offset):
+def adjust_spines(axs, offset, spines):
     only_one_axis = not isinstance(axs, list)
     if only_one_axis:
         axs = [axs]
     for ax in axs:
-        _adjust_spines(ax, offset)
+        _adjust_spines(ax, offset, spines)
 
 
 def adjust_figure_layout(fig, fig_width=None, fig_height=None, pad=0.0):

@@ -119,7 +119,7 @@ class Element:
             force_vector[-1] = dvdt
             return force_vector
         else:
-            raise NotImplementedError("Not implementation to compute stiffness matrix with"
+            raise NotImplementedError("No implementation to compute the stiffness matrix of "
                                       "a mechanical behavior with more than 2 DOFS ")
 
     def compute_stiffness_matrix(self) -> np.ndarray:
@@ -145,5 +145,5 @@ class Element:
             stiffness_matrix[-1, :-1] = stiffness_matrix[:-1, -1] = d2vdalphadx * jacobian
             return stiffness_matrix
         else:
-            raise NotImplementedError(
-                "Not implementation to compute stiffness matrix with mechanical behavior with more than 2 DOFS ")
+            raise NotImplementedError("No implementation to compute the stiffness matrix of "
+                                      "a mechanical behavior with more than 2 DOFS ")

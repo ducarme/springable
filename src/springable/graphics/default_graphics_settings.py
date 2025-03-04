@@ -26,6 +26,7 @@ class PlotOptions(Updatable):
     driven_path_only: bool = False
     loading_sequence: str = 'cycle'
     show_snapping_arrows: bool = True
+    plot_style: str = 'points'
     drive_mode: str = 'none'
     color_mode: str = 'stability'
     show_stability_legend: bool = True
@@ -43,20 +44,33 @@ class PlotOptions(Updatable):
     default_xlabel: str = 'displacement'
     default_ylabel: str = 'force'
     default_color: str = '#a0a0a0'
+    default_opacity: float = 1.0,
     default_marker: str = 'o'
     default_markersize: float = 2.5
+    default_linewidth: float = 2.0
     color_for_stable_points: str = '#86A7FC'
     color_for_stabilizable_points: str = '#FFDD95'
     color_for_unstable_points: str = '#FF9843'
+    style_for_stable_branches: str = '-'
+    style_for_stabilizable_branches: str = '--'
+    style_for_unstable_branches: str = ':'
+    label_for_stable_points: str = 'stable'
+    label_for_stabilizable_points: str = 'stabilizable'
+    label_for_unstable_points: str = 'unstable'
     driven_path_color: str = '#444444'
     size_for_driven_path: float = 0.4
     snapping_arrow_color: str = '#aaaaaa'
     snapping_arrow_opacity: float = 0.35
+    snapping_arrow_style: str = '-'
     size_for_stable_points: float = 1.
     size_for_stabilizable_points: float = .66
     size_for_unstable_points: float = .33
     stylesheet: str = 'default'
     spine_offset: float = 10.
+    show_top_spine: bool = False
+    show_bottom_spine: bool = True
+    show_left_spine: bool = True
+    show_right_spine: bool = False
 
 
 @dataclass
@@ -117,13 +131,15 @@ class AssemblyAppearanceOptions(Updatable):
     distance_spring_line_linewidth: float = 1.0
     distance_spring_line_default_color: str = '#CECECE'
     distance_spring_line_default_opacity: float = 0.7
-    node_style: str = 'basic'
+    node_style: str = 'simple'
     node_size: float = 3.
     node_color: str = '#101010'
+    node_edgecolor: str = '#101010'
+    node_edgewidth: float = 1.0
     show_node_numbers: bool = False
     node_nb_color: str = '#CECECE'
-    force_inner_color: str = '#010101'
-    preload_force_inner_color: str = '#A0A0A0'
-    force_default_outer_color: str = '#CECECE'
+    preload_force_opacity: float = 0.65
+    preload_force_default_color: str = '#cecece'
+    force_default_color: str = '#cecece'
     force_vector_length_scaling: float = 1.0
     force_vector_connection: str = 'tail'

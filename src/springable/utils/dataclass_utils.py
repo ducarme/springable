@@ -1,4 +1,5 @@
 import re
+import difflib
 
 
 def _camel_to_text(cml_text):
@@ -17,4 +18,9 @@ class Updatable:
                           f' "{key}" is ignored.'
                           f' It should be a {expected_type.__name__}, not a {type(value).__name__} ({value})')
             else:
-                print(f'Unknown {_camel_to_text(type(self).__name__).rstrip("s")} "{key}". Probably check spelling...')
+                trials = difflib.get_close_matches(key, self.__dataclass_fields__, n=2)
+                trials_str = ' or '.join([f'"{t}"' for t in trials])
+                trials_str = f'Did you mean {trials_str}' if trials_str else ''
+
+                print(f'Unknown {_camel_to_text(type(self).__name__).rstrip("s")} "{key}". '
+                      f'Check spelling. {trials_str}')
