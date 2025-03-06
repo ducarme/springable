@@ -18,7 +18,7 @@ usable_behaviors = KeywordMapping({mechanical_behavior.LinearBehavior: 'LINEAR',
                                    mechanical_behavior.ZigzagBehavior: 'ZIGZAG',
                                    mechanical_behavior.Zigzag2Behavior: 'ZIGZAG2',
                                    mechanical_behavior.ContactBehavior: 'CONTACT',
-                                   mechanical_behavior.IsothermicGas: 'ISOTHERMIC_GAS',
+                                   mechanical_behavior.IsothermalGas: 'ISOTHERMAL_GAS',
                                    mechanical_behavior.IsentropicGas: 'ISENTROPIC_GAS',
                                    })
 

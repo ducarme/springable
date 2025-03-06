@@ -454,7 +454,7 @@ By playing around with the interface, you will be able to create various general
 + [Zigzag behavior](#zigzag-behavior)
 + [Zigzag2 behavior](#zigzag2-behavior)
 + [Contact behavior](#contact-behavior)
-+ [Isothermic gas behavior](#isothermic-behavior)
++ [Isothermal gas behavior](#isothermal-behavior)
 + [Isentropic gas behavior](#isentropic-behavior)
 + [Additional notes](#additional-notes-1)
 
@@ -598,7 +598,7 @@ Example: `..., ZIGZAG2(u_i=[2.0; 1.0; 3.0]; f_i=[2.0; 0.0; 1.0]; epsilon=0.4)`
 
 
 #### Contact behavior
-#### Isothermic behavior
+#### Isothermal behavior
 #### Isentropic behavior
 #### Additional notes
 

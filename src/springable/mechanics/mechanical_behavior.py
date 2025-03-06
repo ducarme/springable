@@ -148,40 +148,51 @@ class BezierBehavior(UnivariateBehavior, ControllableByPoints):
         f_coefs = np.array([0.0] + self._parameters['f_i'])
         return bezier_curve.is_monotonic(f_coefs)
 
-
     def _make(self):
         u_coefs = np.array([0.0] + self._parameters['u_i'])
         f_coefs = np.array([0.0] + self._parameters['f_i'])
         t = np.linspace(0, 1, self._sampling)
         u = bezier_curve.evaluate_poly(t, u_coefs)
 
-        def fdu(_t, _): return bezier_curve.evaluate_poly(_t, f_coefs) * bezier_curve.evaluate_derivative_poly(_t, u_coefs)
+        def fdu(_t, _):
+            return bezier_curve.evaluate_poly(_t, f_coefs) * bezier_curve.evaluate_derivative_poly(_t,u_coefs)
 
         energy = solve_ivp(fun=fdu, t_span=[0.0, 1.0], y0=[0.0], t_eval=t).y[0, :]
-        self._energy = lambda uu: ((uu < u[-1]) * interp1d(u, energy, kind='linear',
-                                                           bounds_error=False, fill_value=0.0)(np.abs(uu))
-                                   + (np.abs(uu) >= u[-1]) * (energy[-1] + generalized_force[-1] * (np.abs(uu) - u[-1])
-                                                              + 0.5 * generalized_stiffness[-1] * (
-                                                                      np.abs(uu) - u[-1]) ** 2))
-
         generalized_force = bezier_curve.evaluate_poly(t, f_coefs)
-        self._first_der_energy = lambda uu: np.sign(uu) * interp1d(u, generalized_force, kind='linear',
-                                                                   bounds_error=False, fill_value='extrapolate')(
-            np.abs(uu))
+        df = bezier_curve.evaluate_derivative_poly(t, f_coefs)
+        du = bezier_curve.evaluate_derivative_poly(t, u_coefs)
+        generalized_stiffness = df / du
 
-        generalized_stiffness = bezier_curve.evaluate_derivative_poly(t, f_coefs) / bezier_curve.evaluate_derivative_poly(t, u_coefs)
-        self._second_der_energy = lambda uu: interp1d(u, generalized_stiffness, kind='linear',
-                                                      bounds_error=False, fill_value=generalized_stiffness[-1])(
-            np.abs(uu))
+        u_end = u[-1]
+        e_end = energy[-1]
+        f_end = generalized_force[-1]
+        k_end = generalized_stiffness[-1]
+
+        def energy_fun(uu):
+            e_in = interp1d(u, energy, kind='linear', bounds_error=False, fill_value=0.0)(np.abs(uu))
+            e_out = e_end + f_end * (np.abs(uu) - u_end) + 0.5 * k_end * (np.abs(uu)- u_end) ** 2
+            return (uu <= u_end) * e_in + (uu > u_end) * e_out
+
+        def gradient_fun(uu):
+            tensile_f_fun = interp1d(u, generalized_force, kind='linear', bounds_error=False, fill_value='extrapolate')
+            return np.sign(uu) * tensile_f_fun(np.abs(uu))
+
+        def hessian_fun(uu):
+            tensile_k_fun = interp1d(u, generalized_stiffness, kind='linear', bounds_error=False, fill_value=k_end)
+            return tensile_k_fun(np.abs(uu))
+
+        self._energy = energy_fun
+        self._gradient = gradient_fun
+        self._hessian = hessian_fun
 
     def elastic_energy(self, alpha: float | np.ndarray) -> float:
         return self._energy(alpha - self._natural_measure)
 
     def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float]:
-        return self._first_der_energy(alpha - self._natural_measure),
+        return self._gradient(alpha - self._natural_measure),
 
     def hessian_energy(self, alpha: float | np.ndarray) -> tuple[float]:
-        return self._second_der_energy(alpha - self._natural_measure),
+        return self._hessian(alpha - self._natural_measure),
 
     def update(self, natural_measure=None, /, **parameters):
         super().update(natural_measure, **parameters)
@@ -344,8 +355,10 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
                               + (np.abs(t) > 1) * da1)
         self._db = lambda t: ((np.abs(t) <= 1) * bezier_curve.evaluate_derivative_poly(np.abs(t), b_coefs)
                               + (np.abs(t) > 1) * db1)
-        self._d2a = lambda t: (np.abs(t) <= 1) * np.sign(t) * bezier_curve.evaluate_second_derivative_poly(np.abs(t), a_coefs)
-        self._d2b = lambda t: (np.abs(t) <= 1) * np.sign(t) * bezier_curve.evaluate_second_derivative_poly(np.abs(t), b_coefs)
+        self._d2a = lambda t: (np.abs(t) <= 1) * np.sign(t) * bezier_curve.evaluate_second_derivative_poly(np.abs(t),
+                                                                                                           a_coefs)
+        self._d2b = lambda t: (np.abs(t) <= 1) * np.sign(t) * bezier_curve.evaluate_second_derivative_poly(np.abs(t),
+                                                                                                           b_coefs)
         self._d3a = lambda t: (np.abs(t) <= 1) * bezier_curve.evaluate_third_derivative_poly(np.abs(t), a_coefs)
         self._d3b = lambda t: (np.abs(t) <= 1) * bezier_curve.evaluate_third_derivative_poly(np.abs(t), b_coefs)
         self._dbda = lambda t: self._db(t) / self._da(t)
@@ -514,7 +527,7 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
                     branch_id = str(abs(int((i - len(branch_intervals) // 2) / 2))) + '-' + str(
                         abs(int((i - len(branch_intervals) // 2) / 2)) + 1)
                 branch_ids.append(branch_id)
-            self._hysteron_info = {'nb_stable_branches': 2*((nb_extrema/2)//2 + 1)-1,
+            self._hysteron_info = {'nb_stable_branches': 2 * ((nb_extrema / 2) // 2 + 1) - 1,
                                    'branch_intervals': branch_intervals,
                                    'is_branch_stable': is_branch_stable,
                                    'branch_ids': branch_ids}
@@ -934,7 +947,7 @@ class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
                     branch_id = str(abs(int((i - len(branch_intervals) // 2) / 2))) + '-' + str(
                         abs(int((i - len(branch_intervals) // 2) / 2)) + 1)
                 branch_ids.append(branch_id)
-            self._hysteron_info = {'nb_stable_branches': 2*((nb_extrema/2)//2 + 1)-1,
+            self._hysteron_info = {'nb_stable_branches': 2 * ((nb_extrema / 2) // 2 + 1) - 1,
                                    'branch_intervals': branch_intervals,
                                    'is_branch_stable': is_branch_stable,
                                    'branch_ids': branch_ids}
@@ -1036,7 +1049,7 @@ class IdealGas(UnivariateBehavior):
         raise NotImplementedError("This method is abstract")
 
 
-class IsothermicGas(IdealGas):
+class IsothermalGas(IdealGas):
 
     def elastic_energy(self, alpha: float | np.ndarray) -> float:
         v = alpha

@@ -37,7 +37,7 @@ By playing around with the interface, you will be able to create various general
 + [Zigzag behavior](#zigzag-behavior)
 + [Zigzag2 behavior](#zigzag2-behavior)
 + [Contact behavior](#contact-behavior)
-+ [Isothermic gas behavior](#isothermic-behavior)
++ [Isothermal gas behavior](#isothermal-behavior)
 + [Isentropic gas behavior](#isentropic-behavior)
 + [Additional notes](#additional-notes-1)
 
@@ -301,10 +301,10 @@ Example: `..., CONTACT(f0=3.0; uc=0.2)`
     The natural measure of that spring is set to 0. In the example herein above, since no natural measure is provided,
     the generalized displacement and the measure are the same, $U=\alpha-\alpha_0=\alpha$.
 
-## Isothermic behavior
+## Isothermal behavior
 
-An **isothermic** behavior is described by a generalized force-displacement curve that respects the pressure-volume
-relation of an [ideal gas](https://en.wikipedia.org/wiki/Ideal_gas_law) during an isothermic process (constant temperature).
+An **isothermal** behavior is described by a generalized force-displacement curve that respects the pressure-volume
+relation of an [ideal gas](https://en.wikipedia.org/wiki/Ideal_gas_law) during an isothermal process (constant temperature).
 That relation can be expressed as follows,
 
 $$
@@ -323,10 +323,10 @@ $$
 F = nRT_0\frac{U}{(U+\alpha_0)\alpha_0}.
 $$
 
-`ISOTHERMIC_GAS(n=<n_value>; R=<R_value>; T0=<T0_value>)`
+`ISOTHERMAL_GAS(n=<n_value>; R=<R_value>; T0=<T0_value>)`
 
-Example: `..., ISOTHERMIC_GAS(n=1.0; R=8.3; T0=300)`
-> A spring is defined with an isothermic behavior. Its generalized force-displacement relation follows the behavior
+Example: `..., ISOTHERMAL_GAS(n=1.0; R=8.3; T0=300)`
+> A spring is defined with an isothermal behavior. Its generalized force-displacement relation follows the behavior
 > of `1` mole of an ideal gas at constant temperature $T_0$=`300`K.
 > 
 > ![](https://github.com/user-attachments/assets/b9d2d7d8-b502-4249-9218-7e79cbf44ebd){width="300"}
@@ -340,9 +340,9 @@ Example: `..., ISOTHERMIC_GAS(n=1.0; R=8.3; T0=300)`
     when not provided.
     If you want to assign a value for $\alpha_0$, you can do it by adding a comma followed by the $\alpha_0$ value.
 
-    Example: `... , ISOTHERMIC_GAS(n=1.0; R=8.3; T0=300), 1.0`
+    Example: `... , ISOTHERMAL_GAS(n=1.0; R=8.3; T0=300), 1.0`
 
-    > A spring is defined with an isothermic behavior. Its generalized force-displacement relation follows the behavior
+    > A spring is defined with an isothermal behavior. Its generalized force-displacement relation follows the behavior
     > of `1` mole of an ideal gas at constant temperature $T_0$=`300`K. Its *volume*/measure at ambient pressure is `1.0`.
 
 ??? question "Units?"
