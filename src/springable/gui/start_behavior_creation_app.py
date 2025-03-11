@@ -9,7 +9,8 @@ import os
 
 
 def suppress_output():
-    sys.stderr = open(os.devnull, 'w')
+    pass
+    # sys.stderr = open(os.devnull, 'w')
 
 
 # Suppress RuntimeWarnings

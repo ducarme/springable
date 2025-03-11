@@ -115,17 +115,13 @@ def text_to_behavior(behavior_text: str, evaluator: se.SimpleEval = None,
         parameters_txt = parameters_txt.removesuffix(')')
         path = smart_split(parameters_txt, ';')
         path = [evaluator.eval(p) for p in path]
-        behavior_text_path = os.path.join(*path)
+        behavior_text_path = os.path.join('', *path)
         with open(behavior_text_path) as fr:
             line = fr.readline()
         return text_to_behavior(line, evaluator, natural_measure)
 
     if natural_measure is None:
-        if (core_behavior_txt.startswith(usable_behaviors.type_to_name[ContactBehavior] + '(')
-                and core_behavior_txt.endswith(')')):
-            natural_measure = 0.0
-        else:
-            raise UnknownNaturalMeasure
+        raise UnknownNaturalMeasure
 
     for behavior_type, behavior_name in usable_behaviors.type_to_name.items():
         if core_behavior_txt.startswith(behavior_name + '(') and core_behavior_txt.endswith(')'):

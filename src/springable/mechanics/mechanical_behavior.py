@@ -985,19 +985,19 @@ class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
 
 
 class ContactBehavior(UnivariateBehavior):
-    def __init__(self, natural_measure, f0, uc):
-        super().__init__(natural_measure, f0=f0, uc=uc)
+    def __init__(self, natural_measure, f0, uc, delta):
+        super().__init__(natural_measure, f0=f0, uc=uc, delta=delta)
         self._p = 3.0
 
     def elastic_energy(self, alpha: float) -> float:
-        dalpha = alpha - self._natural_measure
         f0 = self._parameters['f0']
         uc = self._parameters['uc']
+        delta = self._parameters['delta']
         p = self._p
-        if dalpha >= uc:
+        if alpha >= delta:
             return 0.0
         else:
-            return f0 * uc / (p + 1) * ((uc - dalpha) / uc) ** (p + 1)
+            return f0 * uc / (p + 1) * ((delta - alpha) / uc) ** (p + 1)
 
     def gradient_energy(self, alpha: float | np.ndarray) -> tuple[float | np.ndarray]:
         if isinstance(alpha, np.ndarray):
@@ -1006,24 +1006,24 @@ class ContactBehavior(UnivariateBehavior):
                 g[i] = self.gradient_energy(alpha_i)[0]
             return g,
 
-        dalpha = alpha - self._natural_measure
         f0 = self._parameters['f0']
         uc = self._parameters['uc']
+        delta = self._parameters['delta']
         p = self._p
-        if dalpha >= uc:
+        if alpha >= delta:
             return 0.0,
         else:
-            return -f0 * ((uc - dalpha) / uc) ** p,
+            return -f0 * ((delta - alpha) / uc) ** p,
 
     def hessian_energy(self, alpha: float) -> tuple[float]:
-        dalpha = alpha - self._natural_measure
         f0 = self._parameters['f0']
         uc = self._parameters['uc']
+        delta = self._parameters['delta']
         p = self._p
-        if dalpha >= uc:
+        if alpha >= delta:
             return 0.0,
         else:
-            return +f0 / uc * p * ((uc - dalpha) / uc) ** (p - 1),
+            return +f0 / uc * p * ((delta - alpha) / uc) ** (p - 1),
 
 
 class IdealGas(UnivariateBehavior):
