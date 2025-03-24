@@ -13,9 +13,15 @@
 ### home page video
 mp4
 <video width="630" height="300" autoplay loop muted src="https://github.com/user-attachments/assets/016852f5-3dd7-49ba-badb-249ba38569c6"></video>
+<video width="630" height="300" autoplay loop muted src="https://github.com/user-attachments/assets/2d5840ef-d182-48ef-9dfb-d0af7aaad448"></video>
+
+https://github.com/user-attachments/assets/2d5840ef-d182-48ef-9dfb-d0af7aaad448
+
+
 
 gif
 ![animation](https://github.com/user-attachments/assets/5b58be17-5fcb-47a2-9554-6ba53ea0c5bf)
+![animation](https://github.com/user-attachments/assets/d60c9fbe-fe85-4e66-8fb4-e1ed34220eae)
 
 
 ### getting started example
