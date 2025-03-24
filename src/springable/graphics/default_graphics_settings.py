@@ -147,6 +147,6 @@ class AssemblyAppearanceOptions(Updatable):
     force_vector_style: str ='basic'
     preload_force_opacity: float = 0.65
     preload_force_default_color: str = '#cecece'
-    force_default_color: str = '#cecece'
+    force_default_color: str = '#000000'
     force_vector_scaling: float = 1.0
     force_vector_connection: str = 'tail'

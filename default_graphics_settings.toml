@@ -185,6 +185,6 @@ node_nb_fontsize = 10
 force_vector_style = 'basic'
 preload_force_opacity = 0.65
 preload_force_default_color = '#cecece'
-force_default_color = '#cecece'
+force_default_color = '#000000'
 force_vector_length_scaling = 1.0
 force_vector_connection = "tail"

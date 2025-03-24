@@ -4,8 +4,8 @@ theme:
     language: en
     direction: ltr
     palette:
-        primary: dark-blue
-        accent: orange
+        primary: deep-purple
+        accent: green
     features:
       - content.code.copy
 nav:

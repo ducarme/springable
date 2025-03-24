@@ -5,9 +5,9 @@
 [![Research Group](https://img.shields.io/badge/Research%20group-Soft%20robotic%20matter%20%40%20AMOLF-67CD00)](https://overvelde.com/)
 [![Made with love in Amsterdam (NL)](https://img.shields.io/badge/Made%20with%20%E2%9D%A4%EF%B8%8F%20in-Amsterdam%20(NL)-ece4fc)](https://amolf.nl/)
 
-<p align="center"><img src="https://github.com/user-attachments/assets/4a461ee1-597d-4742-a8ca-34f5576ae166" height="85px"/></p>
+<p align="center"><img src="https://github.com/user-attachments/assets/7576441a-3fdd-4aa8-a49f-2f438f76c348" height="135px"/></p>
 <p align="center">Library for nonlinear spring simulations</p>
-<p align="center"><img src="https://github.com/user-attachments/assets/5b58be17-5fcb-47a2-9554-6ba53ea0c5bf" height="350px"/></p>
+<p align="center"><img src="https://github.com/user-attachments/assets/d60c9fbe-fe85-4e66-8fb4-e1ed34220eae" height="350px"/></p>
 
 
 **Springable** is a library for **mechanical simulations of nonlinear springs**. It allows you to simulate how structures made out of (non)linear springs deform when subject to forces.
