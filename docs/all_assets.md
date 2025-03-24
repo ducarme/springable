@@ -1,13 +1,27 @@
+
+
 ### logo
+![logo_svg](https://github.com/user-attachments/assets/7576441a-3fdd-4aa8-a49f-2f438f76c348)
 ![logo_springable_small_light](https://github.com/user-attachments/assets/4a461ee1-597d-4742-a8ca-34f5576ae166)
+
+![logo_small_web](https://github.com/user-attachments/assets/28ab9c0e-fdd3-41bc-9e5c-4d9fbf59da24)
+
+![logo_png](https://github.com/user-attachments/assets/b781f0e5-2584-48ac-9f4d-0bd896d60ac7)
+
 
 
 ### home page video
 mp4
 <video width="630" height="300" autoplay loop muted src="https://github.com/user-attachments/assets/016852f5-3dd7-49ba-badb-249ba38569c6"></video>
+<video width="630" height="300" autoplay loop muted src="https://github.com/user-attachments/assets/2d5840ef-d182-48ef-9dfb-d0af7aaad448"></video>
+
+https://github.com/user-attachments/assets/2d5840ef-d182-48ef-9dfb-d0af7aaad448
+
+
 
 gif
 ![animation](https://github.com/user-attachments/assets/5b58be17-5fcb-47a2-9554-6ba53ea0c5bf)
+![animation](https://github.com/user-attachments/assets/d60c9fbe-fe85-4e66-8fb4-e1ed34220eae)
 
 
 ### getting started example
