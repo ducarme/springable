@@ -31,7 +31,7 @@ def save_results(result: static_solver.Result, save_dir):
 
 
 def simulate_model(model_path, save_dir=None, solver_settings_path: str = None, graphics_settings_path: str = None,
-                   print_model_file=False, postprocessing=None):
+                   print_model_file=False, postprocessing=None) -> str:
     # CREATE MAIN DIRECTORY WHERE RESULT WILL BE SAVED + COPY INPUT FILES
     if save_dir is None:
         save_dir = io.mkdir(os.path.splitext(os.path.basename(model_path))[0])
@@ -82,9 +82,9 @@ def simulate_model(model_path, save_dir=None, solver_settings_path: str = None, 
     return save_dir
 
 
-def scan_parameter_space(model_path, save_dir=None, scan_parameters_one_by_one=True,
+def scan_parameter_space(model_path, save_dir=None, scanning_mode='separate',  # 'separate', 'together'
                          solver_settings_path=None, graphics_settings_path=None, print_model_file=False,
-                         postprocessing=None):
+                         postprocessing=None) -> str:
     if solver_settings_path is not None:
         solver_settings = io.read_solver_settings_file(solver_settings_path)
     else:
@@ -126,6 +126,9 @@ def scan_parameter_space(model_path, save_dir=None, scan_parameters_one_by_one=T
 
     default_parameters, design_parameter_data = io.read_parameters_from_model_file(model_path)
     design_parameter_names = list(design_parameter_data.keys())
+    if not design_parameter_names:
+        print('Cannot find parameters to scan in the model file.')
+        return save_dir
     design_parameter_vectors = []
     for design_parameter_name in design_parameter_names:
         if design_parameter_data[design_parameter_name]['is range parameter']:
@@ -138,7 +141,7 @@ def scan_parameter_space(model_path, save_dir=None, scan_parameters_one_by_one=T
 
     all_sim_names = []
     par_name_to_sim_names = {}
-    if scan_parameters_one_by_one:
+    if scanning_mode == 'separate':
         cnt = 0
         nb_simulations = sum([design_parameter_data[par_name]['nb samples'] for par_name in design_parameter_names])
         par_name_to_sim_names = {design_parameter_name: [] for design_parameter_name in design_parameter_names}
@@ -171,7 +174,7 @@ def scan_parameter_space(model_path, save_dir=None, scan_parameters_one_by_one=T
                 par_name_to_sim_names[design_parameter_name].append(sim_name)
                 all_sim_names.append(sim_name)
                 cnt += 1
-    else:
+    elif scanning_mode == 'combine':
         design_parameter_combinations = np.stack(np.meshgrid(*design_parameter_vectors), -1).reshape(-1,
                                                                                                      len(design_parameter_names))
         nb_combinations = design_parameter_combinations.shape[0]
@@ -201,19 +204,55 @@ def scan_parameter_space(model_path, save_dir=None, scan_parameters_one_by_one=T
 
             # mapping design parameters to where results are saved
             all_sim_names.append(sim_name)
+    elif scanning_mode == 'together':
+        nb_sims = design_parameter_vectors[0].shape[0]
+        for design_parameter_vector in design_parameter_vectors:
+            if design_parameter_vector.shape[0] != nb_sims:
+                raise ValueError("When scanning parameter in 'together' mode, "
+                                 "each array of design parameter values must have the same size")
+        parameters = default_parameters.copy()
+        for i in range(nb_sims):
+            print(f'Simulation {i + 1}/{nb_sims}')
 
+            # preparing for saving
+            sim_name = f"sim{i}"
+            subsave_dir = io.mkdir(os.path.join(save_dir, sim_name))
+
+
+            # running simulation with updated parameters
+            design_parameters = {name: values[i] for name, values in zip(design_parameter_names,
+                                                                         design_parameter_vectors)}
+            parameters.update(design_parameters)
+            mdl = io.read_model(model_path, parameters)
+
+            if general_options.generate_all_model_drawings:
+                animation.draw_model(mdl, model_drawings_dir, save_name=sim_name,
+                                     show=general_options.show_all_model_drawings, **custom_assembly_appearance)
+
+            # run simulation
+            res = solve_model(mdl, solver_settings)
+
+            # saving
+            save_results(res, subsave_dir)
+            io.write_design_parameters(design_parameters, subsave_dir)
+
+            # mapping design parameters to where results are saved
+            all_sim_names.append(sim_name)
+    else:
+        raise ValueError(f"Unknown scanning mode '{scanning_mode}'. Must be 'separate', 'combine', or 'together'.")
     general_info = {
         'MODEL_FILENAME': os.path.basename(model_path),
         'ALL_SIM_NAMES': all_sim_names,
-        'PARAMETERS_SCANNED_ONE_BY_ONE': 'yes' if scan_parameters_one_by_one else 'no',
+        'SCANNING_MODE': scanning_mode,
         'PARAMETER_NAME_TO_SIM_NAMES_MAPPING': par_name_to_sim_names
     }
     io.write_scanning_general_info(general_info, save_dir)
 
     # make graphics
-    custom_general_options['general_all_model_drawings'] = False
+    custom_general_options['generate_all_model_drawings'] = False
     visualization.visualize_scan_results(save_dir, save_dir, [custom_general_options,
                                                               custom_plot_options,
                                                               custom_animation_options,
                                                               custom_assembly_appearance],
                                          postprocessing)
+    return save_dir

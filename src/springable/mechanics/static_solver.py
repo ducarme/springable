@@ -265,7 +265,7 @@ class StaticSolver:
                               blocked_nodes_direction_step_list,
                               show_warnings, detect_critical_points, bifurcate_at_simple_bifurcations, critical_point_epsilon,
                               reference_load_parameter, radius, i_max, j_max, convergence_value, verbose,
-                              detail_verbose,
+                              critical_point_detection_verbose,
                               alpha, psi_p, psi_c, detect_mechanism):
         """
             Find equilibrium path using the arc-length method
@@ -302,6 +302,7 @@ class StaticSolver:
         linear_system_solving_counter = 0
         total_nb_increment_retries = 0
         total_nb_singular_matrices_avoided = 0
+        nb_critical_points_detected = 0 if detect_critical_points else '?'
         nb_limit_points_detected = 0 if detect_critical_points else '?'
         nb_bifurcation_points_detected = 0 if detect_critical_points else '?'
         initial_radius_p = radius
@@ -311,8 +312,12 @@ class StaticSolver:
         u = np.zeros(self._nb_dofs)
         force_progress = 0.0
         current_step = None
-        has_previously_bifurcated = False
-        has_bifurcated = False
+
+        # only used if detect_critical_point is True
+        searching_for_existing_critical_point = False
+        multiplicity = None
+        existing_critical_point_found = None
+        is_critical = [False]
 
         i = 0
         try:
@@ -331,6 +336,8 @@ class StaticSolver:
                 previous_delta_lambda_inc = None
                 increment_retries = 0
                 force_progress = 0.0
+                bifurcation_perturbation = None
+                bifurcation_should_be_induced = False
 
                 if step > 0:
                     equilibrium_displacements.append(equilibrium_displacements[-1])
@@ -389,6 +396,9 @@ class StaticSolver:
                                             or np.inner(delta_u_hat, previous_delta_u_inc)
                                             + (psi_p ** 2 * previous_delta_lambda_inc) >= 0)
                     root_sign = +1 if root_choice_criteria else -1
+                    if previous_delta_u_inc is None and equilibrium_eigval_stats[0][0] < 0.0:
+                        root_sign *= -1
+
                     delta_lambda_ite *= root_sign
 
                     # Updating loads, displacements and structure + computation of the unbalanced forces
@@ -487,121 +497,72 @@ class StaticSolver:
                         _, _, previous_fd_negative_eigval_count, _ = equilibrium_eigval_stats[-1]
 
                         if detect_critical_points:
-                            if previous_fd_negative_eigval_count < fd_negative_eigval_count:
+                            if (previous_fd_negative_eigval_count < fd_negative_eigval_count
+                                and not is_critical[-1]):
+                                # The # of unstable modes increased, so we went pass a critical point. Let's reset to
+                                # the previous equilibrium point and divide radius by two.
+                                # Mark that we are searching for a critical point of a certain multiplicity
+                                # (this was already maybe the case)
+                                searching_for_existing_critical_point = True
                                 multiplicity = fd_negative_eigval_count - previous_fd_negative_eigval_count
-                                if detail_verbose:
-                                    print(f'change in negative eigval'
-                                          f'(from {previous_fd_negative_eigval_count} to {fd_negative_eigval_count})')
-                                singular_eigvals, singular_modes = self._compute_singular_eigenmodes(ks, multiplicity)
-                                if np.max(np.abs(singular_eigvals)) / initial_eigval_magnitude < critical_point_epsilon:
-                                    # CRITICAL POINT REACHED
-                                    if multiplicity == 1:
-                                        singular_eigval = singular_eigvals[0]
-                                        singular_mode = singular_modes[0]
-                                    else:
-                                        singular_eigval = min(singular_eigvals)
-                                        ortho_load = _compute_vector_perpendicular_to(g / norm_g)
-                                        singular_mode = np.zeros(self._nb_free_dofs)
-                                        for sm in singular_modes:
-                                            singular_mode += np.inner(ortho_load, sm) * sm
-                                        singular_mode /= np.linalg.norm(singular_mode)
-
-                                    if np.abs(np.inner(singular_mode, g / norm_g)) < 1e-3:
-                                        if has_previously_bifurcated:
-                                            if detail_verbose:
-                                                print(f'looks like bifurcation point,'
-                                                      f'but has recently bifurcated, so no.')
-                                        else:
-                                            # critical point is a bifurcation point
-                                            nb_bifurcation_points_detected += 1
-                                            if detail_verbose:
-                                                print(f'bifurcation point')
-                                                print(f'eigval: {singular_eigval}')
-                                                print(f'v x f = {np.abs(np.inner(singular_mode, g / norm_g))}')
-
-                                            if multiplicity == 1 and bifurcate_at_simple_bifurcations and nb_bifurcation_points_detected == 2:
-                                                # one bifurcates to the "buckled" branch
-                                                self._assembly.set_coordinates(
-                                                    initial_coordinates + equilibrium_displacements[-1])
-                                                f_ext = equilibrium_forces[-1].copy()
-
-                                                perturbation_magnitude = np.linalg.norm(
-                                                    equilibrium_displacements[-1]) / 100
-                                                null_vector = self._get_structural_displacements(singular_mode)
-                                                bifurcation_perturbation = perturbation_magnitude * null_vector
-
-                                                self._assembly.increment_coordinates(bifurcation_perturbation)
-                                                ks = self._assembly.compute_structural_stiffness_matrix()
-                                                k = self._get_reduced_stiffness_matrix(ks)
-                                                self._assembly.increment_coordinates(-bifurcation_perturbation)
-                                                has_bifurcated = True
-                                    else:
-                                        # critical point is a limit point
-                                        nb_limit_points_detected += 1
-                                        if detail_verbose:
-                                            print(f'limit point')
-                                            print(f'eigval: {singular_eigval}')
-                                            print(singular_mode)
-                                            print(f'v x f = {np.abs(np.inner(singular_mode, g / norm_g))}')
-                                    if has_bifurcated:
-                                        has_bifurcated = False
-                                        has_previously_bifurcated = True
-                                        continue  # go to next increment
-                                    else:
-                                        # because limit point, or bifurcation point at which we do not want to bifurcate
-                                        has_bifurcated = False
-                                        has_previously_bifurcated = False
-                                        # the equilibrium point does not need any special treatment,
-                                        # the equilibrium will be saved
-                                else:
-                                    # the critical point was overshot, restart at previously converged increment
-                                    # with smaller radius
-                                    if radius_p < 1e-14:
-                                        raise ConvergenceError
-                                    if detail_verbose:
-                                        print(f'eigval too large to be considered a singularity.'
-                                              f' Restart increment {i} with smaller radius: {radius_p / 2}')
-                                    self._assembly.set_coordinates(initial_coordinates + equilibrium_displacements[-1])
-                                    f_ext = equilibrium_forces[-1].copy()
-                                    ks = self._assembly.compute_structural_stiffness_matrix()
-                                    k = self._get_reduced_stiffness_matrix(ks)
-                                    radius_p /= 2.0
-                                    has_bifurcated = False
-                                    has_previously_bifurcated = False
-                                    continue
-
-                            elif fd_negative_eigval_count < previous_fd_negative_eigval_count:
-                                singular_eigvals, _ = self._compute_singular_eigenmodes(ks, 1)
-                                if np.max(np.abs(singular_eigvals)) / initial_eigval_magnitude < critical_point_epsilon:
-                                    nb_limit_points_detected += 1
-                                    if detail_verbose:
-                                        print(f'limit point')
-                                        print(f'eigval: {singular_eigval}')
-                                        print(singular_mode)
-                                        print(f'v x f = {np.abs(np.inner(singular_mode, g / norm_g))}')
-                                else:
-                                    # the critical point was overshot, restart at previously converged increment
-                                    # with smaller radius
-                                    if radius_p < 1e-14:
-                                        raise ConvergenceError
-                                    if detail_verbose:
-                                        print(f'eigval too large to be considered a singularity.'
-                                              f' Restart increment {i} with smaller radius: {radius_p / 2}')
-                                    self._assembly.set_coordinates(initial_coordinates + equilibrium_displacements[-1])
-                                    f_ext = equilibrium_forces[-1].copy()
-                                    ks = self._assembly.compute_structural_stiffness_matrix()
-                                    k = self._get_reduced_stiffness_matrix(ks)
-                                    radius_p /= 2.0
-                                    has_bifurcated = False
-                                    has_previously_bifurcated = False
-                                    continue
-
-
-
+                                if radius_p < 1e-14:
+                                    raise ConvergenceError
+                                if critical_point_detection_verbose:
+                                    print(f'\nCritical point was passed. To search where it is, '
+                                          f'increment {i} is restarted with smaller radius: {radius_p / 2:.3E}.')
+                                self._assembly.set_coordinates(initial_coordinates + equilibrium_displacements[-1])
+                                f_ext = equilibrium_forces[-1].copy()
+                                ks = self._assembly.compute_structural_stiffness_matrix()
+                                k = self._get_reduced_stiffness_matrix(ks)
+                                radius_p /= 2.0
+                                continue
                             else:
-                                # no increase in nb of negative eigvals --> no sign of critical points
-                                has_bifurcated = False
-                                has_previously_bifurcated = False
+                                # no increase in # of unstable modes (or previous case was critical),
+                                # we have two cases
+                                if not searching_for_existing_critical_point:
+                                    pass  # nothing special to do
+                                else:
+                                    # We are looking for a critical point, then let's check if we are close enough.
+                                    # This point will be saved as valid eq point
+                                    singular_eigvals, singular_modes = self._compute_singular_eigenmodes(ks, multiplicity)
+                                    if not np.max(np.abs(singular_eigvals)) / initial_eigval_magnitude < critical_point_epsilon:
+                                        # too far to be considered critical, nothing special to do
+                                        pass
+                                    else:
+                                        # Close enough to the critical point, the current state lies just before the
+                                        # increase in # of eigenvalues.
+                                        nb_critical_points_detected += 1
+                                        existing_critical_point_found = True
+                                        if critical_point_detection_verbose:
+                                            print(f'Critical point with multiplicity {multiplicity:.0f} reached '
+                                                  f'(max |eigenvalues| = {np.max(np.abs(singular_eigvals)):.3E})')
+                                        if multiplicity == 1:  # this is a simple critical point
+                                            singular_mode = singular_modes[0]
+
+                                            if np.abs(np.inner(singular_mode, g / norm_g)) < 1e-3:
+                                                # This is a simple bifurcation point
+                                                nb_bifurcation_points_detected += 1
+                                                if critical_point_detection_verbose:
+                                                    print(f'Simple bifurcation point')
+                                                    print(f'Buckling mode = '
+                                                          f'{self._get_structural_displacements(singular_mode)}')
+                                                    print(f'v x f = {np.abs(np.inner(singular_mode, g / norm_g)): .3E}')
+
+                                                if bifurcate_at_simple_bifurcations:
+                                                    # mark that the stiffness matrix should be perturbed
+                                                    # to induce bifurcation on the next increment,
+                                                    # and prevent from continuing on the unstable branch
+                                                    bifurcation_should_be_induced = True
+                                                    perturbation_magnitude = np.linalg.norm(equilibrium_displacements[-1]) / 100
+                                                    null_vector = self._get_structural_displacements(singular_mode)
+                                                    bifurcation_perturbation = perturbation_magnitude * null_vector
+
+
+                                            else:  # This is a simple limit point
+                                                nb_limit_points_detected += 1
+                                                if critical_point_detection_verbose:
+                                                    print(f'Simple limit point')
+                                                    print(f'v x f = {np.abs(np.inner(singular_mode, g / norm_g)):.3E}')
 
                         # VALID EQUILIBRIUM POINT
                         i += 1
@@ -619,12 +580,34 @@ class StaticSolver:
                                                          ud_lowest_eigval,
                                                          fd_negative_eigval_count,
                                                          ud_negative_eigval_count])
-                    else:
+                        if detect_critical_points:
+                            if searching_for_existing_critical_point and existing_critical_point_found:
+                                searching_for_existing_critical_point = False
+                                multiplicity = None
+                                existing_critical_point_found = None
+                                is_critical.append(True)
+                            else:
+                                is_critical.append(False)
+
+                            if bifurcate_at_simple_bifurcations:
+                                if bifurcation_should_be_induced:
+                                    self._assembly.increment_coordinates(bifurcation_perturbation)
+                                    ks = self._assembly.compute_structural_stiffness_matrix()
+                                    k = self._get_reduced_stiffness_matrix(ks)
+
+                                    # make sure assembly if not impacted (only stiffness matrix for next increment is perturbed)
+                                    # and that bifurcation perturbation and flag are reset
+                                    self._assembly.increment_coordinates(-bifurcation_perturbation)
+                                    bifurcation_perturbation = None
+                                    bifurcation_should_be_induced = False
+
+
+                    else:   # if not converged
                         increment_retries += 1
                         if increment_retries <= 5 and radius_p > 1e-14:
                             if show_warnings:
                                 print(f"\nCorrection iterations did not converge for the increment {i + 1}"
-                                      f"\t-> retry increment with smaller radius ({radius_p / 2.0:.3})"
+                                      f"\t-> retry increment with smaller radius ({radius_p / 2.0:.3E})"
                                       f"\t-> attempt {increment_retries}/{5}")
                             # Resetting structure to its previous incremental state with a smaller radius
                             total_nb_increment_retries += 1
@@ -703,7 +686,7 @@ class StaticSolver:
                                                         nb_limit_points_detected, nb_bifurcation_points_detected)
         except ConvergenceError:
             if verbose:
-                reason = '--> aborted (could not converge)\r\n'
+                reason = f'--> aborted (increment {i} could not converge)\r\n'
                 update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max, reason,
                                 stability=equilibrium_stability[-1])
                 _print_message_with_final_solving_stats('Full equilibrium path was not retrieved',

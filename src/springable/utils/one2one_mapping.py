@@ -14,7 +14,7 @@ class ReadOnlyDict:
         return self._dict.items()
 
 
-class KeywordMapping:
+class One2OneMapping:
     def __init__(self, _dict: dict):
         self._dict = ReadOnlyDict(_dict)
         inverted_dict = {}

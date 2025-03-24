@@ -1,3 +1,5 @@
+from matplotlib.pyplot import spring
+
 from ..mechanics.element import *
 from ..mechanics.mechanical_behavior import *
 from ..mechanics.shape import *
@@ -79,7 +81,7 @@ def text_to_node(text, evaluator: se.SimpleEval = None) -> Node:
 def behavior_to_text(_behavior: MechanicalBehavior, fmt='',
                      full_name=False, specify_natural_measure=True) -> str:
     if isinstance(_behavior, LinearBehavior) and not full_name:
-        text = str(_behavior.get_spring_constant())
+        text = f'k={_behavior.get_spring_constant():{fmt}}'
     else:
         text = usable_behaviors.type_to_name[type(_behavior)]
         text += '('
@@ -142,8 +144,13 @@ def text_to_behavior(behavior_text: str, evaluator: se.SimpleEval = None,
                 parameters[par_name] = par_val
             return behavior_type(natural_measure, **parameters)
     else:  # the behavior does not match any name --> linear behavior
-        spring_constant = evaluator.eval(core_behavior_txt)
-        return LinearBehavior(natural_measure, spring_constant)
+        if '=' in core_behavior_txt:
+            par_name, par_val_text = core_behavior_txt.split('=')
+        else:
+            par_name = 'k'
+            par_val_text = core_behavior_txt
+        par_val = evaluator.eval(par_val_text)
+        return LinearBehavior(natural_measure, **{par_name: par_val})
 
 
 def _determine_usable_shape_type_name(_shape):
@@ -190,6 +197,18 @@ def text_to_shape(shape_text: tuple[str, str], nodes: set[Node]) -> Shape:
             core_areas = [text_to_shape(('AREA', core_area_description), nodes)
                           for core_area_description in core_area_descriptions]
             return HoleyArea(*core_areas)
+    if shape_type_name == 'X':
+        if shape_description.startswith('('):
+            core_x_descriptions, _ = parse_simple_arithmetic(shape_description, operators='-')
+            pos_x: X = text_to_shape(('X', core_x_descriptions[0]), nodes)
+            neg_x: X = text_to_shape(('X', core_x_descriptions[1]), nodes)
+            return XDiff(pos_x, neg_x)
+    if shape_type_name == 'Y':
+        if shape_description.startswith('('):
+            core_y_descriptions, _ = parse_simple_arithmetic(shape_description, operators='-')
+            pos_y: Y = text_to_shape(('Y', core_y_descriptions[0]), nodes)
+            neg_y: Y = text_to_shape(('Y', core_y_descriptions[1]), nodes)
+            return YDiff(pos_y, neg_y)
     try:
         shape_type = usable_shapes.name_to_type[shape_type_name]
     except KeyError:

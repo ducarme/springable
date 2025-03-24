@@ -18,7 +18,8 @@ def draw_model(mdl: model.Model, save_dir=None, save_name='model', show=True, **
     aa.update(**assembly_appearance)
 
     with plt.style.context(aa.stylesheet):
-        fig, ax = plt.subplots()
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
         ax.set_aspect('equal')
         xmin, ymin, xmax, ymax = mdl.get_assembly().get_dimensional_bounds()
         assembly_span = max(xmax - xmin, ymax - ymin)
@@ -26,9 +27,10 @@ def draw_model(mdl: model.Model, save_dir=None, save_name='model', show=True, **
         midx, midy = (xmin + xmax) / 2, (ymin + ymax) / 2
 
         ModelDrawing(ax, mdl, aa, assembly_span=assembly_span)
-
         ax.set_xlim(midx - canvas_span / 2, midx + canvas_span / 2)
         ax.set_ylim(midy - canvas_span / 2, midy + canvas_span / 2)
+        ff.adjust_spines([ax], 0, ['bottom', 'top', 'left', 'right'] if aa.show_axes else [])
+        ff.adjust_figure_layout(fig, aa.drawing_fig_width, aa.drawing_fig_height, pad=0.1)
         if save_dir is not None:
             ff.save_fig(fig, save_dir, save_name, ['png', 'pdf'], transparent=aa.transparent)
         if show:

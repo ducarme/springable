@@ -20,7 +20,7 @@ class Updatable:
             else:
                 trials = difflib.get_close_matches(key, self.__dataclass_fields__, n=2)
                 trials_str = ' or '.join([f'"{t}"' for t in trials])
-                trials_str = f'Did you mean {trials_str}' if trials_str else ''
+                trials_str = f'Did you mean {trials_str}?' if trials_str else ''
 
                 print(f'Unknown {_camel_to_text(type(self).__name__).rstrip("s")} "{key}". '
                       f'Check spelling. {trials_str}')

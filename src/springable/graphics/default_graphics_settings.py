@@ -94,6 +94,9 @@ class AnimationOptions(Updatable):
 
 @dataclass
 class AssemblyAppearanceOptions(Updatable):
+    drawing_fig_width: float = 3
+    drawing_fig_height: float = 3
+    show_axes: bool = False
     stylesheet: str = 'default'
     transparent: bool = False
     coloring_mode: str = 'generalized_force'
@@ -107,7 +110,6 @@ class AssemblyAppearanceOptions(Updatable):
     show_forces: bool = True
     hide_low_preloading_forces: bool = False
     low_preloading_force_threshold: float = 0.0
-    force_vector_scaling: float = 1.0
     spring_style: str = 'simple'
     spring_nb_coils: int = 6
     spring_aspect: float = 0.4
@@ -128,6 +130,7 @@ class AssemblyAppearanceOptions(Updatable):
     line_spring_linewidth: float = 2.
     line_spring_default_opacity: float = 1.0
     line_spring_default_color: str = '#CECECE'
+    line_spring_dot_color: str = "#ffffff"
     distance_spring_line_linewidth: float = 1.0
     distance_spring_line_default_color: str = '#CECECE'
     distance_spring_line_default_opacity: float = 0.7
@@ -138,8 +141,12 @@ class AssemblyAppearanceOptions(Updatable):
     node_edgewidth: float = 1.0
     show_node_numbers: bool = False
     node_nb_color: str = '#CECECE'
+    node_nb_shift_x: float = 5
+    node_nb_shift_y: float = 5
+    node_nb_fontsize: float = 10
+    force_vector_style: str ='basic'
     preload_force_opacity: float = 0.65
     preload_force_default_color: str = '#cecece'
     force_default_color: str = '#cecece'
-    force_vector_length_scaling: float = 1.0
+    force_vector_scaling: float = 1.0
     force_vector_connection: str = 'tail'

@@ -36,8 +36,8 @@ def _load_graphics_settings(graphics_settings: str | tuple | list):
                     valid = False
                     break
         if not valid:
-            raise ValueError("Incorrect graphics settings specification. If specified, the last argument must"
-                             "be the path to the graphic-settings file, or an already loaded graphic-settings"
+            raise ValueError("Incorrect graphics settings specification. If specified, the last argument must "
+                             "be the path to the graphic-settings file, or an already loaded graphic-settings "
                              "variable, that is a list or tuple of 4 dictionaries")
     else:
         graphics_settings = {}, {}, {}, {}
@@ -63,10 +63,10 @@ def visualize_scan_results(scan_results_dir: str, save_dir: str = '',
     general_info = io.read_scanning_general_info(scan_results_dir)
     model_path = os.path.join(scan_results_dir, general_info['MODEL_FILENAME'])
     all_sim_names = general_info['ALL_SIM_NAMES']
-    scan_parameters_one_by_one = general_info['PARAMETERS_SCANNED_ONE_BY_ONE'] == 'yes'
+    scanning_mode = general_info['SCANNING_MODE']
 
     # MAKE GRAPHICS
-    if scan_parameters_one_by_one:
+    if scanning_mode == 'separate':
         par_name_to_sim_names = general_info['PARAMETER_NAME_TO_SIM_NAMES_MAPPING']
         if go.generate_parametric_fd_plots or postprocessing is not None:
             _, par_name_to_par_data = io.read_parameters_from_model_file(model_path)
@@ -88,6 +88,27 @@ def visualize_scan_results(scan_results_dir: str, save_dir: str = '',
                                               xlabel=pp['xlabel'], ylabel=pp['ylabel'],
                                               show=go.show_parametric_custom_plots, **plot_options
                                               )
+    if scanning_mode == 'together':
+        if go.generate_parametric_fd_plots or postprocessing is not None:
+            subsave_dirs = [os.path.join(scan_results_dir, sim_name) for sim_name in all_sim_names]
+            dummy_parameter_data = {'default value': 0,
+                                    'lower bound': 0,
+                                    'upper bound': len(all_sim_names)-1,
+                                    'nb samples': len(all_sim_names),
+                                    'is numeric parameter': True,
+                                    'is range parameter': True}
+            plot.parametric_force_displacement_curve(_results(subsave_dirs), 'sim #',
+                                                     dummy_parameter_data, np.arange(0, len(all_sim_names)).tolist(),
+                                                     save_dir, save_name=f'parametric_fd_curve',
+                                                     show=go.show_parametric_fd_plots, **plot_options)
+            if postprocessing is not None:
+                for pp in postprocessing:
+                    plot.parametric_curve(pp['postprocessing_fun'], _results(subsave_dirs), 'sim #',
+                                          dummy_parameter_data, np.arange(0, len(all_sim_names)).tolist(),
+                                          save_dir, save_name=f'{pp["save_name"]}',
+                                          xlabel=pp['xlabel'], ylabel=pp['ylabel'],
+                                          show=go.show_parametric_custom_plots, **plot_options
+                                          )
 
     # first scanning of result folders to obtain axes limits for force-displacement plots
     min_u, max_u, min_f, max_f = [None] * 4
@@ -191,12 +212,13 @@ def make_force_displacement_plot(result, save_dir, show=True, graphics_settings=
     plot.force_displacement_curve(result, save_dir, show=show, **p_options)
 
 
-def make_drawing(mdl, save_dir, show=True, graphics_settings=None, **assembly_appearance):
+def make_drawing(mdl: str | model.Model, save_dir,
+                 save_name='model', show=True, graphics_settings=None, **assembly_appearance):
     if isinstance(mdl, str):
         mdl = io.read_model(mdl)
     if not isinstance(mdl, model.Model):
-        raise ValueError("Incorrect result specification. The first argument should be the model file path,"
+        raise ValueError("Incorrect result specification. The first argument should be the model file path, "
                          "or an already loaded Model object")
     _, _, _, a_appearance = _load_graphics_settings(graphics_settings)
     a_appearance.update(assembly_appearance)
-    animation.draw_model(mdl, save_dir, show=show, **a_appearance)
+    animation.draw_model(mdl, save_dir, save_name, show=show, **a_appearance)

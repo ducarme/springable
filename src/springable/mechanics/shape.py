@@ -40,6 +40,40 @@ class Shape:
     def __sub__(self, other):
         return self + (-other)
 
+class X(Shape):
+
+    def compute(self, output_mode):
+        n = len(self._nodes)
+        x = np.mean([nd.get_x() for nd in self._nodes])
+        if output_mode == Shape.MEASURE:
+            return x
+        j = np.zeros(2*n)
+        j[::2] = np.ones(n) / n
+        if output_mode == Shape.MEASURE_AND_JACOBIAN:
+            return x, j
+        h = np.zeros(shape=(2*n, 2*n))
+        if output_mode == Shape.MEASURE_JACOBIAN_AND_HESSIAN:
+            return x, j, h
+        raise ValueError('Unknown output mode')
+
+
+class Y(Shape):
+
+    def compute(self, output_mode):
+        n = len(self._nodes)
+        x = np.mean([nd.get_y() for nd in self._nodes])
+        if output_mode == Shape.MEASURE:
+            return x
+        j = np.zeros(2 * n)
+        j[1::2] = np.ones(n) / n
+        if output_mode == Shape.MEASURE_AND_JACOBIAN:
+            return x, j
+        h = np.zeros(shape=(2 * n, 2 * n))
+        if output_mode == Shape.MEASURE_JACOBIAN_AND_HESSIAN:
+            return x, j, h
+        raise ValueError('Unknown output mode')
+
+
 
 class Segment(Shape):
     MIN_LENGTH_ALLOWED = 1e-6
@@ -361,7 +395,6 @@ class CompoundShape(Shape):
     def get_shapes(self):
         return self._shapes
 
-
 class DistancePointLine(CompoundShape):
 
     def __init__(self, node0: Node, node1: Node, node2: Node):
@@ -508,6 +541,14 @@ class Negative(CompoundShape):
         if output_mode == Shape.MEASURE_JACOBIAN_AND_HESSIAN:
             return -shape_metric[0], -shape_metric[1], -shape_metric[2]
 
+
+class XDiff(Sum):
+    def __init__(self, positive_x: X, negative_x: X):
+        super().__init__(positive_x, -negative_x)
+
+class YDiff(Sum):
+    def __init__(self, positive_y: Y, negative_y: Y):
+        super().__init__(positive_y, -negative_y)
 
 class Path(Sum):
 

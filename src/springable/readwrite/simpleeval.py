@@ -276,7 +276,8 @@ DEFAULT_FUNCTIONS = {
     "COS": math.cos,
     "SIN": math.sin,
     "TAN": math.tan,
-    "INF": math.inf}
+    "INF": math.inf,
+    "ROUND": round}
 
 DEFAULT_NAMES = {"True": True, "False": False, "None": None, "PI": math.pi}
 

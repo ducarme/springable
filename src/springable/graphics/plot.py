@@ -147,7 +147,7 @@ def curve_in_ax(processing_fun: callable, result: Result, ax: plt.Axes, plot_opt
                 if label is not None and i == 0:
                     lbl_i = label
                 else:
-                    lbl_i = '' if not po.show_stability_legend else stability_labels[i]
+                    lbl_i = ''
                 for j, branch in enumerate(branches[stability_state]):
                     ax.plot(x[branch], y[branch],
                             ls='' if po.plot_style == 'points' else stability_styles[i],

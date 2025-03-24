@@ -3,17 +3,19 @@ from ..mechanics.element import Element
 from ..mechanics.mechanical_behavior import BivariateBehavior
 from ..mechanics.assembly import Assembly
 from ..mechanics.model import Model
+from .custom_markers import HORIZONTAL_CART, VERTICAL_CART, ANCHOR, TAIL_ARROW, HEAD_ARROW
 from ..mechanics import shape
 from .default_graphics_settings import AssemblyAppearanceOptions
-from .custom_markers import HORIZONTAL_CART, VERTICAL_CART, ANCHOR
 from .visual_helpers import compute_zigzag_line, compute_arc_line, compute_pathpatch_vertices, compute_coil_line, \
     compute_coil_arc
 from scipy.interpolate import interp1d
-from matplotlib.colors import to_rgba
 import matplotlib.pyplot as plt
+from matplotlib.colors import to_rgba
 import matplotlib.path
 import matplotlib.patches
 import numpy as np
+from matplotlib.transforms import offset_copy, Affine2D
+from matplotlib.markers import MarkerStyle
 
 
 class Drawing:
@@ -23,71 +25,6 @@ class Drawing:
 
     def update(self, *args):
         raise NotImplementedError
-
-
-class NodeDrawing(Drawing):
-
-    def __init__(self, ax: plt.Axes, _node: Node, assembly_appearance: AssemblyAppearanceOptions):
-        super().__init__(ax, assembly_appearance)
-        self._node = _node
-
-        if self._aa.node_style == 'elegant':
-            marker = 'o'
-            if self._node.is_fixed_horizontally() and self._node.is_fixed_vertically():
-                triangle_marker = ANCHOR
-            elif self._node.is_fixed_horizontally():
-                triangle_marker = VERTICAL_CART
-            elif self._node.is_fixed_vertically():
-                triangle_marker = HORIZONTAL_CART
-            else:
-                triangle_marker = None
-
-        elif self._aa.node_style == 'minimalist':
-            marker = 'o'
-            triangle_marker = None
-
-        else:
-            triangle_marker = None
-            if self._node.is_fixed_horizontally() and self._node.is_fixed_vertically():
-                marker = 's'
-            elif self._node.is_fixed_horizontally():
-                marker = '<'
-            elif self._node.is_fixed_vertically():
-                marker = '^'
-            else:
-                marker = 'o'
-
-        self._text = None
-        if self._aa.show_node_numbers:
-            self._text = self._ax.text(self._node.get_x(), self._node.get_y(), f'{self._node.get_node_nb()}',
-                                       color=self._aa.node_nb_color, weight='bold', zorder=5.5)
-
-        self._triangle_graphic = None
-        if triangle_marker is not None:  # do not use node_style for this conditional
-            self._triangle_graphic = self._ax.plot([self._node.get_x()], [self._node.get_y()], zorder=4.0,
-                                                   marker=triangle_marker,
-                                                   markersize=6 * self._aa.node_size,
-                                                   markerfacecolor=self._aa.node_color,
-                                                   markeredgecolor=self._aa.node_edgecolor,
-                                                   markeredgewidth=self._aa.node_edgewidth*0.5)[0]
-
-        self._node_graphic = self._ax.plot([self._node.get_x()], [self._node.get_y()], zorder=5.0,
-                                           marker=marker,
-                                           markersize=self._aa.node_size,
-                                           markeredgecolor=self._aa.node_edgecolor,
-                                           markeredgewidth=self._aa.node_edgewidth,
-                                           color=self._aa.node_color)[0]
-
-    def update(self, *args):
-        self._node_graphic.set_xdata([self._node.get_x()])
-        self._node_graphic.set_ydata([self._node.get_y()])
-        if self._aa.show_node_numbers:
-            self._text.set_x(self._node.get_x())
-            self._text.set_y(self._node.get_y())
-        if self._triangle_graphic is not None:
-            self._triangle_graphic.set_xdata([self._node.get_x()])
-            self._triangle_graphic.set_ydata([self._node.get_y()])
-
 
 class ShapeDrawing(Drawing):
     def __init__(self, _shape: shape.Shape, size: float | None, is_hysteron,
@@ -111,8 +48,7 @@ class ShapeDrawing(Drawing):
         return self._hysteron_label_position
 
 
-# Here in below, core drawing classes for basic shapes
-
+# here in below, core drawing classes for basic shapes
 class SegmentDrawing(ShapeDrawing):
 
     def __init__(self, segment: shape.Segment, width: float, is_hysteron, ax: plt.Axes, color: str, opacity: float,
@@ -220,6 +156,11 @@ class AngleDrawing(ShapeDrawing):
             )
 
 
+class XDrawing(ShapeDrawing):
+    def __init__(self, x: shape.X, size, is_hysteron, ax:plt.Axes,
+                 color: str, opacity: float, aa: AssemblyAppearanceOptions):
+        super().__init__(x, size, is_hysteron, ax, color, opacity, aa)
+
 class AreaDrawing(ShapeDrawing):
     def __init__(self, area: shape.Area, is_hysteron, ax: plt.Axes,
                  color: str, opacity: float, aa: AssemblyAppearanceOptions):
@@ -227,7 +168,7 @@ class AreaDrawing(ShapeDrawing):
         coordinates = self._shape.get_nodal_coordinates()
         x, y = coordinates[::2], coordinates[1::2]
         zorder = np.min(x) / np.abs(np.max(x) - np.min(x))
-        self._graphics = self._ax.fill(x, y, color=self._color, alpha=self._opacity, zorder=zorder)[0]
+        self._graphics = self._ax.fill(x, y, color=self._color, alpha=self._opacity, zorder=zorder, edgecolor='none')[0]
         self._hysteron_label_position = (np.mean(x), np.mean(y)) if self._is_hysteron else None
 
     def update(self, color: str, opacity: float):
@@ -255,9 +196,9 @@ class PathDrawing(ShapeDrawing):
         xx = interp1d(lengths, x)(t[1:-1])
         yy = interp1d(lengths, y)(t[1:-1])
         graphic0 = self._ax.plot(x, y, lw=self._aa.line_spring_linewidth,
-                                 color=self._color, alpha=self._opacity, zorder=0)[0]
-        graphic1 = self._ax.plot(xx, yy, ls='', markersize=self._aa.line_spring_linewidth * 0.4,
-                                 marker='o', color='#CECECE', zorder=0.1)[0]
+                                 color=self._color, alpha=self._opacity, zorder=0.025)[0]
+        graphic1 = self._ax.plot(xx, yy, ls='', markersize=self._aa.line_spring_linewidth*.9,
+                                 marker='o', color=self._aa.line_spring_dot_color, zorder=0.05, markeredgewidth=0.01)[0]
         self._graphics = (graphic0, graphic1)
         self._hysteron_label_position = (np.mean(x), np.mean(y)) if self._is_hysteron else None
 
@@ -332,7 +273,7 @@ class HoleyAreaDrawing(ShapeDrawing):
         polys = [bulk_coords] + holes_coords
         vertices, codes = compute_pathpatch_vertices(polys)
         self._patch = matplotlib.patches.PathPatch(matplotlib.path.Path(vertices, codes),
-                                                   fill=True, color=color, alpha=opacity)
+                                                   fill=True, color=color, alpha=opacity, ec='none')
         self._ax.add_patch(self._patch)
         self._hysteron_label_position = ((np.mean(bulk_coords[0, :]), np.mean(bulk_coords[1, :]))
                                          if self._is_hysteron else None)
@@ -393,6 +334,83 @@ class CompoundDrawing(ShapeDrawing):
         if self._is_hysteron:
             coord = self._shape.get_nodal_coordinates()
             self._hysteron_label_position = np.mean(coord[::2]), np.mean(coord[1::2])
+
+
+
+# here in below other drawings
+class NodeDrawing(Drawing):
+
+    def __init__(self, ax: plt.Axes, _node: Node, assembly_appearance: AssemblyAppearanceOptions):
+        super().__init__(ax, assembly_appearance)
+        self._node = _node
+
+        if self._aa.node_style == 'elegant':
+            marker = 'o'
+            if self._node.is_fixed_horizontally() and self._node.is_fixed_vertically():
+                triangle_marker = ANCHOR
+            elif self._node.is_fixed_horizontally():
+                triangle_marker = VERTICAL_CART
+            elif self._node.is_fixed_vertically():
+                triangle_marker = HORIZONTAL_CART
+            else:
+                triangle_marker = None
+
+        elif self._aa.node_style == 'minimalist':
+            marker = 'o'
+            triangle_marker = None
+
+        else:
+            triangle_marker = None
+            if self._node.is_fixed_horizontally() and self._node.is_fixed_vertically():
+                marker = 's'
+            elif self._node.is_fixed_horizontally():
+                marker = '<'
+            elif self._node.is_fixed_vertically():
+                marker = '^'
+            else:
+                marker = 'o'
+
+        self._text = None
+        if self._aa.show_node_numbers:
+            offset = offset_copy(ax.transData,
+                                       fig=ax.get_figure(),
+                                       x=self._aa.node_nb_shift_x,
+                                       y=self._aa.node_nb_shift_y,
+                                       units='points')  # Offset in points
+            self._text = self._ax.text(self._node.get_x(),
+                                       self._node.get_y(),
+                                       f'{self._node.get_node_nb()}',
+                                       color=self._aa.node_nb_color, weight='bold', zorder=5.5,
+                                       fontsize=self._aa.node_nb_fontsize,
+                                       horizontalalignment='center',
+                                       verticalalignment='center',
+                                       transform=offset)
+
+        self._triangle_graphic = None
+        if triangle_marker is not None:  # do not use node_style for this conditional
+            self._triangle_graphic = self._ax.plot([self._node.get_x()], [self._node.get_y()], zorder=4.0,
+                                                   marker=triangle_marker,
+                                                   markersize=6 * self._aa.node_size,
+                                                   markerfacecolor=self._aa.node_color,
+                                                   markeredgecolor=self._aa.node_edgecolor,
+                                                   markeredgewidth=self._aa.node_edgewidth*0.5)[0]
+
+        self._node_graphic = self._ax.plot([self._node.get_x()], [self._node.get_y()], zorder=5.0,
+                                           marker=marker,
+                                           markersize=self._aa.node_size,
+                                           markeredgecolor=self._aa.node_edgecolor,
+                                           markeredgewidth=self._aa.node_edgewidth,
+                                           color=self._aa.node_color)[0]
+
+    def update(self, *args):
+        self._node_graphic.set_xdata([self._node.get_x()])
+        self._node_graphic.set_ydata([self._node.get_y()])
+        if self._aa.show_node_numbers:
+            self._text.set_x(self._node.get_x())
+            self._text.set_y(self._node.get_y())
+        if self._triangle_graphic is not None:
+            self._triangle_graphic.set_xdata([self._node.get_x()])
+            self._triangle_graphic.set_ydata([self._node.get_y()])
 
 
 class ElementDrawing(Drawing):
@@ -562,7 +580,7 @@ class AssemblyDrawing(Drawing):
 
 
 class ForceDrawing(Drawing):
-    def __init__(self, ax: plt.Axes, _node: Node, force_info: dict[str, float], vector_size, assembly_appearance,
+    def __init__(self, ax: plt.Axes, _node: Node, force_info: dict, vector_size, assembly_appearance,
                  color_handler=None, is_preload=False):
         super().__init__(ax, assembly_appearance)
         self._node = _node
@@ -575,42 +593,63 @@ class ForceDrawing(Drawing):
         # CREATE GRAPHICS FOR FORCE DRAWING
         self._force_graphic = self._make()
 
-    def _make(self) -> plt.Annotation:
+    def _make(self) -> plt.Annotation | plt.Line2D:
         if self._force_info is not None:
             direction = self._force_info['direction']
-            if self._aa.force_vector_connection == 'head':
-                destination = np.array((self._node.get_x(), self._node.get_y()))
-                origin = destination - self._vector_size * direction
-            else:
+            if self._aa.force_vector_style == 'elegant':
+                angle = np.arctan2(direction[1], direction[0])
                 origin = np.array((self._node.get_x(), self._node.get_y()))
-                destination = origin + self._vector_size * direction
-            color = (self._color_handler.determine_property_value(self._force_info['amount'])
-                     if self._color_handler is not None else self._aa.force_default_color)
-            force_graphic = self._ax.annotate('',
-                                              xytext=(origin[0], origin[1]),
-                                              xy=(destination[0], destination[1]),
-                                              verticalalignment="center",
-                                              arrowprops=dict(width=1.5, headwidth=6, headlength=7, shrink=0.15,
-                                                              color=to_rgba(color, alpha=self._alpha)),
-                                              zorder=6 if not self._is_preload else 5.9)
+                color = (self._color_handler.determine_property_value(self._force_info['amount'])
+                         if self._color_handler is not None else self._aa.force_default_color)
+                marker = HEAD_ARROW if self._aa.force_vector_connection == 'head' else TAIL_ARROW
+                force_graphic = self._ax.plot(*origin, marker=MarkerStyle(marker, 'full', Affine2D().rotate(angle)),
+                                              markeredgewidth=0.05,
+                                              markersize=6 * self._aa.node_size * self._aa.force_vector_scaling,
+                                              color=to_rgba(color, self._alpha), clip_on=False, markeredgecolor='none',
+                                              zorder=4.5 if not self._is_preload else 4.4)[0]
+            else:
+                if self._aa.force_vector_connection == 'head':
+                    destination = np.array((self._node.get_x(), self._node.get_y()))
+                    origin = destination - self._vector_size * direction
+                else:
+                    origin = np.array((self._node.get_x(), self._node.get_y()))
+                    destination = origin + self._vector_size * direction
+                color = (self._color_handler.determine_property_value(self._force_info['amount'])
+                         if self._color_handler is not None else self._aa.force_default_color)
+                force_graphic = self._ax.annotate('',
+                                                  xytext=(origin[0], origin[1]),
+                                                  xy=(destination[0], destination[1]),
+                                                  verticalalignment="center",
+                                                  arrowprops=dict(width=1.5, headwidth=6, headlength=7, shrink=0.15,
+                                                                  color=to_rgba(color, alpha=self._alpha), lw=0.00, ec='none'),
+                                                  annotation_clip=False,
+                                                  zorder=4.5 if not self._is_preload else 4.4)
         else:
             force_graphic = None
         return force_graphic
 
     def update(self, *args):
         if self._force_graphic is not None:
-            direction = self._force_info['direction']
-            if self._aa.force_vector_connection == 'head':
-                destination = np.array((self._node.get_x(), self._node.get_y()))
-                origin = destination - self._vector_size * direction
-            else:
+            if self._aa.force_vector_style == 'elegant':
                 origin = np.array((self._node.get_x(), self._node.get_y()))
-                destination = origin + self._vector_size * direction
-            self._force_graphic.set_position((origin[0], origin[1]))
-            self._force_graphic.xy = (destination[0], destination[1])
-            if self._color_handler is not None:
-                color = self._color_handler.determine_property_value(self._force_info['amount'])
-                self._force_graphic.arrow_patch.set_color(to_rgba(color, alpha=self._alpha))
+                self._force_graphic.set_xdata([origin[0]])
+                self._force_graphic.set_ydata([origin[1]])
+                if self._color_handler is not None:
+                    color = self._color_handler.determine_property_value(self._force_info['amount'])
+                    self._force_graphic.set_color(to_rgba(color, alpha=self._alpha))
+            else:
+                direction = self._force_info['direction']
+                if self._aa.force_vector_connection == 'head':
+                    destination = np.array((self._node.get_x(), self._node.get_y()))
+                    origin = destination - self._vector_size * direction
+                else:
+                    origin = np.array((self._node.get_x(), self._node.get_y()))
+                    destination = origin + self._vector_size * direction
+                self._force_graphic.set_position((origin[0], origin[1]))
+                self._force_graphic.xy = (destination[0], destination[1])
+                if self._color_handler is not None:
+                    color = self._color_handler.determine_property_value(self._force_info['amount'])
+                    self._force_graphic.arrow_patch.set_color(to_rgba(color, alpha=self._alpha))
         else:
             pass
 

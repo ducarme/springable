@@ -11,7 +11,7 @@ class SolverSettings(Updatable):
     bifurcate_at_simple_bifurcations: bool = False
     show_warnings: bool = False
     verbose: bool = True
-    detail_verbose: bool = False
+    critical_point_detection_verbose: bool = False
     i_max: float = 5e3
     j_max: float = 15
     convergence_value: float = 1e-6

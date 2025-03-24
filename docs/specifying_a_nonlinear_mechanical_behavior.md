@@ -356,7 +356,7 @@ relation of an [ideal gas](https://en.wikipedia.org/wiki/Ideal_gas_law) during a
 That relation can be expressed as follows,
 
 $$
-p - p_0 = nRT_0\left(1 - \frac{V}{V_0}\right) + \frac{nRT_0}{\gamma - 1} \left(1 - \left(\frac{V_0}{V}\right)^{\gamma - 1}\right),
+ p-p_0 = nRT_0\left(\dfrac1V\left(\dfrac{V_0}{V}\right)^{\gamma-1} - \dfrac1{V_0}\right),
 $$
 
 where $p_0$ is the ambient pressure, $V_0$ is the volume of the gas at ambient pressure,
@@ -369,7 +369,7 @@ while the generalized displacement plays the role of volume change, $U=V-V_0$. T
 natural measure $\alpha_0$ are mapped to $\alpha=V$ and $\alpha_0=V_0$, respectively. The $F-U$ curve is therefore given by
 
 $$
-F = nRT_0\left(\frac{U+\alpha_0}{\alpha_0} -1 \right) + \frac{nRT_0}{\gamma - 1} \left(\left(\frac{\alpha_0}{U+\alpha_0}\right)^{\gamma - 1} - 1 \right).
+F(U) = nRT_0\left(\dfrac1{\alpha_0} - \dfrac1{U+\alpha_0}\left(\dfrac{\alpha_0}{U+\alpha_0}\right)^{\gamma-1}\right).
 $$
 
 `ISENTROPIC_GAS(n=<n_value>; R=<R_value>; T0=<T0_value>; gamma=<gamma_value>)`

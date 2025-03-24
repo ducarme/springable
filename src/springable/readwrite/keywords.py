@@ -1,16 +1,18 @@
 from ..mechanics import shape
 from ..mechanics import mechanical_behavior
-from .keywordmapping import KeywordMapping
+from ..utils.one2one_mapping import One2OneMapping
 
-usable_shapes = KeywordMapping({shape.Segment: '',
+usable_shapes = One2OneMapping({shape.Segment: '',
                                 shape.Area: 'AREA',
                                 shape.Path: 'LINE',
                                 shape.Angle: 'ROTATION',
                                 shape.SignedDistancePointLine: 'DISTANCE',
                                 shape.SquaredDistancePointSegment: 'GAP',
+                                shape.X: 'X',
+                                shape.Y: 'Y'
                                 })
 
-usable_behaviors = KeywordMapping({mechanical_behavior.LinearBehavior: 'LINEAR',
+usable_behaviors = One2OneMapping({mechanical_behavior.LinearBehavior: 'LINEAR',
                                    mechanical_behavior.LogarithmBehavior: 'LOGARITHM',
                                    mechanical_behavior.BezierBehavior: 'BEZIER',
                                    mechanical_behavior.Bezier2Behavior: 'BEZIER2',
@@ -18,7 +20,7 @@ usable_behaviors = KeywordMapping({mechanical_behavior.LinearBehavior: 'LINEAR',
                                    mechanical_behavior.ZigzagBehavior: 'ZIGZAG',
                                    mechanical_behavior.Zigzag2Behavior: 'ZIGZAG2',
                                    mechanical_behavior.ContactBehavior: 'CONTACT',
-                                   mechanical_behavior.IsothermalGas: 'ISOTHERMAL_GAS',
-                                   mechanical_behavior.IsentropicGas: 'ISENTROPIC_GAS',
+                                   mechanical_behavior.IsothermalGas: 'ISOTHERMAL',
+                                   mechanical_behavior.IsentropicGas: 'ISENTROPIC',
                                    })
 
