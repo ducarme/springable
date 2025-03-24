@@ -5,7 +5,7 @@
 
 ![logo_small_web](https://github.com/user-attachments/assets/28ab9c0e-fdd3-41bc-9e5c-4d9fbf59da24)
 
-![logo](https://github.com/user-attachments/assets/b781f0e5-2584-48ac-9f4d-0bd896d60ac7)
+![logo_png](https://github.com/user-attachments/assets/b781f0e5-2584-48ac-9f4d-0bd896d60ac7)
 
 
 
