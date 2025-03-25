@@ -1,5 +1,8 @@
 
 ### logo
+
+![logo_new_svg](https://github.com/user-attachments/assets/a9c967f2-dac9-4ce9-ad31-a8a403fd74bf)
+
 ![logo_svg_font](https://github.com/user-attachments/assets/5642dbbe-f27c-4c71-bb05-c6ae4785f801)
 ![logo_springable_small_light](https://github.com/user-attachments/assets/4a461ee1-597d-4742-a8ca-34f5576ae166)
 
