@@ -1,7 +1,7 @@
 <figure markdown="1">
 ![](https://github.com/user-attachments/assets/5642dbbe-f27c-4c71-bb05-c6ae4785f801){ width="500" }
 <figcaption>Library for nonlinear spring simulations</figcaption>
-<video autoplay loop muted src="https://github.com/user-attachments/assets/2d5840ef-d182-48ef-9dfb-d0af7aaad448"></video>
+![](https://github.com/user-attachments/assets/110da33e-266a-4fca-a0f0-3ac793804bed)
 </figure>
 
 
