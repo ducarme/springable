@@ -1,5 +1,5 @@
 <figure markdown="1">
-![](https://github.com/user-attachments/assets/7576441a-3fdd-4aa8-a49f-2f438f76c348){ width="500" }
+![](https://github.com/user-attachments/assets/5642dbbe-f27c-4c71-bb05-c6ae4785f801){ width="500" }
 <figcaption>Library for nonlinear spring simulations</figcaption>
 <video autoplay loop muted src="https://github.com/user-attachments/assets/2d5840ef-d182-48ef-9dfb-d0af7aaad448"></video>
 </figure>
