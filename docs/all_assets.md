@@ -23,7 +23,8 @@ https://github.com/user-attachments/assets/8b689be4-4338-4e65-a529-fd1885b00b4d
 gif
 ![animation](https://github.com/user-attachments/assets/5b58be17-5fcb-47a2-9554-6ba53ea0c5bf)
 ![animation](https://github.com/user-attachments/assets/d60c9fbe-fe85-4e66-8fb4-e1ed34220eae)
-![anim_gif](https://github.com/user-attachments/assets/66160a11-b79f-4239-a4ef-a2a787028aec)
+![nice_anim_gif](https://github.com/user-attachments/assets/110da33e-266a-4fca-a0f0-3ac793804bed)
+
 
 
 
