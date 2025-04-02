@@ -57,12 +57,10 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
 
     with plt.style.context(ao.stylesheet):
         if ao.side_plot_mode != 'none':
-            fig = plt.figure(figsize=(8, 4.5))
+            fig = plt.figure(figsize=(ao.animation_width, ao.animation_height))
             grid = plt.GridSpec(1, 2, wspace=0.20, hspace=0.01, bottom=0.15, left=0.01)
             ax1 = fig.add_subplot(grid[0, 0])
             ax2 = fig.add_subplot(grid[0, 1])
-            ax2.xaxis.set_major_locator(plt.MaxNLocator(4))
-            ax2.yaxis.set_major_locator(plt.MaxNLocator(4))
             spines = []
             spines += ['left'] if po.show_left_spine else []
             spines += ['right'] if po.show_right_spine else []
@@ -184,6 +182,9 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                            zorder=1.1)[0]
             ax2.set_xlabel(po.default_xlabel)
             ax2.set_ylabel(po.default_ylabel)
+            if po.hide_ticklabels:
+                ax2.set_xticklabels([])
+                ax2.set_yticklabels([])
             if ((((po.show_stability_legend and po.color_mode == 'stability') or
                   (po.show_stability_legend and po.plot_style == 'line')) and
                  not (po.show_driven_path and po.driven_path_only))

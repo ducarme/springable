@@ -201,32 +201,17 @@ def curve_in_ax(processing_fun: callable, result: Result, ax: plt.Axes, plot_opt
                     for i in range(nb_transitions):
                         start = np.array((x[critical_indices[i]], y[critical_indices[i]]))
                         end = np.array((x[restabilization_indices[i]], y[restabilization_indices[i]]))
-                        dir_ = (end-start) / np.linalg.norm(end-start)
 
                         ax.annotate(
                             "",
                             xy=start,
                             xytext=end,
                             arrowprops=dict(
-                                arrowstyle=ArrowStyle.BracketA(widthA=0, lengthA=0, angleA=0),
-                                shrinkA=10,
-                                shrinkB=3,
-                                mutation_scale=20,
+                                arrowstyle=ArrowStyle.CurveA(),
                                 color=po.snapping_arrow_color,
                                 alpha=po.snapping_arrow_opacity,
-                                linewidth=2.5,
+                                linewidth=po.snapping_arrow_width,
                                 ls=po.snapping_arrow_style,
-                            ))
-                        ax.annotate(
-                            "",
-                            xy=end - dir_ / 100,
-                            xytext=end,
-                            arrowprops=dict(
-                                arrowstyle="<|-",
-                                mutation_scale=20,
-                                facecolor=po.snapping_arrow_color,
-                                edgecolor='none',
-                                alpha=po.snapping_arrow_opacity
                             ))
         except LoadingPathEmpty:
             print(f"Cannot draw the {po.drive_mode}-driven path, "
@@ -306,6 +291,9 @@ def parametric_curve(processing_fun: callable,
         spines += ['right'] if po.show_right_spine else []
         spines += ['top'] if po.show_top_spine else []
         spines += ['bottom'] if po.show_bottom_spine else []
+        if po.hide_ticklabels:
+            ax.set_xticklabels([])
+            ax.set_yticklabels([])
 
         ff.adjust_spines(ax, po.spine_offset, spines)
         ff.adjust_figure_layout(fig)
@@ -369,6 +357,9 @@ def curve(processing_fun: callable, result: Result,
         spines += ['right'] if po.show_right_spine else []
         spines += ['top'] if po.show_top_spine else []
         spines += ['bottom'] if po.show_bottom_spine else []
+        if po.hide_ticklabels:
+            ax.set_xticklabels([])
+            ax.set_yticklabels([])
         ff.adjust_spines(ax, po.spine_offset, spines)
         ff.adjust_figure_layout(fig)
         if save_dir is not None:

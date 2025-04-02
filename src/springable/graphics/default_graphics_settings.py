@@ -62,6 +62,7 @@ class PlotOptions(Updatable):
     snapping_arrow_color: str = '#aaaaaa'
     snapping_arrow_opacity: float = 0.35
     snapping_arrow_style: str = '-'
+    snapping_arrow_width: float = 2.5
     size_for_stable_points: float = 1.
     size_for_stabilizable_points: float = .66
     size_for_unstable_points: float = .33
@@ -71,6 +72,7 @@ class PlotOptions(Updatable):
     show_bottom_spine: bool = True
     show_left_spine: bool = True
     show_right_spine: bool = False
+    hide_ticklabels: bool = False
 
 
 @dataclass
@@ -90,6 +92,8 @@ class AnimationOptions(Updatable):
     spine_offset: float = 10.
     animated_equilibrium_point_color: str = '#ff0000'
     animated_equilibrium_point_size: float = 2.
+    animation_width: float = 8
+    animation_height: float = 4.5
 
 
 @dataclass
