@@ -20,7 +20,6 @@ include src/springable/gallery-spring-model-CSV-files/*.csv
 
 
 
-
 * commit and push
 
 * python packages build and twine must be installed in the developer environment
