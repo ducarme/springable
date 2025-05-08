@@ -1,6 +1,6 @@
 __version__ = "0.2.0"
 __author__ = 'Paul Ducarme'
-__credits__ = 'AMOLF, ARCNL'
+__credits__ = 'AMOLF & ARCNL'
 
 print(f"""
   ____             _                   _     _      
