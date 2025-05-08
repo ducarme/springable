@@ -154,6 +154,29 @@ def read_graphics_settings_file(file_path):
             settings.get('animation_options', {}),
             settings.get('assembly_appearance', {}))
 
+def read_experimental_force_displacement_data(filepath,
+                                              displacement_column_index=0, force_column_index=1, delimiter=','):
+    exp_displacements = []
+    exp_forces = []
+    with open(filepath, newline='') as file_object:
+        reader = csv.reader(file_object, delimiter=delimiter)
+        reading_data = False
+        for row in reader:
+            if not reading_data:
+                if row:
+                    try:
+                        u = float(row[displacement_column_index].replace(',', '.'))
+                        f = float(row[force_column_index].replace(',', '.'))
+                    except ValueError:
+                        continue
+                    else:
+                        reading_data = True
+            if reading_data:
+                exp_displacements.append(float(row[displacement_column_index].replace(',', '.')))
+                exp_forces.append(float(row[force_column_index].replace(',', '.')))
+    return np.array(exp_displacements), np.array(exp_forces)
+
+
 
 def write_model_parameters(parameters, save_dir, save_name='parameters.csv'):
     # save the values of the parameters used for a simulation (if any)

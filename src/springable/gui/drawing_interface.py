@@ -70,21 +70,35 @@ class DrawingSpace:
         # self._extra_curves: dict[str, Line2D] = {}
         self.curve_interactors: dict[str, CurveInteractor] = {}
         self.curve_control_points: dict[str, tuple[np.ndarray, np.ndarray] | None] = {}
+        self._exp_curves = []
         self._active_curve_interactor: CurveInteractor | None = None
         self.cid = self.canvas.mpl_connect("draw_event", self.on_draw)
 
-        self.add_remove_cp_btn_frame = ttk.Frame(drawing_frame)
+        bottom_frame = ttk.Frame(drawing_frame)
+
+
+        self.add_remove_cp_btn_frame = ttk.Frame(bottom_frame)
         self.add_cp_btn = ttk.Button(self.add_remove_cp_btn_frame, text='Add CP', command=self.add_control_point)
         self.remove_cp_btn = ttk.Button(self.add_remove_cp_btn_frame, text='Remove CP',
                                         command=self.remove_control_point)
         self.add_cp_btn.grid(column=0, row=0)
         self.remove_cp_btn.grid(column=1, row=0)
 
+        exp_frame = ttk.Frame(bottom_frame)
+        self.show_exp_btn = ttk.Button(exp_frame, text='Load an experimental curve',
+                                       command=self.handler.load_experimental_curve)
+        self.remove_exp_btn = ttk.Button(exp_frame, text='Remove curve',
+                                         command=self.handler.remove_experimental_curve)
+        self.show_exp_btn.grid(column=0, row=0)
+        self.remove_exp_btn.grid(column=1, row=0)
+
         x_pnl.grid(row=0, column=0, sticky='W')
         y_pnl.grid(row=0, column=2, sticky='E')
         self.axis_status_lbl.grid(row=0, column=1)
+        bottom_frame.grid(column=0, row=2, columnspan=3, sticky='W')
         fig_frame.grid(row=1, column=0, columnspan=3)
-        self.add_remove_cp_btn_frame.grid(row=2, column=0, sticky='W')
+        self.add_remove_cp_btn_frame.grid(row=0, column=1, sticky='E')
+        exp_frame.grid(row=0, column=0, sticky='W')
         self.add_remove_cp_btn_frame.grid_remove()
 
         self._current_curve_name = None
@@ -146,6 +160,20 @@ class DrawingSpace:
         print(self.curve_control_points.values())
         print("Active curve interactor:")
         print(self._active_curve_interactor.name if self._active_curve_interactor is not None else 'None')
+
+    def draw_exp_curve(self, u, f):
+        exp_curve, = self.ax.plot(u, f, animated=True, lw=3, alpha=0.5)
+        self._exp_curves.append(exp_curve)
+        self.update()
+        self.handler.show_popup('Experimental curve added!', 750)
+
+    def remove_exp_curve(self):
+        if self._exp_curves:
+            self._exp_curves.pop()
+            self.update()
+            self.handler.show_popup('Experimental curve removed!', 750)
+        else:
+            self.handler.show_popup('No experimental curve to remove!', 750)
 
     def load_new_curve(self, name: str, u, f, is_controllable: bool, cp_x=None, cp_y=None):
         self.curves[name].set_data(u, f)
@@ -285,6 +313,10 @@ class DrawingSpace:
         fig = self.canvas.figure
         fig.draw_artist(self._xaxis_line)
         fig.draw_artist(self._yaxis_line)
+
+        for exp_curve in self._exp_curves:
+            fig.draw_artist(exp_curve)
+
         for name, line in self.curves.items():
             if name != self._current_curve_name:
                 fig.draw_artist(line)

@@ -34,6 +34,7 @@ class PlotOptions(Updatable):
     figure_width: float = 4.
     figure_height: float = 4.
     transparent: bool = False
+    dpi: float = 300
     range_parameter_scan_colormap: str = 'viridis'
     discrete_parameter_scan_colormap: str = 'tab10'
     lowest_eigval_colormap: str = 'PuOr'
@@ -100,6 +101,7 @@ class AnimationOptions(Updatable):
 class AssemblyAppearanceOptions(Updatable):
     drawing_fig_width: float = 3
     drawing_fig_height: float = 3
+    drawing_dpi: float = 300
     show_axes: bool = False
     stylesheet: str = 'default'
     transparent: bool = False
@@ -135,6 +137,7 @@ class AssemblyAppearanceOptions(Updatable):
     line_spring_default_opacity: float = 1.0
     line_spring_default_color: str = '#CECECE'
     line_spring_dot_color: str = "#ffffff"
+    line_spring_dot_opacity: float = 1.0
     distance_spring_line_linewidth: float = 1.0
     distance_spring_line_default_color: str = '#CECECE'
     distance_spring_line_default_opacity: float = 0.7

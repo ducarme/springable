@@ -122,9 +122,9 @@ class LogarithmBehavior(UnivariateBehavior):
 
 
 class BezierBehavior(UnivariateBehavior, ControllableByPoints):
-    def __init__(self, natural_measure, u_i: list[float], f_i: list[float],
+    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], mode: int = 0,
                  sampling: int = 250):
-        super().__init__(natural_measure, u_i=u_i, f_i=f_i)
+        super().__init__(natural_measure, u_i=u_i, f_i=f_i, mode=mode)
         self._sampling = sampling
         self._check()
         self._make()
@@ -151,6 +151,7 @@ class BezierBehavior(UnivariateBehavior, ControllableByPoints):
     def _make(self):
         u_coefs = np.array([0.0] + self._parameters['u_i'])
         f_coefs = np.array([0.0] + self._parameters['f_i'])
+        mode = self._parameters['mode']
         t = np.linspace(0, 1, self._sampling)
         u = bezier_curve.evaluate_poly(t, u_coefs)
 
@@ -163,23 +164,52 @@ class BezierBehavior(UnivariateBehavior, ControllableByPoints):
         du = bezier_curve.evaluate_derivative_poly(t, u_coefs)
         generalized_stiffness = df / du
 
+
+        u_start = u[0]
+        k_start = generalized_stiffness[0]
+
         u_end = u[-1]
         e_end = energy[-1]
         f_end = generalized_force[-1]
         k_end = generalized_stiffness[-1]
 
         def energy_fun(uu):
-            e_in = interp1d(u, energy, kind='linear', bounds_error=False, fill_value=0.0)(np.abs(uu))
-            e_out = e_end + f_end * (np.abs(uu) - u_end) + 0.5 * k_end * (np.abs(uu)- u_end) ** 2
-            return (uu <= u_end) * e_in + (uu > u_end) * e_out
+            if mode == 0:
+                e_in = interp1d(u, energy, kind='linear', bounds_error=False, fill_value=0.0)(np.abs(uu))
+                e_out = e_end + f_end * (np.abs(uu) - u_end) + 0.5 * k_end * (np.abs(uu)- u_end) ** 2
+                return (uu <= u_end) * e_in + (uu > u_end) * e_out
+            if mode == 1:
+                e_in = interp1d(u, energy, kind='linear', bounds_error=False, fill_value=0.0)(uu)
+                e_beyond = e_end + f_end * (uu - u_end) + 0.5 * k_end * (uu - u_end) ** 2
+                e_compression = + 0.5 * k_start * uu ** 2
+                return (np.logical_and(uu <= u_end, uu > u_start) * e_in
+                        + (uu > u_end) * e_beyond
+                        + (uu < u_start) * e_compression)
+            if mode == -1:
+                e_in = interp1d(u, energy, kind='linear', bounds_error=False, fill_value=0.0)(-uu)
+                e_beyond = e_end + f_end * (-uu - u_end) + 0.5 * k_end * (-uu - u_end) ** 2
+                e_tension = + 0.5 * k_start * uu ** 2
+                return (np.logical_and(-uu <= u_end, -uu > u_start) * e_in
+                        + (-uu > u_end) * e_beyond
+                        + (-uu < u_start) * e_tension)
 
         def gradient_fun(uu):
             tensile_f_fun = interp1d(u, generalized_force, kind='linear', bounds_error=False, fill_value='extrapolate')
-            return np.sign(uu) * tensile_f_fun(np.abs(uu))
+            if mode == 0:
+                return np.sign(uu) * tensile_f_fun(np.abs(uu))
+            if mode == 1:
+                return (uu > u_start) * tensile_f_fun(uu) + (uu < u_start) * k_start * uu
+            if mode == -1:
+                return (uu < u_start) * -tensile_f_fun(-uu) + (uu > u_start) * k_start * uu
 
         def hessian_fun(uu):
             tensile_k_fun = interp1d(u, generalized_stiffness, kind='linear', bounds_error=False, fill_value=k_end)
-            return tensile_k_fun(np.abs(uu))
+            if mode == 0:
+                return tensile_k_fun(np.abs(uu))
+            if mode == 1:
+                return (uu >= u_start) * tensile_k_fun(uu) + (uu < u_start) * k_start
+            if mode == -1:
+                return (uu <= u_start) * tensile_k_fun(-uu) + (uu > u_start) * k_start
 
         self._energy = energy_fun
         self._gradient = gradient_fun
@@ -258,20 +288,21 @@ class BezierBehavior(UnivariateBehavior, ControllableByPoints):
         if show:
             l0 = 1.0
             bb = BezierBehavior(l0, u_i, f_i)
-            l = l0 + np.linspace(0.0, u_i[-1])
+            l = l0 + np.linspace(0.0, 1.1*u_i[-1])
             f, = bb.gradient_energy(l)
             fig, ax = plt.subplots()
-            ax.plot(l - l0, f, '-o')
+            ax.plot(l - l0, f, '-', lw=5, alpha=0.5)
+            ax.plot(*bb.get_control_points(), '-o')
             for fd_curve in force_displacement_curves:
-                ax.plot(fd_curve[0], fd_curve[1], '--')
+                ax.plot(fd_curve[0], fd_curve[1], 'k-')
             plt.show()
         return u_i, f_i
 
 
 class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
 
-    def __init__(self, natural_measure, u_i: list[float], f_i: list[float]):
-        super().__init__(natural_measure, u_i=u_i, f_i=f_i)
+    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], mode: int = 0):
+        super().__init__(natural_measure, u_i=u_i, f_i=f_i, mode=mode)
         self._check()
         self._make()
 
@@ -343,24 +374,67 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
     def _make(self):
         a_coefs = np.array([0.0] + self._parameters['u_i'])
         b_coefs = np.array([0.0] + self._parameters['f_i'])
+        mode = self._parameters['mode']
         a1 = bezier_curve.evaluate_poly(1.0, a_coefs)
         da1 = bezier_curve.evaluate_derivative_poly(1.0, a_coefs)
         b1 = bezier_curve.evaluate_poly(1.0, b_coefs)
         db1 = bezier_curve.evaluate_derivative_poly(1.0, b_coefs)
-        self._a = lambda t: ((np.abs(t) <= 1) * np.sign(t) * bezier_curve.evaluate_poly(np.abs(t), a_coefs)
-                             + (np.abs(t) > 1) * np.sign(t) * (a1 + da1 * (np.abs(t) - 1)))
-        self._b = lambda t: ((np.abs(t) <= 1) * np.sign(t) * bezier_curve.evaluate_poly(np.abs(t), b_coefs)
-                             + (np.abs(t) > 1) * np.sign(t) * (b1 + db1 * (np.abs(t) - 1)))
-        self._da = lambda t: ((np.abs(t) <= 1) * bezier_curve.evaluate_derivative_poly(np.abs(t), a_coefs)
-                              + (np.abs(t) > 1) * da1)
-        self._db = lambda t: ((np.abs(t) <= 1) * bezier_curve.evaluate_derivative_poly(np.abs(t), b_coefs)
-                              + (np.abs(t) > 1) * db1)
-        self._d2a = lambda t: (np.abs(t) <= 1) * np.sign(t) * bezier_curve.evaluate_second_derivative_poly(np.abs(t),
-                                                                                                           a_coefs)
-        self._d2b = lambda t: (np.abs(t) <= 1) * np.sign(t) * bezier_curve.evaluate_second_derivative_poly(np.abs(t),
-                                                                                                           b_coefs)
-        self._d3a = lambda t: (np.abs(t) <= 1) * bezier_curve.evaluate_third_derivative_poly(np.abs(t), a_coefs)
-        self._d3b = lambda t: (np.abs(t) <= 1) * bezier_curve.evaluate_third_derivative_poly(np.abs(t), b_coefs)
+
+        da0 = bezier_curve.evaluate_derivative_poly(0.0, a_coefs)
+        db0 = bezier_curve.evaluate_derivative_poly(0.0, b_coefs)
+        if mode == 0:
+            self._a = lambda t: ((np.abs(t) <= 1) * np.sign(t) * bezier_curve.evaluate_poly(np.abs(t), a_coefs)
+                                 + (np.abs(t) > 1) * np.sign(t) * (a1 + da1 * (np.abs(t) - 1)))
+            self._b = lambda t: ((np.abs(t) <= 1) * np.sign(t) * bezier_curve.evaluate_poly(np.abs(t), b_coefs)
+                                 + (np.abs(t) > 1) * np.sign(t) * (b1 + db1 * (np.abs(t) - 1)))
+            self._da = lambda t: ((np.abs(t) <= 1) * bezier_curve.evaluate_derivative_poly(np.abs(t), a_coefs)
+                                  + (np.abs(t) > 1) * da1)
+            self._db = lambda t: ((np.abs(t) <= 1) * bezier_curve.evaluate_derivative_poly(np.abs(t), b_coefs)
+                                  + (np.abs(t) > 1) * db1)
+            self._d2a = lambda t: (np.abs(t) <= 1) * np.sign(t) * bezier_curve.evaluate_second_derivative_poly(np.abs(t),
+                                                                                                               a_coefs)
+            self._d2b = lambda t: (np.abs(t) <= 1) * np.sign(t) * bezier_curve.evaluate_second_derivative_poly(np.abs(t),
+                                                                                                               b_coefs)
+            self._d3a = lambda t: (np.abs(t) <= 1) * bezier_curve.evaluate_third_derivative_poly(np.abs(t), a_coefs)
+            self._d3b = lambda t: (np.abs(t) <= 1) * bezier_curve.evaluate_third_derivative_poly(np.abs(t), b_coefs)
+        elif mode == 1:
+            self._a = lambda t: (  (t < 0) * (da0 * t)
+                                 + np.logical_and((t >= 0), (t <= 1)) * bezier_curve.evaluate_poly(t, a_coefs)
+                                 + (t > 1) * (a1 + da1 * (t - 1)))
+            self._b = lambda t: (  (t < 0) * (db0 * t)
+                                 + np.logical_and((t >= 0), (t <= 1)) * bezier_curve.evaluate_poly(t, b_coefs)
+                                 + (t > 1) * (b1 + db1 * (t - 1)))
+            self._da = lambda t: (  (t < 0) * da0
+                                  + np.logical_and((t >= 0), (t <= 1)) * bezier_curve.evaluate_derivative_poly(t, a_coefs)
+                                  + (t > 1) * da1)
+            self._db = lambda t: (  (t < 0) * db0
+                                  + np.logical_and((t >= 0), (t <= 1)) * bezier_curve.evaluate_derivative_poly(t, b_coefs)
+                                  + (t > 1) * db1)
+
+            self._d2a = lambda t: np.logical_and((t >= 0.), (t <= 1)) * bezier_curve.evaluate_second_derivative_poly(t, a_coefs)
+            self._d2b = lambda t: np.logical_and((t >= 0.), (t <= 1)) * bezier_curve.evaluate_second_derivative_poly(t, b_coefs)
+            self._d3a = lambda t: np.logical_and((t >= 0.), (t <= 1)) * bezier_curve.evaluate_third_derivative_poly(t, a_coefs)
+            self._d3b = lambda t: np.logical_and((t >= 0.), (t <= 1)) * bezier_curve.evaluate_third_derivative_poly(t, b_coefs)
+        elif mode == -1:
+            self._a = lambda t: (  (t > 0) * (da0 * t)
+                                 + np.logical_and(t <= 0, t >= -1) * -bezier_curve.evaluate_poly(-t, a_coefs)
+                                 + (t < -1) * (-a1 + da1 * (t+1)))
+            self._b = lambda t:  (  (t > 0) * (db0 * t)
+                                 + np.logical_and(t <= 0, t >= -1) * -bezier_curve.evaluate_poly(-t, b_coefs)
+                                 + (t < -1) * (-b1 + db1 * (t+1)))
+            self._da = lambda t: (  (t > 0) * da0
+                                  + np.logical_and((t <= 0), (t >= -1)) * bezier_curve.evaluate_derivative_poly(-t, a_coefs)
+                                  + (t < -1) * da1)
+            self._db = lambda t: (  (t > 0) * db0
+                                  + np.logical_and((t <= 0), (t >= -1)) * bezier_curve.evaluate_derivative_poly(-t, b_coefs)
+                                  + (t < -1) * db1)
+
+            self._d2a = lambda t: np.logical_and((t <= 0), (t >= -1)) * -bezier_curve.evaluate_second_derivative_poly(-t,a_coefs)
+            self._d2b = lambda t: np.logical_and((t <= 0), (t >= -1)) * -bezier_curve.evaluate_second_derivative_poly(-t,b_coefs)
+            self._d3a = lambda t: np.logical_and((t <= 0), (t >= -1)) * bezier_curve.evaluate_third_derivative_poly(-t,a_coefs)
+            self._d3b = lambda t: np.logical_and((t <= 0), (t >= -1)) * bezier_curve.evaluate_third_derivative_poly(-t,b_coefs)
+
+
         self._dbda = lambda t: self._db(t) / self._da(t)
         self._d_dbda = lambda t: (self._d2b(t) * self._da(t) - self._db(t) * self._d2a(t)) / self._da(t) ** 2
 
@@ -418,8 +492,10 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
         self._int_adb = int_adb
         self._int_bda = int_bda
         self._hysteron_info = None
-
-        all_t = np.linspace(0, 1, 50)
+        if mode == -1:
+            all_t = np.linspace(-1, 0, 50)
+        else:
+            all_t = np.linspace(0, 1, 50)
         da = self._da(all_t)
         db = self._db(all_t)
         db_da = db / da

@@ -80,14 +80,16 @@ def text_to_node(text, evaluator: se.SimpleEval = None) -> Node:
 
 def behavior_to_text(_behavior: MechanicalBehavior, fmt='',
                      full_name=False, specify_natural_measure=True) -> str:
+    int_fmt = '.0f'
     if isinstance(_behavior, LinearBehavior) and not full_name:
         text = f'k={_behavior.get_spring_constant():{fmt}}'
     else:
         text = usable_behaviors.type_to_name[type(_behavior)]
         text += '('
-        text += '; '.join([f'{par_name}={par_val:{fmt}}' if not isinstance(par_val, list)
+        text += '; '.join([f'{par_name}={par_val:{fmt if par_name != "mode" else int_fmt}}' if not isinstance(par_val, list)
                            else f'{par_name}=[{"; ".join([f"{par_val_i:{fmt}}" for par_val_i in par_val])}]'
-                           for par_name, par_val in _behavior.get_parameters().items()])
+                           for par_name, par_val in _behavior.get_parameters().items()
+                           if not (par_name == "mode" and par_val == 0)])
         text += ')'
 
     if specify_natural_measure:

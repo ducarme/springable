@@ -5,7 +5,8 @@ from ..mechanics.mechanical_behavior import *
 from ..utils import bezier_curve
 from ..readwrite.interpreting import behavior_to_text
 from ..readwrite import fileio
-from .gui_settings import DEFAULT_BEHAVIORS, DEFAULT_NATURAL_MEASURE, XLIM, YLIM, NB_SAMPLES
+from .gui_settings import DEFAULT_BEHAVIORS, DEFAULT_NATURAL_MEASURE, XLIM, YLIM, NB_SAMPLES, FORCE_COLUMN_INDEX, \
+    DISPLACEMENT_COLUMN_INDEX, DELIMITER
 
 import numpy as np
 
@@ -251,6 +252,41 @@ class GUIEventHandler:
         self.update_behavior_text(tab_name)
         self.print_behaviors()
         # to be extended
+
+    def load_experimental_curve(self):
+        if print_messages:
+            print(f'Drawing space GUI sent event to handler to handle the addition of an experimental curve')
+
+        try:
+            file_path = filedialog.askopenfilename(
+                title="Select experimental curve",
+                defaultextension=".csv",
+                filetypes=[("CSV Files", "*.csv")],
+            )
+            if file_path:
+                u, f = fileio.read_experimental_force_displacement_data(file_path,
+                                                                        displacement_column_index=DISPLACEMENT_COLUMN_INDEX,
+                                                                        force_column_index=FORCE_COLUMN_INDEX,
+                                                                        delimiter=DELIMITER)
+            else:
+                return False
+            if u.shape[0] == 0 or f.shape[0] == 0:
+                raise ValueError('Could not read any valid numbers in the displacement or force column.')
+        except ValueError as e:
+            messagebox.showerror("Error", f"Invalid experimental data file. {str(e)}")
+            return False
+        except Exception as e:
+            messagebox.showerror("Error", f"Error when reading behavior file. {e}")
+            return False
+        else:
+            self._drawing_space.draw_exp_curve(u, f)
+            return True
+
+
+    def remove_experimental_curve(self):
+        if print_messages:
+            print(f'Drawing space GUI sent event to handler to handle the removal of the last added experimental curve')
+        self._drawing_space.remove_exp_curve()
 
     def update_behavior_parameter_from_control_points(self, name):
         if print_messages:

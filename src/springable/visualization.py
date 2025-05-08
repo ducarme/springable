@@ -213,7 +213,7 @@ def make_force_displacement_plot(result, save_dir, show=True, graphics_settings=
 
 
 def make_drawing(mdl: str | model.Model, save_dir,
-                 save_name='model', show=True, graphics_settings=None, **assembly_appearance):
+                 save_name='model', show=True, assembly_span=None, graphics_settings=None, **assembly_appearance):
     if isinstance(mdl, str):
         mdl = io.read_model(mdl)
     if not isinstance(mdl, model.Model):
@@ -221,4 +221,4 @@ def make_drawing(mdl: str | model.Model, save_dir,
                          "or an already loaded Model object")
     _, _, _, a_appearance = _load_graphics_settings(graphics_settings)
     a_appearance.update(assembly_appearance)
-    animation.draw_model(mdl, save_dir, save_name, show=show, **a_appearance)
+    animation.draw_model(mdl, save_dir, save_name, show=show, assembly_span=assembly_span, **a_appearance)

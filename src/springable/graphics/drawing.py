@@ -119,7 +119,7 @@ class AngleDrawing(ShapeDrawing):
             mid_angle = (start_angle + end_angle) / 2
             self._hysteron_label_position = (
                 center[0] + self._size * self._aa.rotation_spring_radius_scaling * np.cos(mid_angle),
-                center[0] + self._size * self._aa.rotation_spring_radius_scaling * np.sin(mid_angle)
+                center[1] + self._size * self._aa.rotation_spring_radius_scaling * np.sin(mid_angle)
             )
         else:
             self._hysteron_label_position = None
@@ -152,7 +152,7 @@ class AngleDrawing(ShapeDrawing):
             mid_angle = (start_angle + end_angle) / 2
             self._hysteron_label_position = (
                 center[0] + self._size * self._aa.rotation_spring_radius_scaling * np.cos(mid_angle),
-                center[0] + self._size * self._aa.rotation_spring_radius_scaling * np.sin(mid_angle)
+                center[1] + self._size * self._aa.rotation_spring_radius_scaling * np.sin(mid_angle)
             )
 
 
@@ -177,6 +177,7 @@ class AreaDrawing(ShapeDrawing):
         self._graphics.set_xy(np.array(coordinates).reshape(-1, 2))
         if color is not None:
             self._graphics.set_color(color)
+            self._graphics.set_edgecolor('none')
         if opacity is not None:
             self._graphics.set_alpha(opacity)
         if self._is_hysteron:
@@ -197,8 +198,10 @@ class PathDrawing(ShapeDrawing):
         yy = interp1d(lengths, y)(t[1:-1])
         graphic0 = self._ax.plot(x, y, lw=self._aa.line_spring_linewidth,
                                  color=self._color, alpha=self._opacity, zorder=0.025)[0]
-        graphic1 = self._ax.plot(xx, yy, ls='', markersize=self._aa.line_spring_linewidth*.9,
-                                 marker='o', color=self._aa.line_spring_dot_color, zorder=0.05, markeredgewidth=0.01)[0]
+        graphic1 = self._ax.plot(xx, yy, ls='', marker='o', zorder=0.05,
+                                 markersize=self._aa.line_spring_linewidth*.9, markeredgewidth=0.01,
+                                 color=self._aa.line_spring_dot_color, alpha=self._aa.line_spring_dot_opacity)[0]
+
         self._graphics = (graphic0, graphic1)
         self._hysteron_label_position = (np.mean(x), np.mean(y)) if self._is_hysteron else None
 
@@ -273,7 +276,7 @@ class HoleyAreaDrawing(ShapeDrawing):
         polys = [bulk_coords] + holes_coords
         vertices, codes = compute_pathpatch_vertices(polys)
         self._patch = matplotlib.patches.PathPatch(matplotlib.path.Path(vertices, codes),
-                                                   fill=True, color=color, alpha=opacity, ec='none')
+                                                   fill=True, color=color, alpha=opacity)
         self._ax.add_patch(self._patch)
         self._hysteron_label_position = ((np.mean(bulk_coords[0, :]), np.mean(bulk_coords[1, :]))
                                          if self._is_hysteron else None)

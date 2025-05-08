@@ -301,7 +301,7 @@ def parametric_curve(processing_fun: callable,
         if save_dir is not None:
             if save_name is None:
                 save_name = po.default_plot_name
-            ff.save_fig(fig, save_dir, save_name, ["png", "pdf"], transparent=po.transparent)
+            ff.save_fig(fig, save_dir, save_name, ["png", "pdf"], transparent=po.transparent, dpi=po.dpi)
         if show:
             plt.show()
         else:
@@ -365,7 +365,7 @@ def curve(processing_fun: callable, result: Result,
         if save_dir is not None:
             if save_name is None:
                 save_name = po.default_plot_name
-            ff.save_fig(fig, save_dir, save_name, ["png", "pdf"], transparent=po.transparent)
+            ff.save_fig(fig, save_dir, save_name, ["png", "pdf"], transparent=po.transparent, dpi=po.dpi)
         if show:
             plt.show()
         else:

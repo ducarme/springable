@@ -1,6 +1,8 @@
 from ..readwrite.keywords import usable_behaviors
 from ..mechanics.mechanical_behavior import *
 
+DEBUG = False
+
 DEFAULT_NATURAL_MEASURE = 1.0
 DEFAULT_BEHAVIORS: dict[str, MechanicalBehavior] = dict()
 
@@ -17,5 +19,11 @@ DEFAULT_BEHAVIORS['ISENTROPIC_GAS'] = IsentropicGas(DEFAULT_NATURAL_MEASURE, n=1
 NB_SAMPLES = 400
 XLIM = (-1., 5.)
 YLIM = (-2., 2.5)
+
+# EXPERIMENTAL DATA (csv files, headers will automatically ignored)
+DISPLACEMENT_COLUMN_INDEX = 1
+FORCE_COLUMN_INDEX = 2
+DELIMITER = ','
+
 
 

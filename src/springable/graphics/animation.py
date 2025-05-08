@@ -13,7 +13,8 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 
-def draw_model(mdl: model.Model, save_dir=None, save_name='model', show=True, **assembly_appearance):
+def draw_model(mdl: model.Model, save_dir=None, save_name='model',
+               show=True, assembly_span: float = None, **assembly_appearance):
     aa = AssemblyAppearanceOptions()
     aa.update(**assembly_appearance)
 
@@ -22,7 +23,8 @@ def draw_model(mdl: model.Model, save_dir=None, save_name='model', show=True, **
         ax = fig.add_subplot(111)
         ax.set_aspect('equal')
         xmin, ymin, xmax, ymax = mdl.get_assembly().get_dimensional_bounds()
-        assembly_span = max(xmax - xmin, ymax - ymin)
+        if assembly_span is None:
+            assembly_span = max(xmax - xmin, ymax - ymin)
         canvas_span = 1.25 * assembly_span
         midx, midy = (xmin + xmax) / 2, (ymin + ymax) / 2
 
@@ -32,7 +34,7 @@ def draw_model(mdl: model.Model, save_dir=None, save_name='model', show=True, **
         ff.adjust_spines([ax], 0, ['bottom', 'top', 'left', 'right'] if aa.show_axes else [])
         ff.adjust_figure_layout(fig, aa.drawing_fig_width, aa.drawing_fig_height, pad=0.1)
         if save_dir is not None:
-            ff.save_fig(fig, save_dir, save_name, ['png', 'pdf'], transparent=aa.transparent)
+            ff.save_fig(fig, save_dir, save_name, ['png', 'pdf'], transparent=aa.transparent, dpi=aa.drawing_dpi)
         if show:
             plt.show()
         else:

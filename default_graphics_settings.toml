@@ -42,6 +42,7 @@ show_driven_path_legend = true
 figure_width = 4
 figure_height = 4
 transparent = false
+dpi = 300
 
 # herein below, colormaps. Must be named colormaps from matplotlib
 # (visit https =//matplotlib.org/stable/users/explain/colors/colormaps.html for more info)
@@ -136,6 +137,7 @@ animation_height = 4.5
 [assembly_appearance]
 drawing_fig_width = 3
 drawing_fig_height = 3
+drawing_dpi = 300
 show_axes = false
 stylesheet = "default"  # only used when drawing the model, not used for the animation
 transparent = false  # used when saving the model drawing or saving animation as PNG frames
@@ -175,6 +177,7 @@ line_spring_linewidth = 2
 line_spring_default_opacity = 1.0
 line_spring_default_color = "#cecece"
 line_spring_dot_color = "#ffffff"
+line_spring_dot_opacity = 1.0
 distance_spring_line_linewidth = 1.0
 distance_spring_line_default_color = "#cecece"
 distance_spring_line_default_opacity = 0.7

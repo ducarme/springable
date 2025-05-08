@@ -18,6 +18,7 @@ class BehaviorNotebook:
         self._tab_plus = tab_plus
         self._tabs: dict[BehaviorTab, str] = dict()
         self._tab_menu.bind("<<NotebookTabChanged>>", self.on_tab_selected)
+
         self._tab_menu.grid(column=0, row=0)
 
     def on_tab_selected(self, event):
@@ -33,6 +34,7 @@ class BehaviorNotebook:
 
     def on_remove_button(self):
         self.remove_selected_behavior_tab()
+
 
     def add_behavior_tab(self):
         i = 0
