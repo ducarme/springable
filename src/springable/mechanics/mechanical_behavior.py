@@ -205,7 +205,7 @@ class BivariateBehavior(MechanicalBehavior):
             self.d3a = lambda t: np.logical_and((t <= 0), (t >= -1)) * self._d3a_fun(-t)
             self.d3b = lambda t: np.logical_and((t <= 0), (t >= -1)) * self._d3b_fun(-t)
         else:
-            raise InvalidBehaviorParameters('This error should not never be triggered '
+            raise InvalidBehaviorParameters('This error should never be triggered '
                                             '(error: mode not -1, 0 or 1, while making behavior)')
 
         self._dbda = lambda t: self.db(t) / self.da(t)
@@ -758,7 +758,7 @@ class PiecewiseBehavior(UnivariateBehavior, ControllableByPoints):
             self._force_function = lambda uu: -force_fun(-uu)
             self._stiffness_function = lambda uu: stiffness_fun(-uu)
         else:
-            raise InvalidBehaviorParameters('This error should not never be triggered '
+            raise InvalidBehaviorParameters('This error should never be triggered '
                                             '(error: mode not -1, 0 or 1, while making behavior)')
 
     def get_control_points(self) -> tuple[np.ndarray, np.ndarray]:
@@ -870,7 +870,7 @@ class ZigzagBehavior(UnivariateBehavior, ControllableByPoints):
             self._force = lambda uu: -interp1d(u_s, f_s, kind='linear', bounds_error=False, fill_value='extrapolate')(-uu)
             self._stiffness = lambda uu: interp1d(u_s, k_s, kind='linear', bounds_error=False, fill_value=(k_s[0], k_s[-1]))(-uu)
         else:
-            raise InvalidBehaviorParameters('This error should not never be triggered '
+            raise InvalidBehaviorParameters('This error should never be triggered '
                                             '(error: mode not -1, 0 or 1, while making behavior)')
 
 
