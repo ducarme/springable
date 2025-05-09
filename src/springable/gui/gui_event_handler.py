@@ -5,7 +5,7 @@ from ..mechanics.mechanical_behavior import *
 from ..utils import bezier_curve
 from ..readwrite.interpreting import behavior_to_text
 from ..readwrite import fileio
-from .gui_settings import DEFAULT_BEHAVIORS, DEFAULT_NATURAL_MEASURE, XLIM, YLIM, NB_SAMPLES, FORCE_COLUMN_INDEX, \
+from .gui_settings import DEFAULT_BEHAVIORS, DEFAULT_NATURAL_MEASURE, XLIM, NB_SAMPLES, FORCE_COLUMN_INDEX, \
     DISPLACEMENT_COLUMN_INDEX, DELIMITER
 
 import numpy as np
@@ -43,8 +43,8 @@ class GUIEventHandler:
                     f = behavior.gradient_energy(behavior.get_natural_measure() + u)[0]
                 elif isinstance(behavior, BivariateBehavior):
                     t = np.linspace(-1.25, 1.25, self._nb_samples)
-                    u = behavior._a(t)
-                    f = behavior._b(t)
+                    u = behavior.a(t)
+                    f = behavior.b(t)
                 else:
                     raise ValueError('Unknown behavior family')
             else:
@@ -126,8 +126,8 @@ class GUIEventHandler:
                 f = behavior.gradient_energy(natural_measure + u)[0]
             elif isinstance(behavior, BivariateBehavior):
                 t = np.linspace(-1.25, 1.25, self._nb_samples)
-                u = behavior._a(t)
-                f = behavior._b(t)
+                u = behavior.a(t)
+                f = behavior.b(t)
             else:
                 raise ValueError('Unknown behavior family')
             self._drawing_space.add_curve(tab_name, u, f, True, cp_x, cp_y)
@@ -181,8 +181,8 @@ class GUIEventHandler:
             elif isinstance(behavior, BivariateBehavior):
                 if not error:
                     t = np.linspace(-1.25, 1.25, self._nb_samples)
-                    u = behavior._a(t)
-                    f = behavior._b(t)
+                    u = behavior.a(t)
+                    f = behavior.b(t)
                 else:
                     u = None
                     f = None
@@ -232,8 +232,8 @@ class GUIEventHandler:
             elif isinstance(behavior, BivariateBehavior):
                 if not error:
                     t = np.linspace(-1.25, 1.25, self._nb_samples)
-                    u = behavior._a(t)
-                    f = behavior._b(t)
+                    u = behavior.a(t)
+                    f = behavior.b(t)
                 else:
                     u = None
                     f = None
@@ -311,13 +311,15 @@ class GUIEventHandler:
                     f = behavior.gradient_energy(natural_measure + u)[0]
                 elif isinstance(behavior, BivariateBehavior):
                     t = np.linspace(-1.25, 1.25, self._nb_samples)
-                    u = behavior._a(t)
-                    f = behavior._b(t)
+                    u = behavior.a(t)
+                    f = behavior.b(t)
                 else:
                     raise ValueError
-            self._drawing_space.update_curve(name, u, f)
+            # first updating the message, then drawing the curve.
+            # Otherwise, curve depiction and error message are sometimes not consistent, somehow.
             self._behavior_errors[name] = error
             self.update_behavior_text(name)
+            self._drawing_space.update_curve(name, u, f)
         self.print_behaviors()
 
     def update_behavior_natural_measure(self, tab_name):
@@ -344,8 +346,8 @@ class GUIEventHandler:
                     f = behavior.gradient_energy(natural_measure + u)[0]
                 elif isinstance(behavior, BivariateBehavior):
                     t = np.linspace(-1.25, 1.25, self._nb_samples)
-                    u = behavior._a(t)
-                    f = behavior._b(t)
+                    u = behavior.a(t)
+                    f = behavior.b(t)
                 else:
                     raise ValueError
             else:
@@ -433,8 +435,8 @@ class GUIEventHandler:
                     f = b.gradient_energy(b.get_natural_measure() + u)[0]
                 elif isinstance(b, BivariateBehavior):
                     t = np.linspace(-1.25, 1.25, self._nb_samples)
-                    u = b._a(t)
-                    f = b._b(t)
+                    u = b.a(t)
+                    f = b.b(t)
                 else:
                     raise ValueError('Unknown behavior family')
                 self._drawing_space.load_new_curve(tab_name, u, f, True, cp_x, cp_y)

@@ -93,8 +93,7 @@ def create_smooth_piecewise_function(a, x, delta):
         else:
             spline_functions.append(smoothing_functions[index])
 
-    return lambda u: np.sign(u) * np.piecewise(np.abs(u), [condition(np.abs(u)) for condition in conditions],
-                                               spline_functions)
+    return lambda u: np.piecewise(u, [condition(u) for condition in conditions], spline_functions)
 
 
 def create_smooth_piecewise_derivative_function(a, x, delta):
@@ -110,7 +109,7 @@ def create_smooth_piecewise_derivative_function(a, x, delta):
         else:
             der_spline_functions.append(derivative_smoothing_functions[index])
 
-    return lambda u: np.piecewise(np.abs(u), [condition(np.abs(u)) for condition in conditions], der_spline_functions)
+    return lambda u: np.piecewise(u, [condition(u) for condition in conditions], der_spline_functions)
 
 
 def create_smooth_piecewise_second_derivative_function(a, x, delta):
@@ -126,8 +125,7 @@ def create_smooth_piecewise_second_derivative_function(a, x, delta):
         else:
             second_der_spline_functions.append(second_derivative_smoothing_functions[index])
 
-    return lambda u: np.sign(u) * np.piecewise(np.abs(u), [condition(np.abs(u)) for condition in conditions],
-                                               second_der_spline_functions)
+    return lambda u: np.piecewise(u, [condition(u) for condition in conditions], second_der_spline_functions)
 
 
 def get_extrema(a, x, delta):

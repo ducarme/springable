@@ -1,0 +1,14 @@
+NODES
+0, 0.0, 0.0, 0, 0
+1, -1.0, -1.5, 1, 1
+2, +1.0, -1.5, 1, 1
+3, 0.0, -1, 1, 0
+ROTATION SPRINGS
+1-0-2, k=0.05
+SPRINGS
+1-0, k=.6
+2-0, k=.6
+AREA SPRINGS
+0-1-3-2, ISOTHERMAL(n=2;R=1;T0=1)
+LOADING
+3, Y, -1.0, -3.0

@@ -1,5 +1,6 @@
 UPDATE SPRINGABLE VERSION AND PUBLISHING TO PYPI
 
+* set DEBUG in gui_settings to False
 * update springable package __init__ file (src/springable/__init__.py): change variable __version__
 * update _readme_no_toc.md. Copy-paste text to https://bitdowntoc.derlin.ch/ --> Copy-paste output text to README.md
 * update pyproject.toml: change springable version
