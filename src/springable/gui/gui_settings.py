@@ -1,7 +1,7 @@
 from ..readwrite.keywords import usable_behaviors
 from ..mechanics.mechanical_behavior import *
 
-DEBUG = False
+DEBUG = True
 
 DEFAULT_NATURAL_MEASURE = 1.0
 DEFAULT_BEHAVIORS: dict[str, MechanicalBehavior] = dict()
@@ -21,9 +21,12 @@ XLIM = (-1., 5.)
 YLIM = (-2., 2.5)
 
 # EXPERIMENTAL DATA (csv files, headers will automatically ignored)
-DISPLACEMENT_COLUMN_INDEX = 1
-FORCE_COLUMN_INDEX = 2
+DISPLACEMENT_COLUMN_INDEX = 0
+FORCE_COLUMN_INDEX = 1
 DELIMITER = ','
 
-
+# RESPONSE CURVE
+FMAX = 0.5
+SAMPLING = 150
+OOB_TOL = 0.2e-3
 

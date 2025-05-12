@@ -101,8 +101,8 @@ class BivariateBehavior(MechanicalBehavior):
         if da0 == 0.0 or db0 == 0.0:
             raise InvalidBehaviorParameters('The initial slope of the behavior'
                                             'cannot be perfectly horizontal or vertical')
-        a_extrema = self._get_a_extrema()
-        b_extrema = self._get_b_extrema()
+        a_extrema = self.get_a_extrema()
+        b_extrema = self.get_b_extrema()
         if any(x in set(b_extrema) for x in a_extrema):
             raise InvalidBehaviorParameters('The behavior curve cannot have cusps.')
         a_extrema = [(a_extremum, 'a_max' if i % 2 == (0 if da0 > 0 else 1) else 'a_min')
@@ -336,10 +336,10 @@ class BivariateBehavior(MechanicalBehavior):
     def _d3b_fun(self, t):
         raise NotImplementedError("This method is abstract.")
 
-    def _get_a_extrema(self) -> np.ndarray:
+    def get_a_extrema(self) -> np.ndarray:
         raise NotImplementedError("This method is abstract.")
 
-    def _get_b_extrema(self) -> np.ndarray:
+    def get_b_extrema(self) -> np.ndarray:
         raise NotImplementedError("This method is abstract.")
 
     def elastic_energy(self, alpha: float, t: float) -> np.ndarray:
@@ -371,7 +371,7 @@ class BivariateBehavior(MechanicalBehavior):
         return self._hysteron_info
 
     def _compute_hysteron_info(self):
-        extrema = self._get_a_extrema()
+        extrema = self.get_a_extrema()
         if extrema.shape[0] == 0:  # not a hysteron
             self._hysteron_info = {}
         else:
@@ -404,7 +404,7 @@ class BivariateBehavior(MechanicalBehavior):
                     if is_branch_stable[i]:
                         branch_id = str(i // 2)
                     else:
-                        branch_id = str(i // 2 - 1) + '-' + str(i // 2 + 1)
+                        branch_id = str(i // 2) + '-' + str(i // 2 + 1)
                     branch_ids.append(branch_id)
                 self._hysteron_info = {'nb_stable_branches': nb_extrema + 1,
                                        'branch_intervals': branch_intervals,
@@ -420,7 +420,7 @@ class BivariateBehavior(MechanicalBehavior):
                     if is_branch_stable[i]:
                         branch_id = str(i // 2)
                     else:
-                        branch_id = str(i // 2 - 1) + '-' + str(i // 2 + 1)
+                        branch_id = str(i // 2) + '-' + str(i // 2 + 1)
                     branch_ids.append(branch_id)
                 branch_ids = branch_ids[::-1]
                 self._hysteron_info = {'nb_stable_branches': nb_extrema + 1,
@@ -694,10 +694,10 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
     def _d3b_fun(self, t):
         return bezier_curve.evaluate_third_derivative_poly(t, self._b_coefs)
 
-    def _get_a_extrema(self) -> np.ndarray:
+    def get_a_extrema(self) -> np.ndarray:
         return bezier_curve.get_extrema(self._a_coefs)
 
-    def _get_b_extrema(self) -> np.ndarray:
+    def get_b_extrema(self) -> np.ndarray:
         return bezier_curve.get_extrema(self._b_coefs)
 
     def get_control_points(self) -> tuple[np.ndarray, np.ndarray]:
@@ -760,6 +760,11 @@ class PiecewiseBehavior(UnivariateBehavior, ControllableByPoints):
         else:
             raise InvalidBehaviorParameters('This error should never be triggered '
                                             '(error: mode not -1, 0 or 1, while making behavior)')
+
+    def is_monotonic(self):
+        k = self._parameters['k_i']
+        return all(kk > 0 for kk in k)
+
 
     def get_control_points(self) -> tuple[np.ndarray, np.ndarray]:
         return self._u_i.copy(), self._f_i.copy()
@@ -930,10 +935,10 @@ class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
         return self._raw_db_fun(t)
 
     def _d2a_fun(self, t):
-        return self._raw_d2a_fun
+        return self._raw_d2a_fun(t)
 
     def _d2b_fun(self, t):
-        return self._raw_d2b_fun
+        return self._raw_d2b_fun(t)
 
     def _d3a_fun(self, t):
         return np.zeros_like(t)
@@ -941,10 +946,10 @@ class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
     def _d3b_fun(self, t):
         return np.zeros_like(t)
 
-    def _get_a_extrema(self) -> np.ndarray:
+    def get_a_extrema(self) -> np.ndarray:
         return spw.get_extrema(self._k_u, self._x_u, self._delta)
 
-    def _get_b_extrema(self) -> np.ndarray:
+    def get_b_extrema(self) -> np.ndarray:
         return spw.get_extrema(self._k_f, self._x_f, self._delta)
 
     def _check(self):

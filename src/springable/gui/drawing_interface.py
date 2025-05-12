@@ -68,6 +68,8 @@ class DrawingSpace:
 
         self.curves: dict[str, Line2D] = {}
         # self._extra_curves: dict[str, Line2D] = {}
+        self.response_curve: Line2D | None = None
+
         self.curve_interactors: dict[str, CurveInteractor] = {}
         self.curve_control_points: dict[str, tuple[np.ndarray, np.ndarray] | None] = {}
         self._exp_curves = []
@@ -215,6 +217,22 @@ class DrawingSpace:
             self._active_curve_interactor = self.curve_interactors[name]
         self.update()
 
+    def add_response_curve(self, u, f):
+        if u is not None and f is not None:
+            self.response_curve, = self.ax.plot(u, f, 'o', animated=True, color='#000000', markersize=1.0)
+        else:
+            self.response_curve, = self.ax.plot([], [], 'o', animated=True, color='#000000', markersize=1.0)
+        self.update()
+
+    def update_response_curve(self, u, f):
+        if u is not None and f is not None:
+            self.response_curve.set_xdata(u)
+            self.response_curve.set_ydata(f)
+        else:
+            self.response_curve.set_xdata([])
+            self.response_curve.set_ydata([])
+        self.update()
+
     def change_curve_type(self, name, u, f, is_controllable, cp_x=None, cp_y=None):
         if u is not None and f is not None:
             self.curves[name].set_data(u, f)
@@ -316,6 +334,9 @@ class DrawingSpace:
 
         for exp_curve in self._exp_curves:
             fig.draw_artist(exp_curve)
+
+        if self.response_curve is not None:
+            fig.draw_artist(self.response_curve)
 
         for name, line in self.curves.items():
             if name != self._current_curve_name:

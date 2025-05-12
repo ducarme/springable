@@ -6,7 +6,7 @@ from ..utils import bezier_curve
 from ..readwrite.interpreting import behavior_to_text
 from ..readwrite import fileio
 from .gui_settings import DEFAULT_BEHAVIORS, DEFAULT_NATURAL_MEASURE, XLIM, NB_SAMPLES, FORCE_COLUMN_INDEX, \
-    DISPLACEMENT_COLUMN_INDEX, DELIMITER
+    DISPLACEMENT_COLUMN_INDEX, DELIMITER, OOB_TOL, FMAX, SAMPLING
 
 import numpy as np
 
@@ -138,6 +138,35 @@ class GUIEventHandler:
 
         self._behavior_errors[tab_name] = error
         self.update_behavior_text(tab_name)
+
+        if (all(err == '' for err in self._behavior_errors.values())
+                and all(name in self._behaviors.keys() for name in ('B0', 'B1', 'B2'))
+                and not isinstance(self._behaviors['B0'], BivariateBehavior)
+                and not isinstance(self._behaviors['B1'], BivariateBehavior)
+                and isinstance(self._behaviors['B2'], BivariateBehavior)):
+            b0 = self._behaviors['B0']
+            b1 = self._behaviors['B1']
+            b2: BivariateBehavior = self._behaviors['B2']
+
+            tt = np.linspace(0, 1, SAMPLING)
+            u0 = np.linspace(0, self._umax, SAMPLING)
+            f  = np.linspace(0, FMAX, SAMPLING)
+            T, U0, F = np.meshgrid(tt, u0, f)
+
+            F0 = b0.gradient_energy(U0 + b0.get_natural_measure())[0]
+
+            U2 = b2.a(T)
+            F2 = b2.b(T)
+
+            U1 = U0 + U2
+            F1 = b1.gradient_energy(U1 + b1.get_natural_measure())[0]
+
+            OOB = (F0 - F1 - F2) ** 2 + (F0 + F1 - F) ** 2
+
+            balance_indices = OOB < OOB_TOL
+            balance_f = F[balance_indices].flatten()
+            balance_u = (U0[balance_indices] + U1[balance_indices]).flatten()
+            self._drawing_space.add_response_curve(balance_u, balance_f)
         self.print_behaviors()
 
     def change_behavior_type(self, tab_name):
@@ -202,6 +231,36 @@ class GUIEventHandler:
                 f = None
             self._drawing_space.change_curve_type(tab_name, u, f, False)
         self._behavior_errors[tab_name] = error
+
+        if (all(err == '' for err in self._behavior_errors.values())
+                and all(name in self._behaviors.keys() for name in ('B0', 'B1', 'B2'))
+                and not isinstance(self._behaviors['B0'], BivariateBehavior)
+                and not isinstance(self._behaviors['B1'], BivariateBehavior)
+                and isinstance(self._behaviors['B2'], BivariateBehavior)):
+            b0 = self._behaviors['B0']
+            b1 = self._behaviors['B1']
+            b2: BivariateBehavior = self._behaviors['B2']
+
+            tt = np.linspace(0, 1, SAMPLING)
+            u0 = np.linspace(0, self._umax, SAMPLING)
+            f  = np.linspace(0, FMAX, SAMPLING)
+            T, U0, F = np.meshgrid(tt, u0, f)
+
+            F0 = b0.gradient_energy(U0 + b0.get_natural_measure())[0]
+
+            U2 = b2.a(T)
+            F2 = b2.b(T)
+
+            U1 = U0 + U2
+            F1 = b1.gradient_energy(U1 + b1.get_natural_measure())[0]
+
+            OOB = (F0 - F1 - F2) ** 2 + (F0 + F1 - F) ** 2
+
+            balance_indices = OOB < OOB_TOL
+            balance_f = F[balance_indices].flatten()
+            balance_u = (U0[balance_indices] + U1[balance_indices]).flatten()
+            self._drawing_space.add_response_curve(balance_u, balance_f)
+
         self.update_behavior_text(tab_name)
         self.print_behaviors()
 
@@ -249,6 +308,36 @@ class GUIEventHandler:
 
         self._drawing_space.update_curve(tab_name, u, f)
         self._behavior_errors[tab_name] = error
+
+        if (all(err == '' for err in self._behavior_errors.values())
+                and all(name in self._behaviors.keys() for name in ('B0', 'B1', 'B2'))
+                and not isinstance(self._behaviors['B0'], BivariateBehavior)
+                and not isinstance(self._behaviors['B1'], BivariateBehavior)
+                and isinstance(self._behaviors['B2'], BivariateBehavior)):
+            b0 = self._behaviors['B0']
+            b1 = self._behaviors['B1']
+            b2: BivariateBehavior = self._behaviors['B2']
+
+            tt = np.linspace(0, 1, SAMPLING)
+            u0 = np.linspace(0, self._umax, SAMPLING)
+            f  = np.linspace(0, FMAX, SAMPLING)
+            T, U0, F = np.meshgrid(tt, u0, f)
+
+            F0 = b0.gradient_energy(U0 + b0.get_natural_measure())[0]
+
+            U2 = b2.a(T)
+            F2 = b2.b(T)
+
+            U1 = U0 + U2
+            F1 = b1.gradient_energy(U1 + b1.get_natural_measure())[0]
+
+            OOB = (F0 - F1 - F2) ** 2 + (F0 + F1 - F) ** 2
+
+            balance_indices = OOB < OOB_TOL
+            balance_f = F[balance_indices].flatten()
+            balance_u = (U0[balance_indices] + U1[balance_indices]).flatten()
+            self._drawing_space.update_response_curve(balance_u, balance_f)
+
         self.update_behavior_text(tab_name)
         self.print_behaviors()
         # to be extended
@@ -320,6 +409,35 @@ class GUIEventHandler:
             self._behavior_errors[name] = error
             self.update_behavior_text(name)
             self._drawing_space.update_curve(name, u, f)
+
+            if (all(err == '' for err in self._behavior_errors.values())
+                    and all(name in self._behaviors.keys() for name in ('B0', 'B1', 'B2'))
+                    and not isinstance(self._behaviors['B0'], BivariateBehavior)
+                    and not isinstance(self._behaviors['B1'], BivariateBehavior)
+                    and isinstance(self._behaviors['B2'], BivariateBehavior)):
+                b0 = self._behaviors['B0']
+                b1 = self._behaviors['B1']
+                b2: BivariateBehavior = self._behaviors['B2']
+
+                tt = np.linspace(0, 1, SAMPLING)
+                u0 = np.linspace(0, self._umax, SAMPLING)
+                f = np.linspace(0, FMAX, SAMPLING)
+                T, U0, F = np.meshgrid(tt, u0, f)
+
+                F0 = b0.gradient_energy(U0 + b0.get_natural_measure())[0]
+
+                U2 = b2.a(T)
+                F2 = b2.b(T)
+
+                U1 = U0 + U2
+                F1 = b1.gradient_energy(U1 + b1.get_natural_measure())[0]
+
+                OOB = (F0 - F1 - F2) ** 2 + (F0 + F1 - F) ** 2
+
+                balance_indices = OOB < OOB_TOL
+                balance_f = F[balance_indices].flatten()
+                balance_u = (U0[balance_indices] + U1[balance_indices]).flatten()
+                self._drawing_space.update_response_curve(balance_u, balance_f)
         self.print_behaviors()
 
     def update_behavior_natural_measure(self, tab_name):
