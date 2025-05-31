@@ -10,11 +10,13 @@ import matplotlib.cm as mcm
 from matplotlib.path import Path
 import sys
 
-shape_unit_dimensions: dict[type[shape], int] = {shape.Segment: 1,
+shape_unit_dimensions: dict[type[shape], int] = {shape.SegmentLength: 1,
                                                  shape.Area: 2,
                                                  shape.HoleyArea: 2,
                                                  shape.Angle: 0,
                                                  shape.Path: 1,
+                                                 shape.SignedXDist: -1,
+                                                 shape.SignedYDist: -1,
                                                  shape.DistancePointLine: -1,
                                                  shape.SignedDistancePointLine: -1,
                                                  shape.SquaredDistancePointSegment: -2}
@@ -330,9 +332,8 @@ def compute_pathpatch_vertices(polys, compute_code=True):
     return vertices, codes
 
 
-def compute_requirements_for_animation(_result: Result, assembly_appearance: AssemblyAppearanceOptions):
+def scan_result_and_compute_quantities_for_animations(_result: Result, assembly_appearance: AssemblyAppearanceOptions,):
     aa = assembly_appearance
-
     _assembly = _result.get_model().get_assembly()
     u = _result.get_displacements(include_preloading=True)
     f = _result.get_forces(include_preloading=True)

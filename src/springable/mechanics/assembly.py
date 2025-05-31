@@ -227,7 +227,7 @@ class Assembly:
         all_spring_lengths = []
         for _element in self._elements:
             s = _element.get_shape()
-            if isinstance(s, shape.Segment):
+            if isinstance(s, shape.SegmentLength):
                 all_spring_lengths.append((s.compute(shape.Shape.MEASURE)))
         if all_spring_lengths:  # at least 1 longitudinal spring in assembly
             characteristic_length = np.quantile(all_spring_lengths, .75)

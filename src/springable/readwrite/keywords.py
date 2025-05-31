@@ -2,14 +2,14 @@ from ..mechanics import shape
 from ..mechanics import mechanical_behavior
 from ..utils.one2one_mapping import One2OneMapping
 
-usable_shapes = One2OneMapping({shape.Segment: '',
+usable_shapes = One2OneMapping({shape.SegmentLength: '',
                                 shape.Area: 'AREA',
                                 shape.Path: 'LINE',
                                 shape.Angle: 'ROTATION',
                                 shape.SignedDistancePointLine: 'DISTANCE',
                                 shape.SquaredDistancePointSegment: 'GAP',
-                                shape.X: 'X',
-                                shape.Y: 'Y'
+                                shape.SignedXDist: 'X DISTANCE',
+                                shape.SignedYDist: 'Y DISTANCE'
                                 })
 
 usable_behaviors = One2OneMapping({mechanical_behavior.LinearBehavior: 'LINEAR',

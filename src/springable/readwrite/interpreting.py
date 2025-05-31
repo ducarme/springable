@@ -199,18 +199,6 @@ def text_to_shape(shape_text: tuple[str, str], nodes: set[Node]) -> Shape:
             core_areas = [text_to_shape(('AREA', core_area_description), nodes)
                           for core_area_description in core_area_descriptions]
             return HoleyArea(*core_areas)
-    if shape_type_name == 'X':
-        if shape_description.startswith('('):
-            core_x_descriptions, _ = parse_simple_arithmetic(shape_description, operators='-')
-            pos_x: X = text_to_shape(('X', core_x_descriptions[0]), nodes)
-            neg_x: X = text_to_shape(('X', core_x_descriptions[1]), nodes)
-            return XDiff(pos_x, neg_x)
-    if shape_type_name == 'Y':
-        if shape_description.startswith('('):
-            core_y_descriptions, _ = parse_simple_arithmetic(shape_description, operators='-')
-            pos_y: Y = text_to_shape(('Y', core_y_descriptions[0]), nodes)
-            neg_y: Y = text_to_shape(('Y', core_y_descriptions[1]), nodes)
-            return YDiff(pos_y, neg_y)
     try:
         shape_type = usable_shapes.name_to_type[shape_type_name]
     except KeyError:

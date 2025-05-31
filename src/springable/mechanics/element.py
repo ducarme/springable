@@ -108,14 +108,15 @@ class Element:
         alpha = shape_measure
 
         if self._behavior.get_nb_dofs() == 1:
-            force_vector = self._behavior.gradient_energy(alpha)[0] * jacobian
+            dvdalpha = self._behavior.gradient_energy(alpha)[0]
+            force_vector = dvdalpha * jacobian if dvdalpha != 0.0 else np.zeros_like(jacobian)
             return force_vector
 
         if self._behavior.get_nb_dofs() == 2:
             n = self.get_nb_dofs()
             force_vector = np.empty(n)
             dvdalpha, dvdt = self._behavior.gradient_energy(alpha, *self._x)
-            force_vector[:-1] = dvdalpha * jacobian
+            force_vector[:-1] = dvdalpha * jacobian if dvdalpha != 0.0 else np.zeros_like(jacobian)
             force_vector[-1] = dvdt
             return force_vector
         else:
@@ -129,8 +130,14 @@ class Element:
         alpha = shape_measure
 
         if self._behavior.get_nb_dofs() == 1:
-            stiffness_matrix = (self._behavior.hessian_energy(alpha)[0] * np.outer(jacobian, jacobian)
-                                + self._behavior.gradient_energy(alpha)[0] * hessian)
+            dvdalpha = self._behavior.gradient_energy(alpha)[0]
+            d2vdalpha2 = self._behavior.hessian_energy(alpha)[0]
+            stiffness_matrix = ((d2vdalpha2 * np.outer(jacobian, jacobian)
+                                 if d2vdalpha2 != 0.0 else np.zeros_like(hessian)
+                                 )
+                                + (dvdalpha * hessian
+                                   if dvdalpha != 0.0 else np.zeros_like(hessian)
+                                   ))
             return stiffness_matrix
 
         if self._behavior.get_nb_dofs() == 2:

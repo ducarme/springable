@@ -265,9 +265,9 @@ class BivariateBehavior(MechanicalBehavior):
         self._int_adb = int_adb
         self._int_bda = int_bda
         if mode == -1:
-            all_t = np.linspace(-1, 0, 50)
+            all_t = np.linspace(-1, 0, round(1e5))
         else:
-            all_t = np.linspace(0, 1, 50)
+            all_t = np.linspace(0, 1, round(1e5))
         da = self.da(all_t)
         db = self.db(all_t)
         db_da = db / da
@@ -667,6 +667,64 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
         self._parameters['f_i'] = f_i
         self._a_coefs = np.array([0.0] + self._parameters['u_i'])
         self._b_coefs = np.array([0.0] + self._parameters['f_i'])
+        self._check()
+        self._make()
+
+    def _a_fun(self, t):
+        return bezier_curve.evaluate_poly(t, self._a_coefs)
+
+    def _b_fun(self, t):
+        return bezier_curve.evaluate_poly(t, self._b_coefs)
+
+    def _da_fun(self, t):
+        return bezier_curve.evaluate_derivative_poly(t, self._a_coefs)
+
+    def _db_fun(self, t):
+        return bezier_curve.evaluate_derivative_poly(t, self._b_coefs)
+
+    def _d2a_fun(self, t):
+        return bezier_curve.evaluate_second_derivative_poly(t, self._a_coefs)
+
+    def _d2b_fun(self, t):
+        return bezier_curve.evaluate_second_derivative_poly(t, self._b_coefs)
+
+    def _d3a_fun(self, t):
+        return bezier_curve.evaluate_third_derivative_poly(t, self._a_coefs)
+
+    def _d3b_fun(self, t):
+        return bezier_curve.evaluate_third_derivative_poly(t, self._b_coefs)
+
+    def get_a_extrema(self) -> np.ndarray:
+        return bezier_curve.get_extrema(self._a_coefs)
+
+    def get_b_extrema(self) -> np.ndarray:
+        return bezier_curve.get_extrema(self._b_coefs)
+
+    def get_control_points(self) -> tuple[np.ndarray, np.ndarray]:
+        cp_x = np.array([0.0] + self._parameters['u_i'])
+        cp_y = np.array([0.0] + self._parameters['f_i'])
+        return cp_x, cp_y
+
+    def update_from_control_points(self, cp_x, cp_y):
+        u_i = cp_x[1:].tolist()
+        f_i = cp_y[1:].tolist()
+        self.update(u_i=u_i, f_i=f_i)
+
+    def update(self, natural_measure=None, /, **parameters):
+        super().update(natural_measure, **parameters)
+        self._a_coefs = np.array([0.0] + self._parameters['u_i'])
+        self._b_coefs = np.array([0.0] + self._parameters['f_i'])
+        self._check()
+        if parameters:
+            self._make()
+
+
+class SplineBehavior(BivariateBehavior, ControllableByPoints):
+
+    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], mode: int = 0):
+        super().__init__(natural_measure, mode=mode)
+        self._parameters['u_i'] = u_i
+        self._parameters['f_i'] = f_i
         self._check()
         self._make()
 

@@ -40,42 +40,8 @@ class Shape:
     def __sub__(self, other):
         return self + (-other)
 
-class X(Shape):
 
-    def compute(self, output_mode):
-        n = len(self._nodes)
-        x = np.mean([nd.get_x() for nd in self._nodes])
-        if output_mode == Shape.MEASURE:
-            return x
-        j = np.zeros(2*n)
-        j[::2] = np.ones(n) / n
-        if output_mode == Shape.MEASURE_AND_JACOBIAN:
-            return x, j
-        h = np.zeros(shape=(2*n, 2*n))
-        if output_mode == Shape.MEASURE_JACOBIAN_AND_HESSIAN:
-            return x, j, h
-        raise ValueError('Unknown output mode')
-
-
-class Y(Shape):
-
-    def compute(self, output_mode):
-        n = len(self._nodes)
-        x = np.mean([nd.get_y() for nd in self._nodes])
-        if output_mode == Shape.MEASURE:
-            return x
-        j = np.zeros(2 * n)
-        j[1::2] = np.ones(n) / n
-        if output_mode == Shape.MEASURE_AND_JACOBIAN:
-            return x, j
-        h = np.zeros(shape=(2 * n, 2 * n))
-        if output_mode == Shape.MEASURE_JACOBIAN_AND_HESSIAN:
-            return x, j, h
-        raise ValueError('Unknown output mode')
-
-
-
-class Segment(Shape):
+class SegmentLength(Shape):
     MIN_LENGTH_ALLOWED = 1e-6
 
     # constant matrix used to compute the hessian of the transformation
@@ -90,28 +56,35 @@ class Segment(Shape):
     def compute(self, output_mode: str) \
             -> float | tuple[float, np.ndarray] | tuple[float, np.ndarray, np.ndarray]:
         x1, y1, x2, y2 = self.get_nodal_coordinates()
-        length = Segment.calculate_length(x1, y1, x2, y2)
+        length = SegmentLength.calculate_length(x1, y1, x2, y2)
         if output_mode == Shape.MEASURE:
             return length
-        if length < Segment.MIN_LENGTH_ALLOWED:
+        if length < SegmentLength.MIN_LENGTH_ALLOWED:
             raise IllDefinedShape(
                 f'Length between node {self._nodes[0].get_node_nb()} and {self._nodes[1].get_node_nb()}'
-                f' is lower than {Segment.MIN_LENGTH_ALLOWED}.')
+                f' is lower than {SegmentLength.MIN_LENGTH_ALLOWED}.')
         dx = x1 - x2
         dy = y1 - y2
+
         # jacobian: derivatives of the length with respect to the nodal coordinates
-        dudq = 1 / length * np.array([dx, dy, -dx, -dy])
+        # if length == 0.0:
+        #     dldq = np.ones([1, -1, 1, -1]) / np.sqrt(2)
+        # else:
+        dldq = 1 / length * np.array([dx, dy, -dx, -dy])
         if output_mode == Shape.MEASURE_AND_JACOBIAN:
-            return length, dudq
+            return length, dldq
             # hessian: matrix of the second derivatives of the length with respect to the nodal coordinates
-        d2udq2 = 1 / length * (Segment._a - np.outer(dudq, dudq))
+        d2ldq2 = 1 / length * (SegmentLength._a - np.outer(dldq, dldq))
         if output_mode == Shape.MEASURE_JACOBIAN_AND_HESSIAN:
-            return length, dudq, d2udq2
+            return length, dldq, d2ldq2
         raise ValueError("Unknown mode")
 
     @staticmethod
     def calculate_length(x1, y1, x2, y2):
         return np.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
+class DistanceBetweenTwoSegments(Shape):
+    pass
 
 
 class Angle(Shape):
@@ -395,10 +368,54 @@ class CompoundShape(Shape):
     def get_shapes(self):
         return self._shapes
 
+class SignedXDist(Shape):
+    def __init__(self, node0: Node, node1: Node):
+        super().__init__(node0, node1)
+
+    def compute(self, output_mode) \
+            -> float | tuple[float, np.ndarray] | tuple[float, np.ndarray, np.ndarray]:
+        x0, y0, x1, y1 = self.get_nodal_coordinates()
+        x_dist = x0 - x1
+        if output_mode == Shape.MEASURE:
+            return x_dist
+
+        jacobian = np.array([1, 0, -1, 0])
+        if output_mode == Shape.MEASURE_AND_JACOBIAN:
+            return x_dist, jacobian
+
+        hessian = np.zeros((4, 4))
+        if output_mode == Shape.MEASURE_JACOBIAN_AND_HESSIAN:
+            return x_dist, jacobian, hessian
+
+        else:
+            raise ValueError('Unknown mode')
+
+class SignedYDist(Shape):
+    def __init__(self, node0: Node, node1: Node):
+        super().__init__(node0, node1)
+
+    def compute(self, output_mode) \
+            -> float | tuple[float, np.ndarray] | tuple[float, np.ndarray, np.ndarray]:
+        x0, y0, x1, y1 = self.get_nodal_coordinates()
+        y_dist = y0 - y1
+        if output_mode == Shape.MEASURE:
+            return y_dist
+
+        jacobian = np.array([0, 1, 0, -1])
+        if output_mode == Shape.MEASURE_AND_JACOBIAN:
+            return y_dist, jacobian
+
+        hessian = np.zeros((4, 4))
+        if output_mode == Shape.MEASURE_JACOBIAN_AND_HESSIAN:
+            return y_dist, jacobian, hessian
+
+        else:
+            raise ValueError('Unknown mode')
+
 class DistancePointLine(CompoundShape):
 
     def __init__(self, node0: Node, node1: Node, node2: Node):
-        super().__init__(Area(node0, node1, node2), Segment(node1, node2))
+        super().__init__(Area(node0, node1, node2), SegmentLength(node1, node2))
 
     def compute(self, output_mode) \
             -> float | tuple[float, np.ndarray] | tuple[float, np.ndarray, np.ndarray]:
@@ -449,7 +466,7 @@ class SignedDistancePointLine(CompoundShape):
     the distance is positive else negative. """
 
     def __init__(self, node0: Node, node1: Node, node2: Node):
-        super().__init__(SignedArea(node0, node1, node2), Segment(node1, node2))
+        super().__init__(SignedArea(node0, node1, node2), SegmentLength(node1, node2))
 
     def compute(self, output_mode) \
             -> float | tuple[float, np.ndarray] | tuple[float, np.ndarray, np.ndarray]:
@@ -542,20 +559,14 @@ class Negative(CompoundShape):
             return -shape_metric[0], -shape_metric[1], -shape_metric[2]
 
 
-class XDiff(Sum):
-    def __init__(self, positive_x: X, negative_x: X):
-        super().__init__(positive_x, -negative_x)
 
-class YDiff(Sum):
-    def __init__(self, positive_y: Y, negative_y: Y):
-        super().__init__(positive_y, -negative_y)
 
 class Path(Sum):
 
     def __init__(self, *nodes: Node):
         segments = []
         for i in range(len(nodes) - 1):
-            segments.append(Segment(nodes[i], nodes[i + 1]))
+            segments.append(SegmentLength(nodes[i], nodes[i + 1]))
         super().__init__(*segments)
 
 

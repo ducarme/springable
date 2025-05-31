@@ -66,6 +66,9 @@ class Model:
     def get_force_vector(self):
         return self._force_vector_step_list[-1]
 
+    def get_force_vectors_step_list(self):
+        return self._force_vector_step_list
+
     def get_preforce_vector(self):
         return np.sum(self._force_vector_step_list[:-1], axis=0)
 

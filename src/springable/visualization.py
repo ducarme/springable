@@ -205,15 +205,25 @@ def make_animation(result, save_dir, save_name: str = None, show=True,
                       **anim_options)
 
 
-def make_force_displacement_plot(result, save_dir, show=True, graphics_settings=None, **plot_options):
+def make_force_displacement_plot(result, save_dir, show=True,
+                                 graphics_settings=None, xlim=None, ylim=None, **plot_options):
     result = load_result(result)
     _, p_options, _, _ = _load_graphics_settings(graphics_settings)
     p_options.update(plot_options)
-    plot.force_displacement_curve(result, save_dir, show=show, **p_options)
+    plot.force_displacement_curve(result, save_dir, show=show, xlim=xlim, ylim=ylim, **p_options)
+
+def make_custom_plot(processing_fun, result, save_dir, show=True,
+                     graphics_settings=None, xlim=None, ylim=None, **plot_options):
+    result = load_result(result)
+    _, p_options, _, _ = _load_graphics_settings(graphics_settings)
+    p_options.update(plot_options)
+    plot.curve(processing_fun, result, save_dir, show=show, xlim=xlim, ylim=ylim, **p_options)
 
 
-def make_drawing(mdl: str | model.Model, save_dir,
-                 save_name='model', show=True, assembly_span=None, graphics_settings=None, **assembly_appearance):
+def make_model_drawing(mdl: str | model.Model, save_dir,
+                 save_name='model', show=True, assembly_span=None, characteristic_length=None,
+                 xlim: tuple[float, float] = None, ylim: tuple[float, float] = None,
+                 graphics_settings=None, **assembly_appearance):
     if isinstance(mdl, str):
         mdl = io.read_model(mdl)
     if not isinstance(mdl, model.Model):
@@ -221,4 +231,24 @@ def make_drawing(mdl: str | model.Model, save_dir,
                          "or an already loaded Model object")
     _, _, _, a_appearance = _load_graphics_settings(graphics_settings)
     a_appearance.update(assembly_appearance)
-    animation.draw_model(mdl, save_dir, save_name, show=show, assembly_span=assembly_span, **a_appearance)
+    animation.draw_model(mdl, save_dir, save_name, show=show, assembly_span=assembly_span,
+                         characteristic_length=characteristic_length, xlim=xlim, ylim=ylim,
+                         **a_appearance)
+
+def make_equilibrium_state_drawing(result, save_dir,
+                                   state_index=None,
+                                   start_of_loadstep_index=None,
+                                   end_of_loadstep_index=None,
+                                   save_name='equilibrium_state',
+                                   show=True,
+                                   assembly_span: float = None,
+                                   characteristic_length: float = None,
+                                   xlim: tuple[float, float] = None,
+                                   ylim: tuple[float, float] = None,
+                                   graphics_settings=None, **assembly_appearance):
+    result = load_result(result)
+    _, _, _, a_appearance = _load_graphics_settings(graphics_settings)
+    a_appearance.update(assembly_appearance)
+    animation.draw_equilibrium_state(result, state_index, start_of_loadstep_index, end_of_loadstep_index,
+                                     save_dir, save_name, show, assembly_span, characteristic_length, xlim, ylim,
+                                     **a_appearance)

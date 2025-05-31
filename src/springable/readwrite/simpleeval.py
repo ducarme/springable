@@ -276,6 +276,9 @@ DEFAULT_FUNCTIONS = {
     "COS": math.cos,
     "SIN": math.sin,
     "TAN": math.tan,
+    "ARCSIN": math.asin,
+    "ARCCOS": math.acos,
+    "ARCTAN": math.atan,
     "INF": math.inf,
     "ROUND": round}
 

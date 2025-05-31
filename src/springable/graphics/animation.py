@@ -14,7 +14,12 @@ from matplotlib.animation import FuncAnimation
 
 
 def draw_model(mdl: model.Model, save_dir=None, save_name='model',
-               show=True, assembly_span: float = None, **assembly_appearance):
+               show=True,
+               assembly_span: float = None,
+               characteristic_length: float = None,
+               xlim: tuple[float, float] = None,
+               ylim:  tuple[float, float] = None,
+               **assembly_appearance):
     aa = AssemblyAppearanceOptions()
     aa.update(**assembly_appearance)
 
@@ -25,12 +30,20 @@ def draw_model(mdl: model.Model, save_dir=None, save_name='model',
         xmin, ymin, xmax, ymax = mdl.get_assembly().get_dimensional_bounds()
         if assembly_span is None:
             assembly_span = max(xmax - xmin, ymax - ymin)
+
+
+        ModelDrawing(ax, mdl, aa, assembly_span=assembly_span, characteristic_length=characteristic_length)
         canvas_span = 1.25 * assembly_span
         midx, midy = (xmin + xmax) / 2, (ymin + ymax) / 2
+        if xlim is None:
+            ax.set_xlim(midx - canvas_span / 2, midx + canvas_span / 2)
+        else:
+            ax.set_xlim(*xlim)
+        if ylim is None:
+            ax.set_ylim(midy - canvas_span / 2, midy + canvas_span / 2)
+        else:
+            ax.set_ylim(*ylim)
 
-        ModelDrawing(ax, mdl, aa, assembly_span=assembly_span)
-        ax.set_xlim(midx - canvas_span / 2, midx + canvas_span / 2)
-        ax.set_ylim(midy - canvas_span / 2, midy + canvas_span / 2)
         ff.adjust_spines([ax], 0, ['bottom', 'top', 'left', 'right'] if aa.show_axes else [])
         ff.adjust_figure_layout(fig, aa.drawing_fig_width, aa.drawing_fig_height, pad=0.1)
         if save_dir is not None:
@@ -39,6 +52,110 @@ def draw_model(mdl: model.Model, save_dir=None, save_name='model',
             plt.show()
         else:
             plt.close(fig=fig)
+
+
+def draw_equilibrium_state(res: Result,
+                           state_index: int = None,
+                           start_of_loadstep_index: int  = None,
+                           end_of_loadstep_index: int = None,
+                           save_dir=None, save_name='state',
+                           show=True,
+                           assembly_span: float = None,
+                           characteristic_length: float = None,
+                           xlim: tuple[float, float] = None,
+                           ylim:  tuple[float, float] = None,
+                           **assembly_appearance):
+
+
+    aa = AssemblyAppearanceOptions()
+    aa.update(**assembly_appearance)
+
+    u = res.get_displacements(include_preloading=True)
+    nb_states = u.shape[0]
+    if state_index is None:
+        if start_of_loadstep_index is not None:
+            state_index = res.get_loadstep_starting_index(start_of_loadstep_index)
+        elif end_of_loadstep_index is not None:
+            state_index = res.get_loadstep_end_index(end_of_loadstep_index)
+
+    if state_index is None or state_index > nb_states - 1:
+        print('Cannot draw equilibrium state, because the state cannot be found. Try a different index.')
+        return
+
+    mdl = res.get_model()
+    loadstep_index = res.get_step_indices()[state_index]
+    initial_coordinates = mdl.get_assembly().get_coordinates().copy()
+    u  = res.get_displacements(include_preloading=True)
+
+    mdl.get_assembly().set_coordinates(initial_coordinates + u[state_index, :])
+    blocked_nodes_directions_step_list = mdl.get_blocked_nodes_directions_step_list()
+    for ls_ix, blocked_nodes_directions in enumerate(blocked_nodes_directions_step_list):
+        if ls_ix <= loadstep_index:
+            mdl.get_assembly().block_nodes_along_directions(*blocked_nodes_directions)
+
+    (bounds,
+     characteristic_length_,
+     element_color_handler,
+     element_opacity_handler,
+     force_color_handler,
+     all_force_amounts,
+     all_preforce_amounts) = visual_helpers.scan_result_and_compute_quantities_for_animations(res, aa)
+
+    if all_force_amounts is not None:
+        force_amounts = {loaded_node: amounts[0] for loaded_node, amounts in all_force_amounts.items()}
+    else:
+        force_amounts = None
+
+    if all_preforce_amounts is not None:
+        preforce_amounts = {loaded_node: amounts[0] for loaded_node, amounts in all_preforce_amounts.items()}
+    else:
+        preforce_amounts = None
+
+    forces_after_preloading = np.sum(mdl.get_force_vectors_step_list()[:loadstep_index], axis=0)
+
+
+    with plt.style.context(aa.stylesheet):
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.set_aspect('equal')
+        characteristic_length = characteristic_length if characteristic_length is not None else characteristic_length_
+        xmin, ymin, xmax, ymax = bounds
+        assembly_span = assembly_span if assembly_span is not None else max(xmax - xmin, ymax - ymin)
+        _model_drawing = ModelDrawing(ax, mdl, aa, characteristic_length, assembly_span,
+                                      element_color_handler=element_color_handler,
+                                      element_opacity_handler=element_opacity_handler,
+                                      force_color_handler=force_color_handler, force_amounts=force_amounts,
+                                      force_vector_after_preloading=forces_after_preloading,
+                                      preforce_amounts=preforce_amounts)
+
+        xmin, ymin, xmax, ymax = bounds
+        canvas_span = 1.25 * assembly_span
+        midx, midy = (xmin + xmax) / 2, (ymin + ymax) / 2
+        if xlim is None:
+            ax.set_xlim(midx - canvas_span / 2, midx + canvas_span / 2)
+        else:
+            ax.set_xlim(*xlim)
+        if ylim is None:
+            ax.set_ylim(midy - canvas_span / 2, midy + canvas_span / 2)
+        else:
+            ax.set_ylim(*ylim)
+
+
+        ff.adjust_spines([ax], 0, ['bottom', 'top', 'left', 'right'] if aa.show_axes else [])
+        ff.adjust_figure_layout(fig, aa.drawing_fig_width, aa.drawing_fig_height, pad=0.1)
+        if save_dir is not None:
+            ff.save_fig(fig, save_dir, f'{save_name}_{state_index}',
+                        ['png', 'pdf'], transparent=aa.transparent, dpi=aa.drawing_dpi)
+        if show:
+            plt.show()
+        else:
+            plt.close(fig=fig)
+
+        mdl.get_assembly().set_coordinates(initial_coordinates)
+        for blocked_nodes_directions in blocked_nodes_directions_step_list:
+            mdl.get_assembly().release_nodes_along_directions(*blocked_nodes_directions)
+
+
 
 
 def animate(_result: Result, save_dir, save_name: str = None, show=True,
@@ -82,7 +199,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
          element_opacity_handler,
          force_color_handler,
          all_force_amounts,
-         all_preforce_amounts) = visual_helpers.compute_requirements_for_animation(_result, aa)
+         all_preforce_amounts) = visual_helpers.scan_result_and_compute_quantities_for_animations(_result, aa)
         xmin, ymin, xmax, ymax = bounds
         assembly_span = max(xmax - xmin, ymax - ymin)
         canvas_span = 1.25 * assembly_span

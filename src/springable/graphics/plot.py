@@ -189,15 +189,49 @@ def curve_in_ax(processing_fun: callable, result: Result, ax: plt.Axes, plot_opt
                 lbl = label if po.driven_path_only else ''
 
             if po.show_driven_path:
-                ax.plot(x[path_indices], y[path_indices], ls='',
-                        markersize=po.size_for_driven_path * po.default_markersize,
-                        marker=po.default_marker,
-                        color=color if color is not None else po.driven_path_color,
-                        label=lbl,
-                        zorder=1.1, alpha=0.75)
-            nb_transitions = min(len(critical_indices), len(restabilization_indices))
+                if po.plot_style == 'points':
+                    ax.plot(x[path_indices], y[path_indices], ls='',
+                            markersize=po.size_for_driven_path * po.default_markersize,
+                            marker=po.default_marker,
+                            color=color if color is not None else po.driven_path_color,
+                            label=lbl,
+                            zorder=1.1)
+                else:
+                    nb_transitions = min(len(critical_indices), len(restabilization_indices))
+                    if nb_transitions == 0:
+                        ax.plot(x[path_indices], y[path_indices],
+                                ls='-',
+                                lw=po.default_linewidth * po.size_for_driven_path,
+                                color=color if color is not None else po.driven_path_color,
+                                label=lbl,
+                                zorder=1.1)
+                    else:  # at least one snapping event
+                        ax.plot(x[path_indices[0]:critical_indices[0]],
+                                y[path_indices[0]:critical_indices[0]],
+                                ls='-',
+                                lw=po.default_linewidth * po.size_for_driven_path,
+                                color=color if color is not None else po.driven_path_color,
+                                label=lbl,
+                                zorder=1.1)
+                        for i in range(1, nb_transitions):
+                            ax.plot(x[restabilization_indices[i-1]:critical_indices[i]],
+                                    y[restabilization_indices[i-1]:critical_indices[i]],
+                                    ls='-',
+                                    lw=po.default_linewidth * po.size_for_driven_path,
+                                    color=color if color is not None else po.driven_path_color,
+                                    label=lbl,
+                                    zorder=1.1)
+                        ax.plot(x[restabilization_indices[-1]:path_indices[-1]],
+                                y[restabilization_indices[-1]:path_indices[-1]],
+                                ls='-',
+                                lw=po.default_linewidth * po.size_for_driven_path,
+                                color=color if color is not None else po.driven_path_color,
+                                label=lbl,
+                                zorder=1.1)
+
             if po.show_snapping_arrows:
                 if po.drive_mode in ('force', 'displacement'):
+                    nb_transitions = min(len(critical_indices), len(restabilization_indices))
                     for i in range(nb_transitions):
                         start = np.array((x[critical_indices[i]], y[critical_indices[i]]))
                         end = np.array((x[restabilization_indices[i]], y[restabilization_indices[i]]))

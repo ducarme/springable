@@ -51,7 +51,7 @@ class ShapeDrawing(Drawing):
 # here in below, core drawing classes for basic shapes
 class SegmentDrawing(ShapeDrawing):
 
-    def __init__(self, segment: shape.Segment, width: float, is_hysteron, ax: plt.Axes, color: str, opacity: float,
+    def __init__(self, segment: shape.SegmentLength, width: float, is_hysteron, ax: plt.Axes, color: str, opacity: float,
                  aa: AssemblyAppearanceOptions):
         super().__init__(segment, width, is_hysteron, ax, color, opacity, aa)
         x0, y0, x1, y1 = self._shape.get_nodal_coordinates()
@@ -155,12 +155,6 @@ class AngleDrawing(ShapeDrawing):
                 center[1] + self._size * self._aa.rotation_spring_radius_scaling * np.sin(mid_angle)
             )
 
-
-class XDrawing(ShapeDrawing):
-    def __init__(self, x: shape.X, size, is_hysteron, ax:plt.Axes,
-                 color: str, opacity: float, aa: AssemblyAppearanceOptions):
-        super().__init__(x, size, is_hysteron, ax, color, opacity, aa)
-
 class AreaDrawing(ShapeDrawing):
     def __init__(self, area: shape.Area, is_hysteron, ax: plt.Axes,
                  color: str, opacity: float, aa: AssemblyAppearanceOptions):
@@ -192,7 +186,7 @@ class PathDrawing(ShapeDrawing):
         x, y = coordinates[::2], coordinates[1::2]
         lengths = [0.0]
         for i in range(len(x) - 1):
-            lengths.append(lengths[-1] + shape.Segment.calculate_length(x[i], y[i], x[i + 1], y[i + 1]))
+            lengths.append(lengths[-1] + shape.SegmentLength.calculate_length(x[i], y[i], x[i + 1], y[i + 1]))
         t = np.linspace(0, 1, 10) * lengths[-1]
         xx = interp1d(lengths, x)(t[1:-1])
         yy = interp1d(lengths, y)(t[1:-1])
@@ -212,7 +206,7 @@ class PathDrawing(ShapeDrawing):
         x, y = coordinates[::2], coordinates[1::2]
         lengths = [0.0]
         for i in range(len(x) - 1):
-            lengths.append(lengths[-1] + shape.Segment.calculate_length(x[i], y[i], x[i + 1], y[i + 1]))
+            lengths.append(lengths[-1] + shape.SegmentLength.calculate_length(x[i], y[i], x[i + 1], y[i + 1]))
         t = np.linspace(0, 1, 10) * lengths[-1]
         xx = interp1d(lengths, x)(t[1:-1])
         yy = interp1d(lengths, y)(t[1:-1])
@@ -302,7 +296,7 @@ class CompoundDrawing(ShapeDrawing):
     """ Class to draw shapes that are (eventually) made of sub-shapes that can be drawn
     (that is, belonging to the dictionary DRAWABLE_SHAPES """
 
-    DRAWABLE_SHAPES = {shape.Segment: SegmentDrawing,
+    DRAWABLE_SHAPES = {shape.SegmentLength: SegmentDrawing,
                        shape.Angle: AngleDrawing,
                        shape.Area: AreaDrawing,
                        shape.HoleyArea: HoleyAreaDrawing,
@@ -450,7 +444,7 @@ class ElementDrawing(Drawing):
 
         hysteron_state_drawing_position = None
         _shape = self._element.get_shape()
-        if isinstance(_shape, shape.Segment):
+        if isinstance(_shape, shape.SegmentLength):
             color = color if color is not None else self._aa.spring_default_color
             opacity = opacity if opacity is not None else self._aa.spring_default_opacity
             shape_drawing = SegmentDrawing(_shape, self._width, self._is_hysteron,
@@ -483,8 +477,8 @@ class ElementDrawing(Drawing):
             opacity = opacity if opacity is not None else self._aa.area_spring_default_opacity
             shape_drawing = HoleyAreaDrawing(_shape, self._is_hysteron, self._ax, color, opacity, self._aa)
         else:
-            raise NotImplementedError(
-                f'Cannot draw element because no implementation of how to draw its shape {_shape}')
+            print(f'Cannot draw element #{self._element.get_element_nb()} because no implementation of how to draw its shape (namely "{type(_shape).__name__  }")')
+            return None, None, None
 
         hysteron_state_drawing_position = shape_drawing.get_hysteron_label_position()
 
@@ -514,6 +508,8 @@ class ElementDrawing(Drawing):
         return shape_drawing, hysteron_state_bg_graphic, hysteron_state_id_graphic
 
     def update(self):
+        if self._shape_drawing is None:
+            return
         color = None
         opacity = None
         if self._color_handler is not None:

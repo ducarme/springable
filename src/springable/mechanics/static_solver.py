@@ -51,7 +51,7 @@ class Result:
                     self._starting_index = index
                     self._is_loading_solution_unusable = False
 
-    def get_model(self):
+    def get_model(self) -> Model:
         return self._model
 
     def get_forces(self, include_preloading=False, check_usability=True):
@@ -162,6 +162,45 @@ class Result:
     def get_starting_index(self):
         return self._starting_index
 
+    def get_loadstep_starting_index(self, loadstep_index: int):
+        nb_steps = len(self._model.get_loading())
+        if self._u.ndim < 2:
+            return None
+
+        if loadstep_index < 0:
+            loadstep_index = nb_steps + loadstep_index
+
+        if loadstep_index < 0:
+            return None
+
+        if loadstep_index == 0:
+            return 0
+
+        # load step index > 0
+        index = np.argmax(self._step_indices == loadstep_index)
+        if index == 0:
+            return None
+        else:
+            return index
+
+    def get_loadstep_end_index(self, loadstep_index: int):
+        """ return the end index of the desired loadstep. """
+        if self._u.ndim < 2:
+            return None
+
+        if loadstep_index < 0:
+            nb_steps = len(self._model.get_loading())
+            loadstep_index = nb_steps + loadstep_index
+
+        if loadstep_index < 0:
+            return None
+
+        # load step index > 0
+        index = self._u.shape[0] - np.argmax(self._step_indices[::-1] == loadstep_index) - 1
+        if index == self._u.shape[0] - 1 and loadstep_index not in self._step_indices:
+            return None
+        return index
+
     def get_solving_process_info(self):
         return self._solving_process_info
 
@@ -263,7 +302,8 @@ class StaticSolver:
     @ignore_warnings(LinAlgWarning)
     def _solve_with_arclength(self, force_vector_step_list, max_displacement_map_step_list,
                               blocked_nodes_direction_step_list,
-                              show_warnings, detect_critical_points, bifurcate_at_simple_bifurcations, critical_point_epsilon,
+                              show_warnings, detect_critical_points,
+                              bifurcate_at_simple_bifurcations, critical_point_epsilon, bifurcation_perturbation_amplitude,
                               reference_load_parameter, radius, i_max, j_max, convergence_value, verbose,
                               critical_point_detection_verbose,
                               alpha, psi_p, psi_c, detect_mechanism):
@@ -375,7 +415,9 @@ class StaticSolver:
 
                     # solve linear system
                     if i == 0 and detect_mechanism:
+
                         if cond(k, p=1) > 1e8:
+                            print(cond(k, p=1))
                             raise MechanismDetected
                     try:
                         delta_u_hat = solve(k, g, assume_a='sym')
@@ -501,7 +543,7 @@ class StaticSolver:
                                 and not is_critical[-1]):
                                 # The # of unstable modes increased, so we went pass a critical point. Let's reset to
                                 # the previous equilibrium point and divide radius by two.
-                                # Mark that we are searching for a critical point of a certain multiplicity
+                                # We mark that we are now searching for a critical point of a certain multiplicity
                                 # (this was already maybe the case)
                                 searching_for_existing_critical_point = True
                                 multiplicity = fd_negative_eigval_count - previous_fd_negative_eigval_count
@@ -510,6 +552,7 @@ class StaticSolver:
                                 if critical_point_detection_verbose:
                                     print(f'\nCritical point was passed. To search where it is, '
                                           f'increment {i} is restarted with smaller radius: {radius_p / 2:.3E}.')
+                                total_nb_increment_retries += 1
                                 self._assembly.set_coordinates(initial_coordinates + equilibrium_displacements[-1])
                                 f_ext = equilibrium_forces[-1].copy()
                                 ks = self._assembly.compute_structural_stiffness_matrix()
@@ -553,7 +596,7 @@ class StaticSolver:
                                                     # to induce bifurcation on the next increment,
                                                     # and prevent from continuing on the unstable branch
                                                     bifurcation_should_be_induced = True
-                                                    perturbation_magnitude = np.linalg.norm(equilibrium_displacements[-1]) / 100
+                                                    perturbation_magnitude = np.linalg.norm(equilibrium_displacements[-1]) * bifurcation_perturbation_amplitude
                                                     null_vector = self._get_structural_displacements(singular_mode)
                                                     bifurcation_perturbation = perturbation_magnitude * null_vector
 
