@@ -2,7 +2,7 @@ from collections.abc import Callable
 
 from ..utils import bezier_curve
 from ..utils import smooth_piecewise_linear_curve as spw
-from scipy.interpolate import interp1d, griddata
+from scipy.interpolate import interp1d, griddata, make_interp_spline, PPoly
 from scipy.integrate import quad, solve_ivp, cumulative_trapezoid
 from scipy.optimize import minimize, LinearConstraint
 import numpy as np
@@ -265,9 +265,9 @@ class BivariateBehavior(MechanicalBehavior):
         self._int_adb = int_adb
         self._int_bda = int_bda
         if mode == -1:
-            all_t = np.linspace(-1, 0, round(1e5))
+            all_t = np.linspace(-1, 0, round(1e3))
         else:
-            all_t = np.linspace(0, 1, round(1e5))
+            all_t = np.linspace(0, 1, round(1e3))
         da = self.da(all_t)
         db = self.db(all_t)
         db_da = db / da
@@ -719,44 +719,53 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
             self._make()
 
 
-class SplineBehavior(BivariateBehavior, ControllableByPoints):
+class Spline2Behavior(BivariateBehavior, ControllableByPoints):
 
     def __init__(self, natural_measure, u_i: list[float], f_i: list[float], mode: int = 0):
         super().__init__(natural_measure, mode=mode)
         self._parameters['u_i'] = u_i
         self._parameters['f_i'] = f_i
+        cp_t = np.linspace(0, 1, len(u_i) + 1)
+        cp_u = np.array([0.0] + u_i)
+        cp_f = np.array([0.0] + f_i)
+        self._a_spl = make_interp_spline(cp_t, cp_u)
+        self._b_spl = make_interp_spline(cp_t, cp_f)
         self._check()
         self._make()
 
     def _a_fun(self, t):
-        return bezier_curve.evaluate_poly(t, self._a_coefs)
+        return self._a_spl(t)
 
     def _b_fun(self, t):
-        return bezier_curve.evaluate_poly(t, self._b_coefs)
+        return self._b_spl(t)
 
     def _da_fun(self, t):
-        return bezier_curve.evaluate_derivative_poly(t, self._a_coefs)
+        return self._a_spl.derivative(1)(t)
 
     def _db_fun(self, t):
-        return bezier_curve.evaluate_derivative_poly(t, self._b_coefs)
+        return self._b_spl.derivative(1)(t)
 
     def _d2a_fun(self, t):
-        return bezier_curve.evaluate_second_derivative_poly(t, self._a_coefs)
+        return self._a_spl.derivative(2)(t)
 
     def _d2b_fun(self, t):
-        return bezier_curve.evaluate_second_derivative_poly(t, self._b_coefs)
+        return self._b_spl.derivative(2)(t)
 
     def _d3a_fun(self, t):
-        return bezier_curve.evaluate_third_derivative_poly(t, self._a_coefs)
+        return self._a_spl.derivative(3)(t)
 
     def _d3b_fun(self, t):
-        return bezier_curve.evaluate_third_derivative_poly(t, self._b_coefs)
+        return self._b_spl.derivative(3)(t)
 
     def get_a_extrema(self) -> np.ndarray:
-        return bezier_curve.get_extrema(self._a_coefs)
+        t_roots = PPoly.from_spline(self._a_spl.derivative()).roots()
+        t_roots = np.real(t_roots[np.isreal(t_roots)])
+        return np.sort(t_roots[np.logical_and(t_roots >= 0.0, t_roots <= 1.0)])
 
     def get_b_extrema(self) -> np.ndarray:
-        return bezier_curve.get_extrema(self._b_coefs)
+        t_roots = PPoly.from_spline(self._b_spl.derivative()).roots()
+        t_roots = np.real(t_roots[np.isreal(t_roots)])
+        return np.sort(t_roots[np.logical_and(t_roots >= 0.0, t_roots <= 1.0)])
 
     def get_control_points(self) -> tuple[np.ndarray, np.ndarray]:
         cp_x = np.array([0.0] + self._parameters['u_i'])
@@ -770,8 +779,13 @@ class SplineBehavior(BivariateBehavior, ControllableByPoints):
 
     def update(self, natural_measure=None, /, **parameters):
         super().update(natural_measure, **parameters)
-        self._a_coefs = np.array([0.0] + self._parameters['u_i'])
-        self._b_coefs = np.array([0.0] + self._parameters['f_i'])
+        u_i = self._parameters['u_i']
+        f_i = self._parameters['f_i']
+        cp_t = np.linspace(0, 1, len(u_i) + 1)
+        cp_u = np.array([0.0] + u_i)
+        cp_f = np.array([0.0] + f_i)
+        self._a_spl = make_interp_spline(cp_t, cp_u)
+        self._b_spl = make_interp_spline(cp_t, cp_f)
         self._check()
         if parameters:
             self._make()
