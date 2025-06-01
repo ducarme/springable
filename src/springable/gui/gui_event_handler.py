@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from tkinter import filedialog, messagebox
-from .gui_utils import show_popup
+from .gui_utils import show_popup, get_current_recursion_depth, get_recursion_limit
 from ..mechanics.mechanical_behavior import *
 from ..utils import bezier_curve
 from ..readwrite.interpreting import behavior_to_text
@@ -92,7 +92,7 @@ class GUIEventHandler:
             new_cp_x = np.append(cp_x, cp_x[-1] + 4 * b.get_parameters()['us'])
             new_cp_y = np.append(cp_y, cp_y[-1] + b.get_parameters()['k'][-1] * 4 * b.get_parameters()['us'])
             return new_cp_x, new_cp_y
-        elif isinstance(b, (ZigzagBehavior, Zigzag2Behavior)):
+        elif isinstance(b, (ZigzagBehavior, Zigzag2Behavior, Spline2Behavior)):
             cp_x, cp_y = b.get_control_points()
             s = 0.5
             new_cp_x = np.append(cp_x, cp_x[-1] + (cp_x[-1] - cp_x[-2]) * s)
@@ -274,6 +274,7 @@ class GUIEventHandler:
             print(f'Notebook GUI sent event to handler to handle the update of '
                   f'the parameter {parameter_name} of the behavior named {tab_name}',
                       flush=True)
+
         behavior = self._behaviors[tab_name]
         par_val = self._behavior_notebook.get_behavior_parameter(tab_name, parameter_name)
 

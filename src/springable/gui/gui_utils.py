@@ -2,6 +2,21 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
 from matplotlib.widgets import RectangleSelector
+import sys
+
+def get_current_recursion_depth():
+    """
+    Returns the current recursion depth of the call stack.
+    """
+    current_depth = 0
+    frame = sys._getframe(0)
+    while frame:
+        current_depth += 1
+        frame = frame.f_back
+    return current_depth
+
+def get_recursion_limit():
+    return sys.getrecursionlimit()
 
 
 def value_to_text(val, fmt='.3E', parameter_name='Value'):

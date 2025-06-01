@@ -1,6 +1,6 @@
 import tkinter as tk
 import tkinter.ttk as ttk
-from .gui_utils import slider_panel, Tooltip
+from .gui_utils import slider_panel, Tooltip, get_recursion_limit, get_current_recursion_depth
 from .gui_event_handler import GUIEventHandler
 from .gui_settings import DEFAULT_BEHAVIORS
 from ..mechanics.mechanical_behavior import MechanicalBehavior
@@ -200,11 +200,43 @@ class BehaviorTab:
 
     def _update_parameter(self, parameter_name):
         # send event to notify handler that a parameter has been changed
-        self._handler.update_behavior_parameter(self._name, parameter_name)
+        relative_recursion_depth = get_current_recursion_depth() / get_recursion_limit()
+        if relative_recursion_depth > .8:
+            cmd = self.disconnect_parameter_slider(parameter_name)
+            self._handler.update_behavior_parameter(self._name, parameter_name)
+            self._bn.win.after_idle(self.reconnect_parameter_slider, parameter_name, cmd)
+        else:
+            self._handler.update_behavior_parameter(self._name, parameter_name)
+
+    def disconnect_parameter_slider(self, par_name):
+        _, parameter_sliders, _ = self.alpha_and_parameter_panels[self.get_behavior_type()]
+        cmd = parameter_sliders[par_name].cget("command")
+        parameter_sliders[par_name].config(command="")
+        return cmd
+
+    def reconnect_parameter_slider(self, par_name, cmd):
+        _, parameter_sliders, _ = self.alpha_and_parameter_panels[self.get_behavior_type()]
+        parameter_sliders[par_name].config(command=cmd)
+
+    def disconnect_alpha0_slider(self):
+        _, _, alpha0_slider = self.alpha_and_parameter_panels[self.get_behavior_type()]
+        cmd = alpha0_slider.cget("command")
+        alpha0_slider.config(command="")
+        return cmd
+
+    def reconnect_alpha0_slider(self, cmd):
+        _, _, alpha0_slider = self.alpha_and_parameter_panels[self.get_behavior_type()]
+        alpha0_slider.config(command=cmd)
 
     def _update_natural_measure(self):
         # send event to handler
-        self._handler.update_behavior_natural_measure(self._name)
+        relative_recursion_depth = get_current_recursion_depth() / get_recursion_limit()
+        if relative_recursion_depth > .8:
+            cmd = self.disconnect_alpha0_slider()
+            self._handler.update_behavior_natural_measure(self._name)
+            self._bn.win.after_idle(self.reconnect_alpha0_slider, cmd)
+        else:
+            self._handler.update_behavior_natural_measure(self._name)
 
     def get_parameters(self) -> dict:
         _, parameter_sliders, _ = self.alpha_and_parameter_panels[self.get_behavior_type()]
