@@ -56,7 +56,8 @@ class GUIEventHandler:
     def print_behaviors(self):
         if print_messages:
             for name, behavior in self._behaviors.items():
-                print(f'{name}: {behavior_to_text(behavior, fmt='.2E', full_name=True, specify_natural_measure=True)}')
+                print(f'{name}: {behavior_to_text(behavior, fmt='.2E', full_name=True, specify_natural_measure=True)}',
+                      flush=True)
 
     def connect_to_notebook(self, behavior_notebook):
         self._behavior_notebook = behavior_notebook
@@ -66,7 +67,8 @@ class GUIEventHandler:
 
     def remove_behavior(self, tab_name):
         if print_messages:
-            print(f'Notebook GUI sent event to handler to handle the removal of the behavior named {tab_name}')
+            print(f'Notebook GUI sent event to handler to handle the removal of the behavior named {tab_name}',
+                  flush=True)
         try:
             self._behaviors.pop(tab_name)
         except KeyError:
@@ -101,12 +103,14 @@ class GUIEventHandler:
 
     def switch_focus(self, tab_name):
         if print_messages:
-            print(f'Notebook GUI sent event to handler to handle a focus switch to behavior named {tab_name}')
+            print(f'Notebook GUI sent event to handler to handle a focus switch to behavior named {tab_name}',
+                      flush=True)
         self._drawing_space.switch_to_curve(tab_name)
 
     def add_behavior(self, tab_name):
         if print_messages:
-            print(f'Notebook GUI sent event to handler to handle the addition of a new behavior named {tab_name}')
+            print(f'Notebook GUI sent event to handler to handle the addition of a new behavior named {tab_name}',
+                      flush=True)
 
         behavior_type_name = self._behavior_notebook.get_behavior_type(tab_name)
         natural_measure = self._behavior_notebook.get_natural_measure(tab_name)
@@ -172,7 +176,8 @@ class GUIEventHandler:
     def change_behavior_type(self, tab_name):
         if print_messages:
             print(f'Notebook GUI sent event to handler to handle '
-                  f'the change of behavior type of the behavior named {tab_name}')
+                  f'the change of behavior type of the behavior named {tab_name}',
+                      flush=True)
 
         behavior_type_name = self._behavior_notebook.get_behavior_type(tab_name)
         natural_measure = self._behavior_notebook.get_natural_measure(tab_name)
@@ -267,7 +272,8 @@ class GUIEventHandler:
     def update_behavior_parameter(self, tab_name, parameter_name):
         if print_messages:
             print(f'Notebook GUI sent event to handler to handle the update of '
-                  f'the parameter {parameter_name} of the behavior named {tab_name}')
+                  f'the parameter {parameter_name} of the behavior named {tab_name}',
+                      flush=True)
         behavior = self._behaviors[tab_name]
         par_val = self._behavior_notebook.get_behavior_parameter(tab_name, parameter_name)
 
@@ -344,7 +350,8 @@ class GUIEventHandler:
 
     def load_experimental_curve(self):
         if print_messages:
-            print(f'Drawing space GUI sent event to handler to handle the addition of an experimental curve')
+            print(f'Drawing space GUI sent event to handler to handle the addition of an experimental curve',
+                      flush=True)
 
         try:
             file_path = filedialog.askopenfilename(
@@ -374,12 +381,14 @@ class GUIEventHandler:
 
     def remove_experimental_curve(self):
         if print_messages:
-            print(f'Drawing space GUI sent event to handler to handle the removal of the last added experimental curve')
+            print(f'Drawing space GUI sent event to handler to handle the removal of the last added experimental curve',
+                      flush=True)
         self._drawing_space.remove_exp_curve()
 
     def update_behavior_parameter_from_control_points(self, name):
         if print_messages:
-            print(f'Drawing space GUI sent event to handler to handle the update of the behavior named {name}')
+            print(f'Drawing space GUI sent event to handler to handle the update of the behavior named {name}',
+                      flush=True)
         behavior = self._behaviors[name]
         natural_measure = self._behaviors[name].get_natural_measure()
 
@@ -443,7 +452,8 @@ class GUIEventHandler:
     def update_behavior_natural_measure(self, tab_name):
         if print_messages:
             print(f'Notebook GUI sent event to handler to handle the update of '
-                  f'the natural measure of the behavior named {tab_name}')
+                  f'the natural measure of the behavior named {tab_name}',
+                      flush=True)
         behavior = self._behaviors[tab_name]
         natural_measure = self._behavior_notebook.get_natural_measure(tab_name)
 
@@ -503,7 +513,8 @@ class GUIEventHandler:
 
     def write_behavior(self, tab_name):
         if print_messages:
-            print(f'Notebook GUI sent event to handler to write the behavior named {tab_name} into a CSV file')
+            print(f'Notebook GUI sent event to handler to write the behavior named {tab_name} into a CSV file',
+                      flush=True)
         file_path = filedialog.asksaveasfilename(
             title="Save behavior as",
             defaultextension=".csv",
@@ -523,7 +534,8 @@ class GUIEventHandler:
     def load_from_file(self, tab_name):
         if print_messages:
             print(f'Notebook GUI sent event to handler to read and load a new  behavior in place of the behavior named'
-                  f'{tab_name}')
+                  f'{tab_name}',
+                      flush=True)
         try:
             file_path = filedialog.askopenfilename(
                 title="Select behavior file",

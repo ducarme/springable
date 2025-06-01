@@ -265,9 +265,9 @@ class BivariateBehavior(MechanicalBehavior):
         self._int_adb = int_adb
         self._int_bda = int_bda
         if mode == -1:
-            all_t = np.linspace(-1, 0, round(1e3))
+            all_t = np.linspace(-1, 0, round(50))
         else:
-            all_t = np.linspace(0, 1, round(1e3))
+            all_t = np.linspace(0, 1, round(50))
         da = self.da(all_t)
         db = self.db(all_t)
         db_da = db / da

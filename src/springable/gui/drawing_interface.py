@@ -11,7 +11,19 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
                                                NavigationToolbar2Tk)
 from matplotlib.figure import Figure
 from matplotlib.ticker import AutoLocator
+import sys
 
+
+def get_current_recursion_depth():
+    """
+    Returns the current recursion depth of the call stack.
+    """
+    current_depth = 0
+    frame = sys._getframe(0)
+    while frame:
+        current_depth += 1
+        frame = frame.f_back
+    return current_depth
 
 class DrawingSpace:
     def __init__(self, drawing_frame: ttk.Frame, handler: GUIEventHandler):
@@ -449,6 +461,8 @@ class CurveInteractor:
         self.cid = self.poly.add_callback(self.poly_changed)
         self._ind = None  # the active vert
 
+        # self._after_id = None
+
         self.cid_btn_pressed = self.canvas.mpl_connect('button_press_event', self.on_button_press)
         self.cid_key_pressed = self.canvas.mpl_connect('key_press_event', self.on_key_press)
         self.cid_btn_released = self.canvas.mpl_connect('button_release_event', self.on_button_release)
@@ -459,6 +473,8 @@ class CurveInteractor:
         self.canvas.mpl_disconnect(self.cid_key_pressed)
         self.canvas.mpl_disconnect(self.cid_btn_released)
         self.canvas.mpl_disconnect(self.cid_mouse_moved)
+        # if self._after_id:
+        #     self.canvas.get_tk_widget().after_cancel(self._after_id)
 
     def reconnect(self):
         self.cid_btn_pressed = self.canvas.mpl_connect('button_press_event', self.on_button_press)
@@ -562,7 +578,13 @@ class CurveInteractor:
         cp_x, cp_y = self.get_control_points()
         self.line.set_data(cp_x, cp_y)
         self.ds.curve_control_points[self.name] = cp_x, cp_y
-        self.handler.update_behavior_parameter_from_control_points(self.name)
+
+        if get_current_recursion_depth() > 800:
+            self.canvas.mpl_disconnect(self.cid_mouse_moved)
+            self.handler.update_behavior_parameter_from_control_points(self.name)
+            self.cid_mouse_moved = self.canvas.mpl_connect('motion_notify_event', self.on_mouse_move)
+        else:
+            self.handler.update_behavior_parameter_from_control_points(self.name)
 
 
     def get_control_points(self):

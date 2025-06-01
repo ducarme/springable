@@ -10,17 +10,18 @@ import os
 
 
 def suppress_output():
-    sys.stderr = open(os.devnull, 'w')
+    pass
+    # sys.stderr = open(os.devnull, 'w')
 
 
 # Suppress RuntimeWarnings
-warnings.filterwarnings("ignore", category=RuntimeWarning)
+#warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
 def start_behavior_creation():
     window = tk.Tk()
-    if not DEBUG:
-        suppress_output()
+    # if not DEBUG:
+    #     suppress_output()
     window.wm_title('Behavior creation')
     handler = GUIEventHandler()
     main_frame = ttk.Frame(window, padding=(3, 3, 12, 12))
