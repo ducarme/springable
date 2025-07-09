@@ -1,2 +1,14 @@
 *.pyc
-.vscode
+.gitignore
+.vscode/
+.idea/
+behaviors/
+results/
+settings/
+stylesheets/
+models/
+MISC/
+FIGURES/
+COUNTERSNAPPING/
+run_sim.py
+test_gui.py
