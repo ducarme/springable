@@ -279,10 +279,10 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                                                            kind='nearest')(unloading_driving_displacement).astype(int)
                         frame_indices = np.hstack((loading_frame_indices, unloading_frame_indices))
                     else:
-                        driving_displacement = np.linspace(0.0, deformation[loading_path_indices[-1]], ao.nb_frames)
+                        driving_displacement = np.linspace(deformation[loading_path_indices[0]],
+                                                           deformation[loading_path_indices[-1]], ao.nb_frames)
                         frame_indices = interp1d(deformation[loading_path_indices], loading_path_indices,
-                                                 kind='nearest')(
-                            driving_displacement).astype(int)
+                                                 kind='nearest')(driving_displacement).astype(int)
                 else:
                     raise ValueError(f'unknown drive mode {ao.drive_mode}')
             except LoadingPathEmpty:

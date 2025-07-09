@@ -94,6 +94,21 @@ class Result:
                 raise UnusableSolution
             return self._u[self._starting_index:, self._model.get_assembly().get_dof_index(_node, direction)]
 
+    def get_internal_force_from_element_index(self, element_index: int, include_preloading=False, check_usability=True):
+        el = self.get_model().get_assembly().get_elements()[element_index]
+        q0 = self.get_model().get_assembly().get_coordinates().copy()
+        u = self.get_displacements(include_preloading, check_usability)
+        internal_force = np.empty(u.shape[0])
+        for i in range(u.shape[0]):
+            self.get_model().get_assembly().set_coordinates(q0 + u[i, :])
+            internal_force[i] = el.compute_generalized_force()
+        self.get_model().get_assembly().set_coordinates(q0)
+        return internal_force
+
+
+
+
+
     def get_stability(self, include_preloading=False, check_usability=True):
         if include_preloading:
             if self._is_solution_unusable and check_usability:
@@ -334,8 +349,14 @@ class StaticSolver:
                                                         0, 0, 0, 0, 0, 0, 0)
                 end = time.time()
                 print(f"Solving duration: {end - start:.4f} s")
+            solving_process_info = {'duration (s)': 0,
+                                    '# stiffness matrix evals': 1,
+                                    '# linear system resolutions': 0,
+                                    '# increment retries': 0,
+                                    '# avoided singular stiffness matrices': 0,
+                                    }
             return (np.array([np.nan]), np.array([np.nan]), np.array(['nan'], dtype=str),
-                    np.array([np.nan]), np.array([0], dtype=int))
+                    np.array([np.nan]), np.array([0], dtype=int), solving_process_info)
 
         equilibrium_stability = [self._assess_stability(ks, initial_loaded_dof_indices)]
         initial_eigval_magnitude = max(np.abs(equilibrium_eigval_stats[-1][0]), 0.1)

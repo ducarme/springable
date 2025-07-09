@@ -1,5 +1,3 @@
-from matplotlib.pyplot import spring
-
 from ..mechanics.element import *
 from ..mechanics.mechanical_behavior import *
 from ..mechanics.shape import *

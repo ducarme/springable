@@ -1,3 +1,4 @@
+from ..mechanics.mechanical_behavior import SmootherZigzag2Behavior
 from ..readwrite.keywords import usable_behaviors
 from ..mechanics.mechanical_behavior import *
 
@@ -13,6 +14,7 @@ DEFAULT_BEHAVIORS['BEZIER2'] = Bezier2Behavior(DEFAULT_NATURAL_MEASURE, u_i=[1.0
 DEFAULT_BEHAVIORS['PIECEWISE'] = PiecewiseBehavior(DEFAULT_NATURAL_MEASURE, k_i=[1.0, -1.0, 1.0], u_i=[1, 2], us=0.25)
 DEFAULT_BEHAVIORS['ZIGZAG'] = ZigzagBehavior(DEFAULT_NATURAL_MEASURE, [1.0, 2.0, 3.0], [1.0, -5.0, 1.0], 0.5)
 DEFAULT_BEHAVIORS['ZIGZAG2'] = Zigzag2Behavior(DEFAULT_NATURAL_MEASURE, [1.0, 2.0, 3.0], [1.0, -5.0, 1.0], 0.5)
+DEFAULT_BEHAVIORS['SZIGZAG2'] = SmootherZigzag2Behavior(DEFAULT_NATURAL_MEASURE, [1.0, 2.0, 3.0], [1.0, -5.0, 1.0], 0.5)
 DEFAULT_BEHAVIORS['SPLINE2'] = Spline2Behavior(DEFAULT_NATURAL_MEASURE, [1.0, 2.0, 3.0], [1.0, -5.0, 1.0])
 DEFAULT_BEHAVIORS['CONTACT'] = ContactBehavior(0.0, f0=10.0, uc=0.5, delta=0.5)
 DEFAULT_BEHAVIORS['ISOTHERMAL_GAS'] = IsothermalGas(DEFAULT_NATURAL_MEASURE, n=1.0, R=1.0, T0=1.0)
@@ -22,9 +24,9 @@ XLIM = (-1., 5.)
 YLIM = (-2., 2.5)
 
 # EXPERIMENTAL DATA (csv files, headers will automatically ignored)
-DISPLACEMENT_COLUMN_INDEX = 0
-FORCE_COLUMN_INDEX = 1
-DELIMITER = ','
+DISPLACEMENT_COLUMN_INDEX = 1
+FORCE_COLUMN_INDEX = 2
+DELIMITER = ';'
 
 # RESPONSE CURVE
 FMAX = 0.5
