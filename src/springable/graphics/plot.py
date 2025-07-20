@@ -10,7 +10,7 @@ from matplotlib.patches import ArrowStyle
 import typing
 
 
-def curve_in_ax(processing_fun: callable, result: Result, ax: plt.Axes, plot_options: PlotOptions, color, label):
+def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: PlotOptions, color, label):
     po = plot_options
     x, y = processing_fun(result)
     stability_colors = [po.color_for_stable_points,
