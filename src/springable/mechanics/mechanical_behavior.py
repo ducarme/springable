@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 from ..utils import bezier_curve
 from ..utils import smooth_piecewise_linear_curve as spw
+from ..utils import smoother_piecewise_linear_curve as sspw
 from scipy.interpolate import interp1d, griddata, make_interp_spline, PPoly
 from scipy.integrate import quad, solve_ivp, cumulative_trapezoid
 from scipy.optimize import minimize, LinearConstraint
@@ -591,7 +592,7 @@ class BezierBehavior(UnivariateBehavior, ControllableByPoints):
             self._make()
 
     @classmethod
-    def compute_fitting_parameters(cls, force_displacement_curves: list[tuple], degree: int, show=False):
+    def compute_fitting_parameters(cls, force_displacement_curves: list[tuple], degree: int, clamp_last=False, show=False):
         umax = np.min([np.max(fd_curve[0]) for fd_curve in force_displacement_curves])
         fmax = np.min([np.max(fd_curve[1]) for fd_curve in force_displacement_curves])
         nb_samples = 500
@@ -601,6 +602,9 @@ class BezierBehavior(UnivariateBehavior, ControllableByPoints):
             natural_measure = 1.0
             u_i = x[::2].tolist()
             f_i = x[1::2].tolist()
+            if clamp_last:
+                u_i.append(umax)
+                f_i.append(fmax)
             try:
                 behavior = BezierBehavior(natural_measure, u_i=u_i, f_i=f_i)
                 f_fit = behavior.gradient_energy(natural_measure + u_sampling)[0]
@@ -617,20 +621,39 @@ class BezierBehavior(UnivariateBehavior, ControllableByPoints):
                     mismatch += np.sum((f_exp - f_fit) ** 2)
             return mismatch
 
+
         u_guess = np.linspace(1 / degree, 1.0, degree) * umax
         f_guess = np.linspace(1 / degree, 1.0, degree) * fmax
+        if clamp_last:
+            u_guess = u_guess[:-1]
+            f_guess = f_guess[:-1]
 
-        initial_values = np.array([u_guess[i // 2] if i % 2 == 0 else f_guess[i // 2] for i in range(2 * degree)])
+        initial_values = np.empty(u_guess.shape[0] * 2)
+        initial_values[0::2] = u_guess
+        initial_values[1::2] = f_guess
+
         bounds = [(0.0, None) if i % 2 == 0 else (None, None) for i in range(2 * degree)]
         bounds[1] = (0.0, None)  # first control point should be above f=0 axis
+        if clamp_last:
+            bounds = bounds[:-2]
+            bounds[-2] = (0.0, umax)
 
         # control point abscissas should be monotonically increasing
-        constraint_matrix = np.zeros((degree - 1, 2 * degree))
-        for i in range(degree - 1):
-            constraint_matrix[i, 2 * i] = -1.0
-            constraint_matrix[i, 2 * i + 2] = 1.0
-        lb = np.zeros(constraint_matrix.shape[0])
-        ub = np.ones(constraint_matrix.shape[0]) * np.inf
+        if not clamp_last:
+            constraint_matrix = np.zeros((degree - 1, 2 * degree))
+            for i in range(degree - 1):
+                constraint_matrix[i, 2 * i] = -1.0
+                constraint_matrix[i, 2 * i + 2] = 1.0
+            lb = np.zeros(constraint_matrix.shape[0])
+            ub = np.ones(constraint_matrix.shape[0]) * np.inf
+        else:
+            constraint_matrix = np.zeros((degree - 2, 2 * (degree-1)))
+            for i in range(degree - 2):
+                constraint_matrix[i, 2 * i] = -1.0
+                constraint_matrix[i, 2 * i + 2] = 1.0
+            lb = np.zeros(constraint_matrix.shape[0])
+            ub = np.ones(constraint_matrix.shape[0]) * np.inf
+
         constraints = LinearConstraint(constraint_matrix, lb, ub)
 
         result = minimize(compute_mismatch,
@@ -645,17 +668,23 @@ class BezierBehavior(UnivariateBehavior, ControllableByPoints):
         f_i = optimal_parameters[1::2]
         u_i = u_i.tolist()
         f_i = f_i.tolist()
+        if clamp_last:
+            u_i.append(umax)
+            f_i.append(fmax)
+
         if show:
             l0 = 1.0
             bb = BezierBehavior(l0, u_i, f_i)
             l = l0 + np.linspace(0.0, 1.1*u_i[-1])
             f, = bb.gradient_energy(l)
             fig, ax = plt.subplots()
-            ax.plot(l - l0, f, '-', lw=5, alpha=0.5)
+            ax.plot(l - l0, f, '-', lw=5, alpha=0.5, label='fit')
             ax.plot(*bb.get_control_points(), '-o')
             for fd_curve in force_displacement_curves:
-                ax.plot(fd_curve[0], fd_curve[1], 'k-')
+                ax.plot(fd_curve[0], fd_curve[1], 'k-', label='exp')
+            ax.legend()
             plt.show()
+
         return u_i, f_i
 
 
@@ -719,19 +748,41 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
             self._make()
 
 
+
 class Spline2Behavior(BivariateBehavior, ControllableByPoints):
 
-    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], mode: int = 0):
+    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], deg: int = 3, mode: int = 0):
         super().__init__(natural_measure, mode=mode)
         self._parameters['u_i'] = u_i
         self._parameters['f_i'] = f_i
+        self._parameters['deg'] = deg
+        self._check()
+        self._make()
+
+    def _check(self):
+        if len(self._parameters['u_i']) < self._parameters['deg']:
+            raise InvalidBehaviorParameters(f'No enough control points. '
+                                            f'At least {self._parameters['deg'] +1} are required.')
+        u_i = self._parameters['u_i']
+        f_i = self._parameters['f_i']
+        deg = self._parameters['deg']
         cp_t = np.linspace(0, 1, len(u_i) + 1)
         cp_u = np.array([0.0] + u_i)
         cp_f = np.array([0.0] + f_i)
-        self._a_spl = make_interp_spline(cp_t, cp_u)
-        self._b_spl = make_interp_spline(cp_t, cp_f)
-        self._check()
-        self._make()
+        self._a_spl = make_interp_spline(cp_t, cp_u, k=deg)
+        self._b_spl = make_interp_spline(cp_t, cp_f, k=deg)
+        super()._check()
+
+    def _make(self):
+        u_i = self._parameters['u_i']
+        f_i = self._parameters['f_i']
+        deg = self._parameters['deg']
+        cp_t = np.linspace(0, 1, len(u_i) + 1)
+        cp_u = np.array([0.0] + u_i)
+        cp_f = np.array([0.0] + f_i)
+        self._a_spl = make_interp_spline(cp_t, cp_u, k=deg)
+        self._b_spl = make_interp_spline(cp_t, cp_f, k=deg)
+        super()._make()
 
     def _a_fun(self, t):
         return self._a_spl(t)
@@ -779,13 +830,6 @@ class Spline2Behavior(BivariateBehavior, ControllableByPoints):
 
     def update(self, natural_measure=None, /, **parameters):
         super().update(natural_measure, **parameters)
-        u_i = self._parameters['u_i']
-        f_i = self._parameters['f_i']
-        cp_t = np.linspace(0, 1, len(u_i) + 1)
-        cp_u = np.array([0.0] + u_i)
-        cp_f = np.array([0.0] + f_i)
-        self._a_spl = make_interp_spline(cp_t, cp_u)
-        self._b_spl = make_interp_spline(cp_t, cp_f)
         self._check()
         if parameters:
             self._make()
@@ -1059,6 +1103,103 @@ class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
         self._raw_db_fun = spw.create_smooth_piecewise_derivative_function(self._k_f, self._x_f, self._delta)
         self._raw_d2a_fun = spw.create_smooth_piecewise_second_derivative_function(self._k_u, self._x_u, self._delta)
         self._raw_d2b_fun = spw.create_smooth_piecewise_second_derivative_function(self._k_f, self._x_f, self._delta)
+
+        self._check()
+        if parameters:
+            self._make()
+
+class SmootherZigzag2Behavior(BivariateBehavior, ControllableByPoints):
+
+    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], epsilon: float, mode: int = 0):
+        super().__init__(natural_measure, mode)
+        self._parameters['u_i'] = u_i
+        self._parameters['f_i'] = f_i
+        self._parameters['epsilon'] = epsilon
+
+        n = len(u_i) + 1
+        cp_t = np.arange(n) / (n - 1)
+        cp_u = np.array([0.0] + u_i)
+        cp_f = np.array([0.0] + f_i)
+
+        # to update in the 'update' method
+        self._delta = epsilon / (2 * (n - 1))
+        self._k_u, self._x_u = sspw.compute_piecewise_slopes_and_transitions_from_control_points(cp_t, cp_u)
+        self._k_f, self._x_f = sspw.compute_piecewise_slopes_and_transitions_from_control_points(cp_t, cp_f)
+        self._raw_a_fun = sspw.create_smooth_piecewise_function(self._k_u, self._x_u, self._delta)
+        self._raw_b_fun = sspw.create_smooth_piecewise_function(self._k_f, self._x_f, self._delta)
+        self._raw_da_fun = sspw.create_smooth_piecewise_derivative_function(self._k_u, self._x_u, self._delta)
+        self._raw_db_fun = sspw.create_smooth_piecewise_derivative_function(self._k_f, self._x_f, self._delta)
+        self._raw_d2a_fun = sspw.create_smooth_piecewise_second_derivative_function(self._k_u, self._x_u, self._delta)
+        self._raw_d2b_fun = sspw.create_smooth_piecewise_second_derivative_function(self._k_f, self._x_f, self._delta)
+
+        self._check()
+        self._make()
+
+    def _a_fun(self, t):
+        return self._raw_a_fun(t)
+
+    def _b_fun(self, t):
+        return self._raw_b_fun(t)
+
+    def _da_fun(self, t):
+        return self._raw_da_fun(t)
+
+    def _db_fun(self, t):
+        return self._raw_db_fun(t)
+
+    def _d2a_fun(self, t):
+        return self._raw_d2a_fun(t)
+
+    def _d2b_fun(self, t):
+        return self._raw_d2b_fun(t)
+
+    def _d3a_fun(self, t):
+        return np.zeros_like(t)
+
+    def _d3b_fun(self, t):
+        return np.zeros_like(t)
+
+    def get_a_extrema(self) -> np.ndarray:
+        return sspw.get_extrema(self._k_u, self._x_u, self._delta)
+
+    def get_b_extrema(self) -> np.ndarray:
+        return sspw.get_extrema(self._k_f, self._x_f, self._delta)
+
+    def _check(self):
+        u_i, f_i, epsilon = self._parameters['u_i'], self._parameters['f_i'], self._parameters['epsilon']
+        if not 0.0 < epsilon < 1.0:
+            raise InvalidBehaviorParameters(f'Parameter epsilon must be between 0 and 1 (current value: {epsilon:.3E})')
+        if len(u_i) != len(f_i):
+            raise InvalidBehaviorParameters(f'u_i and f_i must contain the same number of elements')
+        super()._check()
+
+    def get_control_points(self) -> tuple[np.ndarray, np.ndarray]:
+        return np.array([0.0] + self._parameters['u_i']), np.array([0.0] + self._parameters['f_i'])
+
+    def update_from_control_points(self, cp_x, cp_y):
+        u_i = cp_x[1:].tolist()
+        f_i = cp_y[1:].tolist()
+        self.update(u_i=u_i, f_i=f_i)
+
+    def update(self, natural_measure=None, /, **parameters):
+        super().update(natural_measure, **parameters)
+        u_i = self._parameters['u_i']
+        f_i = self._parameters['f_i']
+        epsilon = self._parameters['epsilon']
+
+        n = len(u_i) + 1
+        cp_t = np.arange(n) / (n - 1)
+        cp_u = np.array([0.0] + u_i)
+        cp_f = np.array([0.0] + f_i)
+        self._delta = epsilon / (2 * (n - 1))
+        self._k_u, self._x_u = sspw.compute_piecewise_slopes_and_transitions_from_control_points(cp_t, cp_u)
+        self._k_f, self._x_f = sspw.compute_piecewise_slopes_and_transitions_from_control_points(cp_t, cp_f)
+        self._raw_a_fun = sspw.create_smooth_piecewise_function(self._k_u, self._x_u, self._delta)
+        self._raw_b_fun = sspw.create_smooth_piecewise_function(self._k_f, self._x_f, self._delta)
+        self._raw_da_fun = sspw.create_smooth_piecewise_derivative_function(self._k_u, self._x_u, self._delta)
+        self._raw_db_fun = sspw.create_smooth_piecewise_derivative_function(self._k_f, self._x_f, self._delta)
+        self._raw_d2a_fun = sspw.create_smooth_piecewise_second_derivative_function(self._k_u, self._x_u, self._delta)
+        self._raw_d2b_fun = sspw.create_smooth_piecewise_second_derivative_function(self._k_f, self._x_f, self._delta)
 
         self._check()
         if parameters:

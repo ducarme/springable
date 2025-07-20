@@ -148,7 +148,7 @@ color_forces = false
 colormap="coolwarm"
 # Colormap to color the elements and the forces. Must be a named colormap from matplotlib
 # (visit https =//matplotlib.org/stable/users/explain/colors/colormaps.html for more info)
-show_state_of_hysterons = true
+show_state_of_hysterons = true # it true, label with a state number will be shown at the center of the element
 hysteron_state_label_size = 10
 hysteron_state_bg_color = "#e0e0e0"
 hysteron_state_txt_color = "#101010"

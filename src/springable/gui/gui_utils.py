@@ -47,21 +47,7 @@ def make_update_value_text_function(parameter_name, slider_value_lbl):
 
 
 def slider_panel(root, parameter_name, initial_val, low, high, command, row):
-    if parameter_name != 'mode':
-        low_limit_var = tk.StringVar(value=str(low))
-        high_limit_var = tk.StringVar(value=str(high))
-
-        low_limit_entry = ttk.Entry(root, textvariable=low_limit_var, width=6)
-        high_limit_entry = ttk.Entry(root, textvariable=high_limit_var, width=6)
-        slider_value_lbl = ttk.Label(root, text=value_to_text(initial_val, parameter_name=parameter_name))
-        slider = ttk.Scale(root, orient=tk.HORIZONTAL, length=120, from_=low, to=high, value=initial_val,
-                           command=lambda val: [make_update_value_text_function(parameter_name, slider_value_lbl)(val),
-                                                command()])
-        error_lbl = ttk.Label(root, text="", foreground="red")
-        validate_and_update_limits = make_validate_and_update_function(low_limit_var, high_limit_var, slider, error_lbl)
-        low_limit_entry.bind("<KeyRelease>", validate_and_update_limits)
-        high_limit_entry.bind("<KeyRelease>", validate_and_update_limits)
-    else:
+    if parameter_name == 'mode':
         low_limit_var = tk.StringVar(value=str(-1))
         high_limit_var = tk.StringVar(value=str(1))
 
@@ -71,9 +57,39 @@ def slider_panel(root, parameter_name, initial_val, low, high, command, row):
         high_limit_entry.config(state='disabled')
         slider_value_lbl = ttk.Label(root, text=value_to_text(initial_val, parameter_name=parameter_name))
         slider = tk.Scale(root, orient=tk.HORIZONTAL, length=120, from_=-1, to=1, resolution=1,
+                          command=lambda val: [make_update_value_text_function(parameter_name, slider_value_lbl)(val),
+                                               command()])
+        slider.set(initial_val)
+        error_lbl = ttk.Label(root, text="", foreground="red")
+        validate_and_update_limits = make_validate_and_update_function(low_limit_var, high_limit_var, slider, error_lbl)
+        low_limit_entry.bind("<KeyRelease>", validate_and_update_limits)
+        high_limit_entry.bind("<KeyRelease>", validate_and_update_limits)
+    elif parameter_name == 'deg':
+        low_limit_var = tk.StringVar(value=str(2))
+        high_limit_var = tk.StringVar(value=str(6))
+        low_limit_entry = ttk.Entry(root, textvariable=low_limit_var, width=6)
+        low_limit_entry.config(state='disabled')
+        high_limit_entry = ttk.Entry(root, textvariable=high_limit_var, width=6)
+        high_limit_entry.config(state='disabled')
+        slider_value_lbl = ttk.Label(root, text=value_to_text(initial_val, parameter_name=parameter_name))
+        slider = tk.Scale(root, orient=tk.HORIZONTAL, length=120, from_=2, to=6, resolution=1,
+                          command=lambda val: [make_update_value_text_function(parameter_name, slider_value_lbl)(val),
+                                               command()])
+        slider.set(initial_val)
+        error_lbl = ttk.Label(root, text="", foreground="red")
+        validate_and_update_limits = make_validate_and_update_function(low_limit_var, high_limit_var, slider, error_lbl)
+        low_limit_entry.bind("<KeyRelease>", validate_and_update_limits)
+        high_limit_entry.bind("<KeyRelease>", validate_and_update_limits)
+    else:
+        low_limit_var = tk.StringVar(value=str(low))
+        high_limit_var = tk.StringVar(value=str(high))
+
+        low_limit_entry = ttk.Entry(root, textvariable=low_limit_var, width=6)
+        high_limit_entry = ttk.Entry(root, textvariable=high_limit_var, width=6)
+        slider_value_lbl = ttk.Label(root, text=value_to_text(initial_val, parameter_name=parameter_name))
+        slider = ttk.Scale(root, orient=tk.HORIZONTAL, length=120, from_=low, to=high, value=initial_val,
                            command=lambda val: [make_update_value_text_function(parameter_name, slider_value_lbl)(val),
                                                 command()])
-        slider.set(initial_val)
         error_lbl = ttk.Label(root, text="", foreground="red")
         validate_and_update_limits = make_validate_and_update_function(low_limit_var, high_limit_var, slider, error_lbl)
         low_limit_entry.bind("<KeyRelease>", validate_and_update_limits)

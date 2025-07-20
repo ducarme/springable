@@ -372,10 +372,11 @@ class DrawingSpace:
         if self._active_curve_interactor is not None:
             name = self._active_curve_interactor.name
             new_cp_x, new_cp_y = self.handler.get_elevated_control_points(name)
-            self.curve_control_points[name] = new_cp_x, new_cp_y
             if new_cp_x.shape[0] > 12:
                 self.handler.show_popup('Max 12 control points!', 750)
                 return
+
+            self.curve_control_points[name] = new_cp_x, new_cp_y
 
             # Delete
             curve_interactor = self.curve_interactors.pop(name)

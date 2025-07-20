@@ -164,6 +164,9 @@ class Assembly:
     def get_nodes_dof_indices(self) -> dict[int, list[int]]:
         return self._nodes_dof_indices
 
+    def get_elements_dof_indices(self) -> dict[int, list[int]]:
+        return self._elements_dof_indices
+
     def get_fixed_dof_indices(self) -> list[int]:
         return self._fixed_dof_indices
 
