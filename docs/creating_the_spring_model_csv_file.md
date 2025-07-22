@@ -220,7 +220,7 @@ Here, no natural area was provided, so the natural area will be automatically se
 the area of the polygon defined by the nodes `0`, `2`, and `1` as defined in the section `NODES`.
 
 #### The `PATH SPRINGS` section
-The `PATH SPRINGS` section serves to define **line springs**, that is, springs whose elastic energy is a function of their [polygonal chain](https://en.wikipedia.org/wiki/Polygonal_chain)'s length.
+The `PATH SPRINGS` section serves to define **path springs**, that is, springs whose elastic energy is a function of their [polygonal chain](https://en.wikipedia.org/wiki/Polygonal_chain)'s length.
 They are useful when modelling mechanical systems involving cable-driven actuation or [pulleys](https://en.wikipedia.org/wiki/Pulley).
 Those springs are defined by specifying  $n$ **nodes** ($n \ge 2$), which together define a polygonal chain. More precisely, the nodes are the vertices listed sequentially that form the chain.
 The sequence of nodes does not need to (but can) be closed (first and last node can be different or identical).
@@ -228,10 +228,10 @@ The sequence of nodes does not need to (but can) be closed (first and last node 
 Along with its $n$ nodes, the **mechanical behavior** must be specified, and optionally the natural length of the line
 spring. If no natural length is provided, the natural length is automatically set to the length defined by the
 n specified nodes. The mechanical behavior describes its intrinsic tension-displacement relation. It can be a linear behavior
-(the line spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
+(the path spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
 (see section [Specifying a nonlinear mechanical behavior](#specifying-a-nonlinear-mechanical-behavior)).
 
-To define a line spring, a line with the following structure is added to the section `PATH SPRINGS`.
+To define a path spring, a line with the following structure is added to the section `PATH SPRINGS`.
 
 `<node index>-<node index>-<node index>-..., <mechanical behavior>, [natural length]`
 
@@ -239,10 +239,10 @@ To define a line spring, a line with the following structure is added to the sec
 * `<node index>` is the index of the second node, following the first node along the chain,
 * `<node index>` is the index of the third node following the second node along the chain,
 * `<node index>` ... etc.
-* `<mechanical behavior>` is the mechanical behavior of the line spring. To specify a **linear** line spring,
+* `<mechanical behavior>` is the mechanical behavior of the path spring. To specify a **linear** path spring,
 the mechanical behavior is simply the **spring constant** (positive float), that is the slope of its tension-displacement curve.
-* `[natural length]` is the natural length of the line spring (float). 
-It is an optional parameter; if not provided the natural length of the line spring will automatically be set to the
+* `[natural length]` is the natural length of the path spring (float). 
+It is an optional parameter; if not provided the natural length of the path spring will automatically be set to the
 length defined by the n nodes as created in the `NODES` section.
 
 
@@ -251,7 +251,7 @@ Example:
 PATH SPRINGS
 0-2-1, 1.0
 ```
->A linear line spring is defined. The tension it creates will be determined by the difference between its current and natural lengths.
+>A linear path spring is defined. The tension it creates will be determined by the difference between its current and natural lengths.
 The displacement versus tension relation is defined by the spring constant set to `1.0`.
 Here, no natural length was provided, so the natural length will be automatically set to
 the length of the polygonal chain defined by the nodes `0`, `2`, and `1` as defined in the section `NODES`.

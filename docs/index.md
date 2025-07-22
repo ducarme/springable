@@ -16,7 +16,7 @@ buckling, symmetry-breaking or restabilization.
 
 In its core, `springable` deals with **springs**, that we define as any entity that can store [elastic energy](https://en.wikipedia.org/wiki/Elastic_energy).
 *Springs* therefore include longitudinal springs (compression and extension),
-angular springs (bending), area springs (useful to model fluids and pneumatic loading), line springs (useful to model cable-driven systems), and more!
+angular springs (bending), area springs (useful to model fluids and pneumatic loading), path springs (useful to model cable-driven systems), and more!
 On top of that, the library allows you to define the energy potential of each individual spring to make them intrinsically linear or nonlinear, thereby generating a whole ecosystem of springs, ready to be assembled and simulated!
 
 **Table of contents**
