@@ -176,7 +176,8 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
 
     with plt.style.context(ao.stylesheet):
         if ao.side_plot_mode != 'none':
-            fig = plt.figure(figsize=(ao.animation_width, ao.animation_height))
+            fig = plt.figure(figsize=(ao.animation_width, ao.animation_height),
+                             dpi=ao.dpi)
             grid = plt.GridSpec(1, 2, wspace=0.20, hspace=0.01, bottom=0.15, left=0.01)
             ax1 = fig.add_subplot(grid[0, 0])
             ax2 = fig.add_subplot(grid[0, 1])
