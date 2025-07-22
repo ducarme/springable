@@ -135,7 +135,7 @@ AREA SPRINGS
 <node index>-<node index>-<node index>-..., <mechanical behavior>, [natural area]
 <node index>-<node index>-<node index>-..., <mechanical behavior>, [natural area]
 ...
-LINE SPRINGS
+PATH SPRINGS
 <node index>-<node index>-<node index>-..., <mechanical behavior>, [natural length]
 <node index>-<node index>-<node index>-..., <mechanical behavior>, [natural length]
 ...
@@ -159,7 +159,7 @@ Each section is described in details herein below.
 + [The `SPRINGS` section](#the-springs-section)
 + [The `ANGULAR SPRINGS` section](#the-angular-springs-section)
 + [The `AREA SPRINGS` section](#the-area-springs-section)
-+ [The `LINE SPRINGS` section](#the-line-springs-section)
++ [The `PATH SPRINGS` section](#the-line-springs-section)
 + [The `LOADING` section](#the-loading-section)
 + [A complete example](#a-complete-example)
 + [Additional notes](#additional-notes)
@@ -316,8 +316,8 @@ by the spring constant set to `3.0`.
 Here, no natural area was provided, so the natural area will be automatically set to
 the area of the polygon defined by the nodes `0`, `2`, and `1` as defined in the section `NODES`.
 
-#### The `LINE SPRINGS` section
-The `LINE SPRINGS` section serves to define **line springs**, that is, springs whose elastic energy is a function of their [polygonal chain](https://en.wikipedia.org/wiki/Polygonal_chain)'s length.
+#### The `PATH SPRINGS` section
+The `PATH SPRINGS` section serves to define **line springs**, that is, springs whose elastic energy is a function of their [polygonal chain](https://en.wikipedia.org/wiki/Polygonal_chain)'s length.
 They are useful when modelling mechanical systems involving cable-driven actuation or [pulleys](https://en.wikipedia.org/wiki/Pulley).
 Those springs are defined by specifying **n nodes** (n>=2), which together define a polygonal chain. More precisely, the nodes are the vertices listed sequentially that form the chain.
 The sequence of nodes does not need to (but can) be closed (first and last node can be different or identical).
@@ -328,7 +328,7 @@ n specified nodes. The mechanical behavior describes its intrinsic tension-displ
 (the line spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
 (see section [Specifying a nonlinear mechanical behavior](#specifying-a-nonlinear-mechanical-behavior)).
 
-To define a line spring, a line with the following structure is added to the section `LINE SPRINGS`:\
+To define a line spring, a line with the following structure is added to the section `PATH SPRINGS`:\
 `<node index>-<node index>-<node index>-..., <mechanical behavior>, [natural length]`.
 * `<node index>` is the index of a first node that form the polygonal chain,
 * `<node index>` is the index of the second node, following the first node along the chain,
@@ -343,7 +343,7 @@ length defined by the n nodes as created in the `NODES` section.
 
 Example:
 ```csv
-LINE SPRINGS
+PATH SPRINGS
 0-2-1, 1.0
 ```
 >A linear line spring is defined. The tension it creates will be determined by the difference between its current and natural lengths.
