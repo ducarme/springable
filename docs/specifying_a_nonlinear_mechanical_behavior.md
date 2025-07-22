@@ -1,11 +1,11 @@
-In `springable`, each spring (longitudinal, rotational, etc) has its own intrinsic mechanical behavior.
+In `springable`, each spring (longitudinal, angularal, etc) has its own intrinsic mechanical behavior.
 An intrinsic mechanical behavior is fully characterized by a **generalized force-displacement curve**.
-For a longitudinal spring, that curve will be interpreted as a *force-displacement* curve. For a rotational spring, as a
+For a longitudinal spring, that curve will be interpreted as a *force-displacement* curve. For a angularal spring, as a
 *torque-angle change* curve. For an area spring, as a *2d pressure-area change* curve. Etc.
 
 !!! info
     Mathematically speaking, the generalized force $F$ is defined as the derivative of the elastic energy with respect to the *measure* $\alpha$
-    of the spring. The measure $\alpha$ is the *length* for a longitudinal spring, the *angle* for a rotation spring, the *area* for an area spring, etc.
+    of the spring. The measure $\alpha$ is the *length* for a longitudinal spring, the *angle* for a angular spring, the *area* for an area spring, etc.
     The generalized displacement $U$ is defined as the difference between the current measure $\alpha$ and the *natural* measure $\alpha_0$, that is, the measure
     of the spring in its natural configuration (wherein no force is generated and no elastic energy is stored).
 
@@ -69,7 +69,7 @@ Example: `..., LINEAR(k=2.0)` or equivalently `..., 2.0`
 ## Logarithm behavior
 A **logarithm** behavior is defined by a generalized force-displacement curve given by
 $F=k\alpha_0\ln(\alpha/\alpha_0)$, $U=\alpha-\alpha_0$. It is useful to prevent springs from having a zero measure
-(longitudinal springs with zero length, rotational springs with zero angle, etc),
+(longitudinal springs with zero length, angularal springs with zero angle, etc),
 as the generalized force approaches infinity as the measure gets close to zero.
 
 `LOGARITHM(k=<spring constant>)`

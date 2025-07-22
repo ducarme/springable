@@ -13,7 +13,7 @@ SPRINGS
 <node index>-<node index>, <mechanical behavior>, [natural length]
 <node index>-<node index>, <mechanical behavior>, [natural length]
 ...
-ROTATION SPRINGS
+ANGULAR SPRINGS
 <node index>-<node index>-<node index>, <mechanical behavior>, [natural angle]
 <node index>-<node index>-<node index>, <mechanical behavior>, [natural angle]
 ...
@@ -42,7 +42,7 @@ Each section is described in details herein below.
 + [The `PARAMETERS` section](#the-parameters-section)
 + [The `NODES` section](#the-nodes-section)
 + [The `SPRINGS` section](#the-springs-section)
-+ [The `ROTATION SPRINGS` section](#the-rotation-springs-section)
++ [The `ANGULAR SPRINGS` section](#the-angular-springs-section)
 + [The `AREA SPRINGS` section](#the-area-springs-section)
 + [The `LINE SPRINGS` section](#the-line-springs-section)
 + [The `LOADING` section](#the-loading-section)
@@ -139,38 +139,38 @@ SPRINGS
 > No natural length was provided, so their natural length will be automatically set to the distance between nodes `0`
 > and `2`, and between nodes `1` and `2` as defined in the section `NODES`, respectively.
 
-#### The `ROTATION SPRINGS` section
-The `ROTATION SPRINGS` section serves to define **rotation springs**
+#### The `ANGULAR SPRINGS` section
+The `ANGULAR SPRINGS` section serves to define **angular springs**
 (also known as [torsion springs](https://en.wikipedia.org/wiki/Torsion_spring)), that is, springs whose elastic energy is a function of an angle. They are useful when modelling mechanical systems involving elastic bending, such as flexures for example.
 Those springs are defined by specifying **three nodes** A, B and C,
 which together, define the angle ABC (B is the vertex of the angle). More precisely, the angle ABC is the angle by which
 the segment BA must rotate counterclockwise (about B) to align with segment BC. The angle is always between 0 and 2π.
 
-Along with its three nodes, the **mechanical behavior** must be specified, and optionally the natural angle of the rotation
+Along with its three nodes, the **mechanical behavior** must be specified, and optionally the natural angle of the angular
 spring (in radians). If no natural angle is provided, the natural angle is automatically set to the angle defined by the
 three specified nodes. The mechanical behavior describes its intrinsic (torque)-(angle-change) relation. It can be a linear behavior
-(the rotation spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
+(the angular spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
 (see section [Specifying a nonlinear mechanical behavior](#specifying-a-nonlinear-mechanical-behavior)).
 
-To define a rotation spring, a line with the following structure is added to the section `ROTATION SPRINGS`.
+To define a angular spring, a line with the following structure is added to the section `ANGULAR SPRINGS`.
 
 `<node index>-<node index>-<node index>, <mechanical behavior>, [natural angle]`
 
 * `<node index>` is the index of node A.
 * `<node index>` is the index of node B.
 * `<node index>` is the index of node C.
-* `<mechanical behavior>` is the angular mechanical behavior of the rotation spring. To specify a **linear** rotation spring,
+* `<mechanical behavior>` is the angular mechanical behavior of the angular spring. To specify a **linear** angular spring,
 the mechanical behavior is simply the **spring constant** (positive float), that is the slope of its (torque)-(angle-change) curve.
-* `[natural angle]` is the natural angle of the rotation spring in radians (float in [0, 2π[). 
-It is an optional parameter; if not provided the natural angle of the rotation spring will automatically be set to the
+* `[natural angle]` is the natural angle of the angular spring in radians (float in [0, 2π[). 
+It is an optional parameter; if not provided the natural angle of the angular spring will automatically be set to the
 angle defined by nodes A, B and C as created in the `NODES` section.
 
 Example:
 ```csv
-ROTATION SPRINGS
+ANGULAR SPRINGS
 0-2-1, 1.5, PI/2
 ```
->A linear rotation spring is defined. The torque it creates will be determined by the difference between the angle 021
+>A linear angular spring is defined. The torque it creates will be determined by the difference between the angle 021
 (vertex at node `2`) and its natural angle `PI/2` (90 deg). The angle-difference versus torque relation is defined
 by the spring constant set to `1.5`.
 Note that if no natural angle was specified, the natural angle would have been automatically set to the angle defined by
@@ -290,7 +290,7 @@ the simulation is assumed to have completed.
 
 #### A complete example
 This example describes a spring structure composed of two inclined linear longitudinal springs connected in the center,
-and hinging through a linear rotation spring.
+and hinging through a linear angular spring.
 ```csv
 # spring model example (this is a comment)
 
@@ -307,7 +307,7 @@ NODES
 SPRINGS
 0-2, stiffness
 1-2, stiffness
-ROTATION SPRINGS
+ANGULAR SPRINGS
 0-2-1, 1.5, PI/2
 
 LOADING

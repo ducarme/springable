@@ -10,6 +10,9 @@ from .keywords import usable_shapes, usable_behaviors
 import os
 
 
+DEFAULT_FLEXEL_NAME = 'FLEXEL'
+ALTERNATIVE_FLEXEL_NAME = 'SPRING'
+
 def smart_split(string, separators) -> list[str]:
     """ separate the input string when separators are encountered,
     except if those are within brackets (), {}, or []"""
@@ -200,7 +203,21 @@ def text_to_shape(shape_text: tuple[str, str], nodes: set[Node]) -> Shape:
     try:
         shape_type = usable_shapes.name_to_type[shape_type_name]
     except KeyError:
-        raise NotImplementedError(f'Shape type {shape_type_name} is unknown.')
+        if shape_type_name == '':
+            shape_type = SegmentLength
+        elif shape_type_name == 'ROTATION':
+            raise NotImplementedError(f'{shape_type_name} {DEFAULT_FLEXEL_NAME} (or {shape_type_name} {ALTERNATIVE_FLEXEL_NAME}) '
+                                      f'is not valid anymore. '
+                                      f'Instead, use "{usable_shapes.type_to_name[Angle]} {DEFAULT_FLEXEL_NAME}" '
+                                      f'(or equivalently "{usable_shapes.type_to_name[Angle]} {ALTERNATIVE_FLEXEL_NAME}").')
+        elif shape_type_name in ('LINE', 'CABLE', 'PATH LENGTH', 'PATHLENGTH'):
+            raise NotImplementedError(f'{shape_type_name} {DEFAULT_FLEXEL_NAME} (or {shape_type_name} {ALTERNATIVE_FLEXEL_NAME}) '
+                                      f'is not valid. '
+                                      f'Use "{usable_shapes.type_to_name[PathLength]}" '
+                                      f'(or equivalently "{usable_shapes.type_to_name[PathLength]} {ALTERNATIVE_FLEXEL_NAME}") instead '
+                                      f'if your intention is to model a cable or rope passing through multiple nodes.')
+        else:
+            raise NotImplementedError(f'Shape type {shape_type_name} is unknown.')
     node_nbs = [int(node_nb) for node_nb in smart_split(shape_description, '-')]
     shape_nodes = []
     for node_nb in node_nbs:
@@ -210,7 +227,7 @@ def text_to_shape(shape_text: tuple[str, str], nodes: set[Node]) -> Shape:
 
 def element_to_text(_element: Element) -> str:
     shape_type_name, shape_description = shape_to_text(_element.get_shape())
-    text = shape_type_name + ' SPRING\n'
+    text = shape_type_name + ' ' + DEFAULT_FLEXEL_NAME +'\n'
     text = text.lstrip()
     text += shape_description
     text += ', '
@@ -227,7 +244,15 @@ def text_to_element(element_txt: str,
     shape_type_text, to_parse = basic_split(element_txt, '\n')
     element_description = smart_split(to_parse, ',')
     shape_description = element_description[0]
-    _shape = text_to_shape((shape_type_text.removesuffix('SPRING').rstrip(), shape_description), nodes)
+
+    if shape_type_text.endswith(DEFAULT_FLEXEL_NAME):
+        flexel_name = DEFAULT_FLEXEL_NAME
+    elif shape_type_text.endswith(ALTERNATIVE_FLEXEL_NAME):
+        flexel_name = ALTERNATIVE_FLEXEL_NAME
+    else:
+        raise ValueError(f'Unknown flexel type. What is a "{shape_type_text}"?')
+    
+    _shape = text_to_shape((shape_type_text.removesuffix(flexel_name).rstrip(), shape_description), nodes)
 
     # behavior
     behavior_txt = ', '.join(element_description[1:])
@@ -278,7 +303,7 @@ def text_to_assembly(assembly_text: str, evaluator: se.SimpleEval = None) -> Ass
             reading_nodes = True
             reading_elements = False
             continue
-        if line.endswith('SPRINGS'):
+        if line.endswith(f'{DEFAULT_FLEXEL_NAME}S') or line.endswith(f'{ALTERNATIVE_FLEXEL_NAME}S'):
             reading_nodes = False
             reading_elements = True
             current_shape_type = line.rstrip('S')

@@ -36,7 +36,7 @@ SPRINGS
 2-7, k1
 3-6, k1
 4-5, k1
-ROTATION SPRINGS
+ANGULAR SPRINGS
 1-0-14, k_rot
 2-1-0, k_rot
 3-2-1, k_rot

@@ -561,7 +561,7 @@ class Negative(CompoundShape):
 
 
 
-class Path(Sum):
+class PathLength(Sum):
 
     def __init__(self, *nodes: Node):
         segments = []

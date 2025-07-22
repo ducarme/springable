@@ -14,7 +14,7 @@ shape_unit_dimensions: dict[type[shape], int] = {shape.SegmentLength: 1,
                                                  shape.Area: 2,
                                                  shape.HoleyArea: 2,
                                                  shape.Angle: 0,
-                                                 shape.Path: 1,
+                                                 shape.PathLength: 1,
                                                  shape.SignedXDist: -1,
                                                  shape.SignedYDist: -1,
                                                  shape.DistancePointLine: -1,
@@ -177,9 +177,9 @@ def compute_coil_line(start, end, nb_coils, diameter, straight_ratio=0.4, aspect
 
     # Rotate the coil to align with the start-end direction
 
-    rotation_matrix = np.array([[np.cos(angle), -np.sin(angle)],
+    angular_matrix = np.array([[np.cos(angle), -np.sin(angle)],
                                 [np.sin(angle), np.cos(angle)]])
-    coil = np.dot(rotation_matrix, np.array([coil_x, coil_y]))
+    coil = np.dot(angular_matrix, np.array([coil_x, coil_y]))
 
     # Combine the coil with the path
     x_ = path_x + coil[0]

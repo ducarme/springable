@@ -163,14 +163,14 @@ spring_linewidth = 2
 spring_width_scaling = 1.0
 spring_default_opacity = 1.0
 spring_default_color = "#cecece"
-rotation_spring_style = "line"  # "elegant", "line"
-rotation_spring_nb_coils = 6  # has no effect if "rotation_spring_style" = "line"
-rotation_spring_radii_ratio = 6  # ratio between the rotation spring radius and the coil radius. Is only used when "rotation_spring_style" = "elegant"
-rotation_spring_aspect = 0.4  # is only used when "rotation_spring_style" = "elegant"
-rotation_spring_linewidth = 2
-rotation_spring_radius_scaling = 1.0
-rotation_spring_default_opacity = 1.0
-rotation_spring_default_color = "#cecece"
+angular_spring_style = "line"  # "elegant", "line"
+angular_spring_nb_coils = 6  # has no effect if "angular_spring_style" = "line"
+angular_spring_radii_ratio = 6  # ratio between the angular spring radius and the coil radius. Is only used when "angular_spring_style" = "elegant"
+angular_spring_aspect = 0.4  # is only used when "angular_spring_style" = "elegant"
+angular_spring_linewidth = 2
+angular_spring_radius_scaling = 1.0
+angular_spring_default_opacity = 1.0
+angular_spring_default_color = "#cecece"
 area_spring_default_opacity = 0.5
 area_spring_default_color = "#cecece"
 line_spring_linewidth = 2

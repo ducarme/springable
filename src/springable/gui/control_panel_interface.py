@@ -2,7 +2,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from .gui_utils import slider_panel, Tooltip, get_recursion_limit, get_current_recursion_depth
 from .gui_event_handler import GUIEventHandler
-from .gui_settings import DEFAULT_BEHAVIORS
+from .gui_settings import DEFAULT_BEHAVIORS, INITIALLY_SELECTED_BEHAVIOR_INDEX
 from ..mechanics.mechanical_behavior import MechanicalBehavior
 
 
@@ -137,7 +137,7 @@ class BehaviorTab:
         self._behavior_type_var = tk.StringVar()
         behavior_type_menu = ttk.Combobox(self.tab, textvariable=self._behavior_type_var)
         behavior_type_menu['values'] = list(DEFAULT_BEHAVIORS.keys())
-        behavior_type_menu.current(3)
+        behavior_type_menu.current(INITIALLY_SELECTED_BEHAVIOR_INDEX)
 
         behavior_type_menu.state(["readonly"])
         behavior_type_menu.bind('<<ComboboxSelected>>', self.on_behavior_type_menu_change)

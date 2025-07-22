@@ -103,23 +103,23 @@ class AngleDrawing(ShapeDrawing):
         end_angle = shape.Angle.calculate_angle(x1 + 1, y1, x1, y1, x2, y2)
         start_angle = end_angle - angle
 
-        if self._aa.rotation_spring_style == 'elegant':
-            x_coords, y_coords = compute_coil_arc(center, 0.8 * self._size * self._aa.rotation_spring_radius_scaling,
+        if self._aa.angular_spring_style == 'elegant':
+            x_coords, y_coords = compute_coil_arc(center, 0.8 * self._size * self._aa.angular_spring_radius_scaling,
                                                   start_angle, end_angle,
-                                                  self._aa.rotation_spring_nb_coils,
-                                                  self._aa.rotation_spring_radii_ratio,
-                                                  self._aa.rotation_spring_aspect)
+                                                  self._aa.angular_spring_nb_coils,
+                                                  self._aa.angular_spring_radii_ratio,
+                                                  self._aa.angular_spring_aspect)
         else:  # "line" or anything else
-            x_coords, y_coords = compute_arc_line(center, self._size * self._aa.rotation_spring_radius_scaling,
+            x_coords, y_coords = compute_arc_line(center, self._size * self._aa.angular_spring_radius_scaling,
                                                   start_angle, end_angle)
 
-        self._graphics = self._ax.plot(x_coords, y_coords, lw=self._aa.rotation_spring_linewidth,
+        self._graphics = self._ax.plot(x_coords, y_coords, lw=self._aa.angular_spring_linewidth,
                                        color=self._color, alpha=self._opacity, zorder=0)[0]
         if self._is_hysteron:
             mid_angle = (start_angle + end_angle) / 2
             self._hysteron_label_position = (
-                center[0] + self._size * self._aa.rotation_spring_radius_scaling * np.cos(mid_angle),
-                center[1] + self._size * self._aa.rotation_spring_radius_scaling * np.sin(mid_angle)
+                center[0] + self._size * self._aa.angular_spring_radius_scaling * np.cos(mid_angle),
+                center[1] + self._size * self._aa.angular_spring_radius_scaling * np.sin(mid_angle)
             )
         else:
             self._hysteron_label_position = None
@@ -132,14 +132,14 @@ class AngleDrawing(ShapeDrawing):
         end_angle = shape.Angle.calculate_angle(x1 + 1, y1, x1, y1, x2, y2)
         start_angle = end_angle - angle
 
-        if self._aa.rotation_spring_style == 'elegant':
-            x_coords, y_coords = compute_coil_arc(center, self._size * self._aa.rotation_spring_radius_scaling,
+        if self._aa.angular_spring_style == 'elegant':
+            x_coords, y_coords = compute_coil_arc(center, self._size * self._aa.angular_spring_radius_scaling,
                                                   start_angle, end_angle,
-                                                  self._aa.rotation_spring_nb_coils,
-                                                  self._aa.rotation_spring_radii_ratio,
-                                                  self._aa.rotation_spring_aspect)
+                                                  self._aa.angular_spring_nb_coils,
+                                                  self._aa.angular_spring_radii_ratio,
+                                                  self._aa.angular_spring_aspect)
         else:  # "line" or anything else
-            x_coords, y_coords = compute_arc_line(center, self._size * self._aa.rotation_spring_radius_scaling,
+            x_coords, y_coords = compute_arc_line(center, self._size * self._aa.angular_spring_radius_scaling,
                                                   start_angle, end_angle)
         self._graphics.set_xdata(x_coords)
         self._graphics.set_ydata(y_coords)
@@ -151,8 +151,8 @@ class AngleDrawing(ShapeDrawing):
         if self._is_hysteron:
             mid_angle = (start_angle + end_angle) / 2
             self._hysteron_label_position = (
-                center[0] + self._size * self._aa.rotation_spring_radius_scaling * np.cos(mid_angle),
-                center[1] + self._size * self._aa.rotation_spring_radius_scaling * np.sin(mid_angle)
+                center[0] + self._size * self._aa.angular_spring_radius_scaling * np.cos(mid_angle),
+                center[1] + self._size * self._aa.angular_spring_radius_scaling * np.sin(mid_angle)
             )
 
 class AreaDrawing(ShapeDrawing):
@@ -179,7 +179,7 @@ class AreaDrawing(ShapeDrawing):
 
 
 class PathDrawing(ShapeDrawing):
-    def __init__(self, path: shape.Path, is_hysteron, ax: plt.Axes,
+    def __init__(self, path: shape.PathLength, is_hysteron, ax: plt.Axes,
                  color: str, opacity: float, aa: AssemblyAppearanceOptions):
         super().__init__(path, None, is_hysteron, ax, color, opacity, aa)
         coordinates = self._shape.get_nodal_coordinates()
@@ -300,7 +300,7 @@ class CompoundDrawing(ShapeDrawing):
                        shape.Angle: AngleDrawing,
                        shape.Area: AreaDrawing,
                        shape.HoleyArea: HoleyAreaDrawing,
-                       shape.Path: PathDrawing,
+                       shape.PathLength: PathDrawing,
                        shape.DistancePointLine: DistanceDrawing,
                        shape.SignedDistancePointLine: DistanceDrawing,
                        shape.SquaredDistancePointSegment: DistanceDrawing
@@ -451,8 +451,8 @@ class ElementDrawing(Drawing):
                                            self._ax, color, opacity, self._aa)
 
         elif isinstance(_shape, shape.Angle):
-            color = color if color is not None else self._aa.rotation_spring_default_color
-            opacity = opacity if opacity is not None else self._aa.rotation_spring_default_opacity
+            color = color if color is not None else self._aa.angular_spring_default_color
+            opacity = opacity if opacity is not None else self._aa.angular_spring_default_opacity
             shape_drawing = AngleDrawing(_shape, self._width, self._is_hysteron,
                                          self._ax, color, opacity, self._aa)
         elif isinstance(_shape, shape.Area):
@@ -461,7 +461,7 @@ class ElementDrawing(Drawing):
             shape_drawing = AreaDrawing(_shape, self._is_hysteron,
                                         self._ax, color, opacity, self._aa)
 
-        elif isinstance(_shape, shape.Path):
+        elif isinstance(_shape, shape.PathLength):
             color = color if color is not None else self._aa.line_spring_default_color
             opacity = opacity if opacity is not None else self._aa.line_spring_default_opacity
             shape_drawing = PathDrawing(_shape, self._is_hysteron,

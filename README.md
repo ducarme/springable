@@ -21,7 +21,7 @@ buckling, symmetry-breaking or restabilization.
 
 In its core, `springable` deals with **springs**, that we define as any entity that can store [elastic energy](https://en.wikipedia.org/wiki/Elastic_energy).
 *Springs* therefore include longitudinal springs (compression and extension),
-rotation springs (bending), area springs (useful to model fluids and pneumatic loading), line springs (useful to model cable-driven systems), and more!
+angular springs (bending), area springs (useful to model fluids and pneumatic loading), line springs (useful to model cable-driven systems), and more!
 On top of that, the library allows you to define the energy potential of each individual spring to make them intrinsically linear or nonlinear, thereby generating a whole ecosystem of springs, ready to be assembled and simulated!
 
    
@@ -127,7 +127,7 @@ SPRINGS
 <node index>-<node index>, <mechanical behavior>, [natural length]
 <node index>-<node index>, <mechanical behavior>, [natural length]
 ...
-ROTATION SPRINGS
+ANGULAR SPRINGS
 <node index>-<node index>-<node index>, <mechanical behavior>, [natural angle]
 <node index>-<node index>-<node index>, <mechanical behavior>, [natural angle]
 ...
@@ -157,7 +157,7 @@ Each section is described in details herein below.
 + [The `PARAMETERS` section](#the-parameters-section)
 + [The `NODES` section](#the-nodes-section)
 + [The `SPRINGS` section](#the-springs-section)
-+ [The `ROTATION SPRINGS` section](#the-rotation-springs-section)
++ [The `ANGULAR SPRINGS` section](#the-angular-springs-section)
 + [The `AREA SPRINGS` section](#the-area-springs-section)
 + [The `LINE SPRINGS` section](#the-line-springs-section)
 + [The `LOADING` section](#the-loading-section)
@@ -248,21 +248,21 @@ Those springs are defined by specifying **three nodes** A, B and C,
 which together, define the angle ABC (B is the vertex of the angle). More precisely, the angle ABC is the angle by which
 the segment BA must rotate counterclockwise (about B) to align with segment BC. The angle is always between 0 and 2π.
 
-Along with its three nodes, the **mechanical behavior** must be specified, and optionally the natural angle of the rotation
+Along with its three nodes, the **mechanical behavior** must be specified, and optionally the natural angle of the angular
 spring (in radians). If no natural angle is provided, the natural angle is automatically set to the angle defined by the
 three specified nodes. The mechanical behavior describes its intrinsic (torque)-(angle-change) relation. It can be a linear behavior
-(the rotation spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
+(the angular spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
 (see section [Specifying a nonlinear mechanical behavior](#specifying-a-nonlinear-mechanical-behavior)).
 
-To define a rotation spring, a line with the following structure is added to the section `ROTATION SPRINGS`:\
+To define a angular spring, a line with the following structure is added to the section `ANGULAR SPRINGS`:\
 `<node index>-<node index>-<node index>, <mechanical behavior>, [natural angle]`.
 * `<node index>` is the index of node A.
 * `<node index>` is the index of node B.
 * `<node index>` is the index of node C.
-* `<mechanical behavior>` is the angular mechanical behavior of the rotation spring. To specify a **linear** rotation spring,
+* `<mechanical behavior>` is the angular mechanical behavior of the angular spring. To specify a **linear** angular spring,
 the mechanical behavior is simply the **spring constant** (positive float), that is the slope of its (torque)-(angle-change) curve.
-* `[natural angle]` is the natural angle of the rotation spring in radians (float in [0, 2π[). 
-It is an optional parameter; if not provided the natural angle of the rotation spring will automatically be set to the
+* `[natural angle]` is the natural angle of the angular spring in radians (float in [0, 2π[). 
+It is an optional parameter; if not provided the natural angle of the angular spring will automatically be set to the
 angle defined by nodes A, B and C as created in the `NODES` section.
 
 Example:
@@ -270,7 +270,7 @@ Example:
 ANGULAR SPRINGS
 0-2-1, 1.5, PI/2
 ```
->A linear rotation spring is defined. The torque it creates will be determined by the difference between the angle 021
+>A linear angular spring is defined. The torque it creates will be determined by the difference between the angle 021
 (vertex at node `2`) and its natural angle `PI/2` (90 deg). The angle-difference versus torque relation is defined
 by the spring constant set to `1.5`.
 Note that if no natural angle was specified, the natural angle would have been automatically set to the angle defined by
@@ -382,7 +382,7 @@ Please refer to the [full documentation](#documentation) for more info
 
 #### A complete example
 This example describes a spring structure composed of two inclined linear longitudinal springs connected in the center,
-and hinging through a linear rotation spring.
+and hinging through a linear angular spring.
 ```csv
 # spring model example (this is a comment)
 
@@ -399,7 +399,7 @@ NODES
 SPRINGS
 0-2, stiffness
 1-2, stiffness
-ROTATION SPRINGS
+ANGULAR SPRINGS
 0-2-1, 1.5, PI/2
 
 LOADING
@@ -416,14 +416,14 @@ Value π can be used without defining it in the section `PARAMETERS` with the ke
 or to omit it completely (no header and no content).
 
 ### Specifying a nonlinear mechanical behavior
-In `springable`, each spring (longitudinal, rotational, etc) has its own intrinsic mechanical behavior.
+In `springable`, each spring (longitudinal, angularal, etc) has its own intrinsic mechanical behavior.
 An intrinsic mechanical behavior is fully characterized by a **generalized force-displacement curve**.
-For a longitudinal spring, that curve will be interpreted as a *force-displacement* curve. For a rotational spring, as a
+For a longitudinal spring, that curve will be interpreted as a *force-displacement* curve. For a angularal spring, as a
 *torque-angle change* curve. For an area spring, as a *2d pressure-area change* curve. Etc.
 
 > [!NOTE]
 > Mathematically speaking, the generalized force $F$ is defined as the derivative of the elastic energy with respect to the *measure* $\alpha$
-> of the spring. The measure $\alpha$ is the *length* for a longitudinal spring, the *angle* for a rotation spring, the *area* for an area spring, etc.
+> of the spring. The measure $\alpha$ is the *length* for a longitudinal spring, the *angle* for a angular spring, the *area* for an area spring, etc.
 > The generalized displacement $U$ is defined as the difference between the current measure $\alpha$ and the *natural* measure $\alpha_0$, that is, the measure
 > of the spring in its default configuration.
 
@@ -473,7 +473,7 @@ The unit of $k$ should be the unit of the generalized force $F$ divided by the u
 #### Logarithm behavior
 A **logarithm** behavior is defined by a generalized force-displacement curve given by
 $F=k\alpha_0\ln(\alpha/\alpha_0)$, $U=\alpha-\alpha_0$. It is useful to prevent springs from having a zero measure
-(longitudinal springs with zero length, rotational springs with zero angle, etc),
+(longitudinal springs with zero length, angularal springs with zero angle, etc),
 as the generalized force approaches infinity as the measure gets close to zero.
 
 `LOGARITHM(k=<spring constant>)`
