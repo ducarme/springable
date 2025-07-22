@@ -241,8 +241,8 @@ SPRINGS
 No natural length was provided, so their natural length will be automatically set to the distance between nodes `0`
 and `2`, and between nodes `1` and `2` as defined in the section `NODES`, respectively.
 
-#### The `ROTATION SPRINGS` section
-The `ROTATION SPRINGS` section serves to define **rotation springs**
+#### The `ANGULAR SPRINGS` section
+The `ANGULAR SPRINGS` section serves to define **angular springs**
 (also known as [torsion springs](https://en.wikipedia.org/wiki/Torsion_spring)), that is, springs whose elastic energy is a function of an angle. They are useful when modelling mechanical systems involving elastic bending, such as flexures for example.
 Those springs are defined by specifying **three nodes** A, B and C,
 which together, define the angle ABC (B is the vertex of the angle). More precisely, the angle ABC is the angle by which
@@ -267,7 +267,7 @@ angle defined by nodes A, B and C as created in the `NODES` section.
 
 Example:
 ```csv
-ROTATION SPRINGS
+ANGULAR SPRINGS
 0-2-1, 1.5, PI/2
 ```
 >A linear rotation spring is defined. The torque it creates will be determined by the difference between the angle 021
