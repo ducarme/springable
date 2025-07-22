@@ -1,13 +1,13 @@
 import numpy as np
 from scipy.special import factorial
+from typing import overload
 
 
 def valid_t_among(t: np.ndarray):
     t = np.real(t[np.isreal(t)])
     return np.sort(t[np.logical_and(t >= 0.0, t <= 1.0)])
 
-
-def evaluate_poly(t: float | np.ndarray, coefs: np.ndarray) -> float | np.ndarray:
+def evaluate_poly(t: np.ndarray, coefs: np.ndarray) -> np.ndarray:
     """ Computes and returns the value of the Bezier polynomial at t using de Castlejau's algorithm """
     beta = [c for c in coefs]  # copies array
     n = len(beta)
@@ -17,7 +17,7 @@ def evaluate_poly(t: float | np.ndarray, coefs: np.ndarray) -> float | np.ndarra
     return beta[0]
 
 
-def elevate_order(coefs: np.array) -> np.ndarray:
+def elevate_order(coefs: np.ndarray) -> np.ndarray:
     n = coefs.shape[0] - 1
     new_coefs = np.empty(n + 2)
     w = np.append(coefs, 0.0)
@@ -47,7 +47,7 @@ def get_roots(coefs: np.ndarray):
     return valid_t_among(np.roots(get_monomial_coefs(coefs)))
 
 
-def evaluate_derivative_poly(t: float | np.ndarray, coefs: np.ndarray) -> float | np.ndarray:
+def evaluate_derivative_poly(t: np.ndarray, coefs: np.ndarray) -> np.ndarray:
     """ Computes and returns the value of the derivative of the Bezier polynomial at t using de Castlejau's algorithm"""
     coefs = np.diff(coefs) * (coefs.shape[0] - 1)
     return evaluate_poly(t, coefs)
@@ -66,7 +66,7 @@ def is_monotonic(coefs: np.ndarray):
     return get_extrema(coefs).shape[0] == 0
 
 
-def evaluate_inverse_poly(x: float | np.ndarray, coefs: np.ndarray):
+def evaluate_inverse_poly(x: np.ndarray, coefs: np.ndarray):
     """ polynomial is assumed to be monotonic """
     if isinstance(x, np.ndarray):
         t = np.empty_like(x)
@@ -79,14 +79,14 @@ def evaluate_inverse_poly(x: float | np.ndarray, coefs: np.ndarray):
         return valid_t_among(np.roots(mc))[0]
 
 
-def evaluate_second_derivative_poly(t: float | np.ndarray, coefs: np.ndarray) -> float | np.ndarray:
+def evaluate_second_derivative_poly(t: np.ndarray, coefs: np.ndarray) -> np.ndarray:
     """ Computes and returns the value of the second derivative of the Bezier polynomial at t using de Castlejau's
     algorithm"""
     coefs = np.diff(coefs, 2) * (coefs.shape[0] - 1) * (coefs.shape[0] - 2)
     return evaluate_poly(t, coefs)
 
 
-def evaluate_third_derivative_poly(t: float | np.ndarray, coefs: np.ndarray) -> float | np.ndarray:
+def evaluate_third_derivative_poly(t: np.ndarray, coefs: np.ndarray) -> np.ndarray:
     coefs = np.diff(coefs, 3) * (coefs.shape[0] - 1) * (coefs.shape[0] - 2) * (coefs.shape[0] - 3)
     return evaluate_poly(t, coefs)
 

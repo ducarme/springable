@@ -11,7 +11,7 @@ class Element:
         self._shape = _shape
         self._behavior = behavior
         self._x = np.zeros(self._behavior.get_nb_dofs() - 1)  # values of the internal degrees of freedom
-        self._el_nb = None
+        self._el_nb: int | None = None
         self._element_name = element_name
 
         # ONLY USED FOR DYNAMIC SIMULATION
@@ -88,7 +88,7 @@ class Element:
             return hessian[0]
         if len(hessian) == 3:  # for behavior with 1 hidden variable (Bivariate behavior)
             return (hessian[0] * hessian[2] - hessian[1] ** 2) / hessian[2]
-        else:  # for behavior with more than 1 hidden variable (Trivariate behavior for example)
+        else:  # for behavior with more than 1 hidden variable (Trivariate behavior for example, for the future )
             hessian_size = int(round((np.sqrt(1 + 8 * len(hessian)) - 1) / 2))
             hessian_matrix = np.zeros((hessian_size, hessian_size))
             index = 0

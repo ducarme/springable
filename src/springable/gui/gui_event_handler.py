@@ -42,7 +42,7 @@ class GUIEventHandler:
                     u = np.linspace(self._umin, self._umax, self._nb_samples)
                     f = behavior.gradient_energy(behavior.get_natural_measure() + u)[0]
                 elif isinstance(behavior, BivariateBehavior):
-                    t = np.linspace(-1.25, 1.25, self._nb_samples)
+                    t = np.linspace(-1.25*behavior.tmax, 1.25*behavior.tmax, self._nb_samples)
                     u = behavior.a(t)
                     f = behavior.b(t)
                 else:
@@ -90,7 +90,7 @@ class GUIEventHandler:
         elif isinstance(b, PiecewiseBehavior):
             cp_x, cp_y = b.get_control_points()
             new_cp_x = np.append(cp_x, cp_x[-1] + 4 * b.get_parameters()['us'])
-            new_cp_y = np.append(cp_y, cp_y[-1] + b.get_parameters()['k'][-1] * 4 * b.get_parameters()['us'])
+            new_cp_y = np.append(cp_y, cp_y[-1] + b.get_parameters()['k_i'][-1] * 4 * b.get_parameters()['us'])
             return new_cp_x, new_cp_y
         elif isinstance(b, (ZigzagBehavior, Zigzag2Behavior, Spline2Behavior, SmootherZigzag2Behavior)):
             cp_x, cp_y = b.get_control_points()
@@ -129,7 +129,7 @@ class GUIEventHandler:
                 u = np.linspace(self._umin, self._umax, self._nb_samples)
                 f = behavior.gradient_energy(natural_measure + u)[0]
             elif isinstance(behavior, BivariateBehavior):
-                t = np.linspace(-1.25, 1.25, self._nb_samples)
+                t = np.linspace(-1.25*behavior.tmax, 1.25*behavior.tmax, self._nb_samples)
                 u = behavior.a(t)
                 f = behavior.b(t)
             else:
@@ -214,7 +214,7 @@ class GUIEventHandler:
                     f = None
             elif isinstance(behavior, BivariateBehavior):
                 if not error:
-                    t = np.linspace(-1.25, 1.25, self._nb_samples)
+                    t = np.linspace(-1.25*behavior.tmax, 1.25*behavior.tmax, self._nb_samples)
                     u = behavior.a(t)
                     f = behavior.b(t)
                 else:
@@ -297,7 +297,7 @@ class GUIEventHandler:
                     f = None
             elif isinstance(behavior, BivariateBehavior):
                 if not error:
-                    t = np.linspace(-1.25, 1.25, self._nb_samples)
+                    t = np.linspace(-1.25*behavior.tmax, 1.25*behavior.tmax, self._nb_samples)
                     u = behavior.a(t)
                     f = behavior.b(t)
                 else:
@@ -409,7 +409,7 @@ class GUIEventHandler:
                     u = np.linspace(self._umin, self._umax, self._nb_samples)
                     f = behavior.gradient_energy(natural_measure + u)[0]
                 elif isinstance(behavior, BivariateBehavior):
-                    t = np.linspace(-1.25, 1.25, self._nb_samples)
+                    t = np.linspace(-1.25*behavior.tmax, 1.25*behavior.tmax, self._nb_samples)
                     u = behavior.a(t)
                     f = behavior.b(t)
                 else:
@@ -474,7 +474,7 @@ class GUIEventHandler:
                     u = np.linspace(self._umin, self._umax, self._nb_samples)
                     f = behavior.gradient_energy(natural_measure + u)[0]
                 elif isinstance(behavior, BivariateBehavior):
-                    t = np.linspace(-1.25, 1.25, self._nb_samples)
+                    t = np.linspace(-1.25*behavior.tmax, 1.25*behavior.tmax, self._nb_samples)
                     u = behavior.a(t)
                     f = behavior.b(t)
                 else:
@@ -565,7 +565,7 @@ class GUIEventHandler:
                     u = np.linspace(self._umin, self._umax, self._nb_samples)
                     f = b.gradient_energy(b.get_natural_measure() + u)[0]
                 elif isinstance(b, BivariateBehavior):
-                    t = np.linspace(-1.25, 1.25, self._nb_samples)
+                    t = np.linspace(-1.25*b.tmax, 1.25*b.tmax, self._nb_samples)
                     u = b.a(t)
                     f = b.b(t)
                 else:

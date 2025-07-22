@@ -1,8 +1,9 @@
 import tkinter as tk
 import tkinter.ttk as ttk
+from typing import Callable
 from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
-from matplotlib.widgets import RectangleSelector
 import sys
+
 
 def get_current_recursion_depth():
     """
@@ -105,7 +106,7 @@ def slider_panel(root, parameter_name, initial_val, low, high, command, row):
 
 
 class SimpleToolbar(NavigationToolbar2Tk):
-    def __init__(self, canvas, parent, home: callable):
+    def __init__(self, canvas, parent, home: Callable):
         NavigationToolbar2Tk.toolitems = (
             ('Home', 'Reset original view', 'home', 'home'),)
         super().__init__(canvas, parent, pack_toolbar=False)

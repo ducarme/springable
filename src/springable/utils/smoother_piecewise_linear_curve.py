@@ -57,6 +57,9 @@ def _create_derivative_smoothing_function(a0, a1, x0, delta) -> np.polynomial.Po
 def _create_second_derivative_smoothing_function(a0, a1, x0, delta) -> np.polynomial.Polynomial:
     return _create_smoothing_function0(a0, a1, x0, delta).deriv(m=2)
 
+def _create_third_derivative_smoothing_function(a0, a1, x0, delta) -> np.polynomial.Polynomial:
+    return _create_smoothing_function0(a0, a1, x0, delta).deriv(m=3)
+
 
 def _create_all_smoothing_functions(a, x, delta):
     cp_x, cp_y = compute_piecewise_control_points(a, x)
@@ -81,6 +84,13 @@ def _create_all_second_derivative_smoothing_functions(a, x, delta):
     dfuns = []
     for i in range(len(x)):
         dfun = _create_second_derivative_smoothing_function(a[i], a[i + 1], x[i], delta)
+        dfuns.append(dfun)
+    return dfuns
+
+def _create_all_third_derivative_smoothing_functions(a, x, delta):
+    dfuns = []
+    for i in range(len(x)):
+        dfun = _create_third_derivative_smoothing_function(a[i], a[i + 1], x[i], delta)
         dfuns.append(dfun)
     return dfuns
 
@@ -129,6 +139,20 @@ def create_smooth_piecewise_second_derivative_function(a, x, delta):
             second_der_spline_functions.append(second_derivative_smoothing_functions[index])
 
     return lambda u: np.piecewise(u, [condition(u) for condition in conditions], second_der_spline_functions)
+
+def create_smooth_piecewise_third_derivative_function(a, x, delta):
+    third_derivative_smoothing_functions = _create_all_third_derivative_smoothing_functions(a, x, delta)
+    conditions = _create_interval_conditions(x, delta)
+
+    third_der_spline_functions = []
+    for i in range(len(conditions)):
+        index = i // 2
+        if i % 2 == 0:
+            third_der_spline_functions.append(0.0)
+        else:
+            third_der_spline_functions.append(third_derivative_smoothing_functions[index])
+
+    return lambda u: np.piecewise(u, [condition(u) for condition in conditions], third_der_spline_functions)
 
 
 def get_extrema(a, x, delta):

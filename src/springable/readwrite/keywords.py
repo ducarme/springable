@@ -13,7 +13,7 @@ usable_shapes = One2OneMapping({shape.SegmentLength: '',
                                 })
 
 usable_behaviors = One2OneMapping({mechanical_behavior.LinearBehavior: 'LINEAR',
-                                   mechanical_behavior.LogarithmBehavior: 'LOGARITHM',
+                                   mechanical_behavior.LogarithmicBehavior: 'LOGARITHMIC',
                                    mechanical_behavior.BezierBehavior: 'BEZIER',
                                    mechanical_behavior.Bezier2Behavior: 'BEZIER2',
                                    mechanical_behavior.PiecewiseBehavior: 'PIECEWISE',
