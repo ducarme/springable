@@ -10,8 +10,8 @@ from .keywords import usable_shapes, usable_behaviors
 import os
 
 
-DEFAULT_FLEXEL_NAME = 'FLEXEL'
-ALTERNATIVE_FLEXEL_NAME = 'SPRING'
+DEFAULT_FLEXEL_NAME = 'SPRING'
+ALTERNATIVE_FLEXEL_NAME = 'FLEXEL'
 
 def smart_split(string, separators) -> list[str]:
     """ separate the input string when separators are encountered,

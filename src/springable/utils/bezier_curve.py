@@ -68,10 +68,20 @@ def is_monotonic(coefs: np.ndarray):
 
 def evaluate_inverse_poly(x: np.ndarray, coefs: np.ndarray):
     """ polynomial is assumed to be monotonic """
+    mc = get_monomial_coefs(coefs)
     if isinstance(x, np.ndarray):
         t = np.empty_like(x)
         for i in range(x.shape[0]):
-            t[i] = evaluate_inverse_poly(x[i], coefs)
+            mc_ = mc.copy()
+            mc_[-1] -= x[i]
+            roots = valid_t_among(np.roots(mc_))
+            if roots.size > 0:
+                t[i] = roots[0]
+            else:
+                poly_1 = evaluate_poly(np.array(1.0), coefs)
+                slope_1 = evaluate_derivative_poly(np.array(1.0), coefs)
+                intercept = poly_1 - slope_1 * 1.0
+                t[i] = (x[i] - intercept) / slope_1
         return t
     else:
         mc = get_monomial_coefs(coefs)
@@ -99,6 +109,15 @@ def get_monomial_coefs_of_second_derivative(coefs: np.ndarray):
 def get_inflexions(coefs: np.ndarray):
     return valid_t_among(np.roots(get_monomial_coefs_of_second_derivative(coefs)))
 
+
+def create_antiderivative_of_parametric_bezier(y_coefs: np.ndarray, x_coefs: np.ndarray):
+    """
+        Computes the area under a parametric curve described by two Bezier poly
+    """
+    y = np.polynomial.Polynomial(get_monomial_coefs(y_coefs)[::-1])
+    dx = np.polynomial.Polynomial(get_monomial_coefs_of_derivative(x_coefs)[::-1])
+    ydx = y * dx
+    return ydx.integ(1, k=[0.0])
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt

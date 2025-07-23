@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from typing import Any
 
+from ..utils import misc
 from ..utils import bezier_curve
 from ..utils import smooth_piecewise_linear_curve as spw
 from ..utils import smoother_piecewise_linear_curve as sspw
@@ -467,7 +468,7 @@ class LinearBehavior(UnivariateBehavior):
         return self._parameters['k'] * (alpha - self._natural_measure),
 
     def hessian_energy(self, alpha: np.ndarray) -> tuple[np.ndarray,]:
-        return self._parameters['k'],
+        return self._parameters['k'] * np.ones_like(alpha),
 
     def get_spring_constant(self) -> float:
         return self._parameters['k']
@@ -493,8 +494,7 @@ class LogarithmicBehavior(UnivariateBehavior):
 
 
 class BezierBehavior(UnivariateBehavior, ControllableByPoints):
-    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], mode: int = 0,
-                 sampling: int = 250):
+    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], mode: int = 0, sampling: int = 50):
         super().__init__(natural_measure, u_i=u_i, f_i=f_i, mode=mode)
         self._sampling = sampling
         self._check()
@@ -524,84 +524,56 @@ class BezierBehavior(UnivariateBehavior, ControllableByPoints):
         u_coefs = np.array([0.0] + self._parameters['u_i'])
         f_coefs = np.array([0.0] + self._parameters['f_i'])
         mode = self._parameters['mode']
-        t = np.linspace(0, 1, self._sampling)
-        u = bezier_curve.evaluate_poly(t, u_coefs)
 
-        def fdu(_t, _):
-            return bezier_curve.evaluate_poly(_t, f_coefs) * bezier_curve.evaluate_derivative_poly(_t,u_coefs)
+        f_in = lambda t: bezier_curve.evaluate_poly(t, f_coefs)
+        du_in = lambda t: bezier_curve.evaluate_derivative_poly(t, u_coefs)
+        df_in = lambda t: bezier_curve.evaluate_derivative_poly(t, f_coefs)
+        int_fdu_in = bezier_curve.create_antiderivative_of_parametric_bezier(f_coefs, u_coefs)
+        # true inverse, but computationanly costly
+        #inv_u_in = lambda uu: bezier_curve.evaluate_inverse_poly(uu, u_coefs)
 
-        energy = solve_ivp(fun=fdu, t_span=[0.0, 1.0], y0=[0.0], t_eval=t).y[0, :]
-        generalized_force = bezier_curve.evaluate_poly(t, f_coefs)
-        df = bezier_curve.evaluate_derivative_poly(t, f_coefs)
-        du = bezier_curve.evaluate_derivative_poly(t, u_coefs)
-        generalized_stiffness = df / du
+        # approximate inverse, the f(u) is still infinitely smooth, except at the boundaries u=0 and u=u_coefs[-1]
+        t_sampled = np.linspace(0, 1, round(self._sampling * len(u_coefs)))
+        u_in_sampled = bezier_curve.evaluate_poly(t_sampled, u_coefs)
+        inv_u_in = interp1d(u_in_sampled, t_sampled, kind='linear', bounds_error=False, fill_value=0.0)
 
+        e = lambda uu: ( (uu <= 0) * 0.5 * (f_coefs[1] / u_coefs[1]) * uu**2
+                        + np.logical_and(uu > 0, uu < u_coefs[-1]) * int_fdu_in(inv_u_in(uu))
+                        + (uu >= u_coefs[-1]) * (int_fdu_in(1.0) + f_coefs[-1]*(uu-u_coefs[-1]) + (f_coefs[-1] - f_coefs[-2])/(u_coefs[-1] - u_coefs[-2])*(uu - u_coefs[-1])**2/2)
+                        )
+        f = lambda uu: ( (uu <= 0) * (f_coefs[1] / u_coefs[1]) * uu
+                        + np.logical_and(uu > 0, uu < u_coefs[-1]) * f_in(inv_u_in(uu))
+                        + (uu >= u_coefs[-1]) * (f_coefs[-1] + (f_coefs[-1] - f_coefs[-2])/(u_coefs[-1] - u_coefs[-2])*(uu - u_coefs[-1]))
+                        )
+        k = lambda uu: ( (uu <= 0) * (f_coefs[1] / u_coefs[1])
+                        + np.logical_and(uu > 0, uu < u_coefs[-1]) * df_in(inv_u_in(uu)) / du_in(inv_u_in(uu))
+                        + (uu >= u_coefs[-1]) * (f_coefs[-1] - f_coefs[-2])/(u_coefs[-1] - u_coefs[-2])
+                        )
 
-        u_start = u[0]
-        k_start = generalized_stiffness[0]
-
-        u_end = u[-1]
-        e_end = energy[-1]
-        f_end = generalized_force[-1]
-        k_end = generalized_stiffness[-1]
-
-        def energy_fun(uu: np.ndarray) -> np.ndarray:
-            if mode == 0:
-                e_in = interp1d(u, energy, kind='linear', bounds_error=False, fill_value=0.0)(np.abs(uu))
-                e_out = e_end + f_end * (np.abs(uu) - u_end) + 0.5 * k_end * (np.abs(uu)- u_end) ** 2
-                return (uu <= u_end) * e_in + (uu > u_end) * e_out
-            if mode == 1:
-                e_in = interp1d(u, energy, kind='linear', bounds_error=False, fill_value=0.0)(uu)
-                e_beyond = e_end + f_end * (uu - u_end) + 0.5 * k_end * (uu - u_end) ** 2
-                e_compression = + 0.5 * k_start * uu ** 2
-                return (np.logical_and(uu <= u_end, uu > u_start) * e_in
-                        + (uu > u_end) * e_beyond
-                        + (uu < u_start) * e_compression)
-            if mode == -1:
-                e_in = interp1d(u, energy, kind='linear', bounds_error=False, fill_value=0.0)(-uu)
-                e_beyond = e_end + f_end * (-uu - u_end) + 0.5 * k_end * (-uu - u_end) ** 2
-                e_tension = + 0.5 * k_start * uu ** 2
-                return (np.logical_and(-uu <= u_end, -uu > u_start) * e_in
-                        + (-uu > u_end) * e_beyond
-                        + (-uu < u_start) * e_tension)
-            else:
-                raise ValueError('invalid mode')
-
-        def gradient_fun(uu: np.ndarray) -> np.ndarray:
-            tensile_f_fun = interp1d(u, generalized_force, kind='linear',
-                                     bounds_error=False, fill_value='extrapolate')  # type: ignore
-            if mode == 0:
-                return np.sign(uu) * tensile_f_fun(np.abs(uu))
-            if mode == 1:
-                return (uu > u_start) * tensile_f_fun(uu) + (uu < u_start) * k_start * uu
-            if mode == -1:
-                return (uu < u_start) * -tensile_f_fun(-uu) + (uu > u_start) * k_start * uu
-            else:
-                raise ValueError('invalid mode')
-
-        def hessian_fun(uu: np.ndarray) -> np.ndarray:
-            tensile_k_fun = interp1d(u, generalized_stiffness, kind='linear', bounds_error=False, fill_value=k_end)
-            if mode == 0:
-                return tensile_k_fun(np.abs(uu))
-            if mode == 1:
-                return (uu >= u_start) * tensile_k_fun(uu) + (uu < u_start) * k_start
-            if mode == -1:
-                return (uu <= u_start) * tensile_k_fun(-uu) + (uu > u_start) * k_start
-            else:
-                raise ValueError('invalid mode')
-
-        self._energy = energy_fun
-        self._gradient = gradient_fun
-        self._hessian = hessian_fun
+        if mode == 0:
+            self._energy = lambda uu: e(np.abs(uu))
+            self._force = lambda uu: np.sign(uu) * f(np.abs(uu))
+            self._stiffness = lambda uu: k(np.abs(uu))
+        elif mode == 1:
+            self._energy = e
+            self._force = f
+            self._stiffness = k
+        elif mode == -1:
+            self._energy = lambda uu: e(-uu)
+            self._force = lambda uu: -f(-uu)
+            self._stiffness = lambda uu: k(-uu)
+        else:
+            raise InvalidBehaviorParameters('This error should never be triggered '
+                                            '(error: mode not -1, 0 or 1, while making behavior)')
 
     def elastic_energy(self, alpha: np.ndarray) -> np.ndarray:
         return self._energy(alpha - self._natural_measure)
 
     def gradient_energy(self, alpha: np.ndarray) -> tuple[np.ndarray,]:
-        return self._gradient(alpha - self._natural_measure),
+        return self._force(alpha - self._natural_measure),
 
     def hessian_energy(self, alpha: np.ndarray) -> tuple[np.ndarray,]:
-        return self._hessian(alpha - self._natural_measure),
+        return self._stiffness(alpha - self._natural_measure),
 
     def update(self, natural_measure=None, /, **parameters):
         super().update(natural_measure, **parameters)
@@ -893,15 +865,19 @@ class PiecewiseBehavior(UnivariateBehavior, ControllableByPoints):
         k, u, us = self._parameters['k_i'], self._parameters['u_i'], self._parameters['us']
         mode = self._parameters['mode']
         self._u_i, self._f_i = spw.compute_piecewise_control_points(k, u, extra=4 * us)
+        energy_fun = spw.create_smooth_piecewise_antiderivative_function(k, u, us)
         force_fun = spw.create_smooth_piecewise_function(k, u, us)
         stiffness_fun = spw.create_smooth_piecewise_derivative_function(k, u, us)
         if mode == 0:
+            self._energy_function = lambda uu: energy_fun(np.abs(uu))
             self._force_function = lambda uu: np.sign(uu) * force_fun(np.abs(uu))
             self._stiffness_function = lambda uu: stiffness_fun(np.abs(uu))
         elif mode == 1:
+            self._energy_function = energy_fun
             self._force_function = force_fun
             self._stiffness_function = stiffness_fun
         elif mode == -1:
+            self._energy_function = lambda uu: energy_fun(-uu)
             self._force_function = lambda uu: -force_fun(-uu)
             self._stiffness_function = lambda uu: stiffness_fun(-uu)
         else:
@@ -923,7 +899,8 @@ class PiecewiseBehavior(UnivariateBehavior, ControllableByPoints):
         self.update(k_i=k, u_i=u)
 
     def elastic_energy(self, alpha: np.ndarray) -> np.ndarray:
-        return quad(self._force_function, 0.0, alpha - self._natural_measure)[0]
+        return self._energy_function(alpha - self._natural_measure)
+
 
     def gradient_energy(self, alpha: np.ndarray) -> tuple[np.ndarray,]:
         return self._force_function(alpha - self._natural_measure),
@@ -940,10 +917,8 @@ class PiecewiseBehavior(UnivariateBehavior, ControllableByPoints):
 
 class ZigzagBehavior(UnivariateBehavior, ControllableByPoints):
 
-    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], epsilon: float, mode: int = 0,
-                 sampling: int = 100):
+    def __init__(self, natural_measure, u_i: list[float], f_i: list[float], epsilon: float, mode: int = 0):
         super().__init__(natural_measure, u_i=u_i, f_i=f_i, mode=mode, epsilon=epsilon)
-        self._sampling = sampling
         self._check()
         self._make()
 
@@ -984,43 +959,24 @@ class ZigzagBehavior(UnivariateBehavior, ControllableByPoints):
         delta = epsilon / (2 * (n - 1))
         slopes_u, transitions_u = spw.compute_piecewise_slopes_and_transitions_from_control_points(cp_t, cp_u)
         slopes_f, transitions_f = spw.compute_piecewise_slopes_and_transitions_from_control_points(cp_t, cp_f)
-        u = spw.create_smooth_piecewise_function(slopes_u, transitions_u, delta)
+        inv_u = spw.create_inverse_smooth_piecewise_function(slopes_u, transitions_u, delta)
         f = spw.create_smooth_piecewise_function(slopes_f, transitions_f, delta)
         du = spw.create_smooth_piecewise_derivative_function(slopes_u, transitions_u, delta)
         df = spw.create_smooth_piecewise_derivative_function(slopes_f, transitions_f, delta)
+        int_fdu = spw.create_antiderivative_of_parametric_piecewise(slopes_u, slopes_f, transitions_u, delta)  # transitions_u == transitions_f
 
-        t = np.linspace(0, 1, self._sampling)
-        u_s = u(t)
-        f_s = f(t)
-        k_s = df(t) / du(t)
-
-        def fdu(_t, _): return f(_t) * du(_t)
-
-        e_s = solve_ivp(fun=fdu, t_span=[0.0, 1.0], y0=[0.0], t_eval=t).y[0, :]
-        e_inside = interp1d(u_s, e_s, kind='linear', bounds_error=False, fill_value=0.0)
         if mode == 0:
-            self._energy = lambda uu: ((np.abs(uu) <= u_s[-1]) * e_inside(np.abs(uu))
-                                       + (np.abs(uu) > u_s[-1]) * (e_s[-1] + f_s[-1] * (np.abs(uu) - u_s[-1])
-                                                                    + 0.5 * k_s[-1] * (np.abs(uu) - u_s[-1]) ** 2))
-            self._force = lambda uu: np.sign(uu) * interp1d(u_s, f_s, kind='linear', bounds_error=False,
-                                                            fill_value='extrapolate')(np.abs(uu)) # type: ignore
-            self._stiffness = lambda uu: interp1d(u_s, k_s, kind='linear', bounds_error=False, fill_value=k_s[-1])(np.abs(uu))
+            self._energy = lambda uu: int_fdu(inv_u(np.abs(uu)))
+            self._force = lambda uu: np.sign(uu) * f(inv_u(np.abs(uu)))
+            self._stiffness = lambda uu: df(inv_u(np.abs(uu))) / du(inv_u(np.abs(uu)))
         elif mode == 1:
-            self._energy = lambda uu: (np.logical_and(uu <= u_s[-1], uu >=0) * e_inside(uu)
-                                       + (uu > u_s[-1]) * (e_s[-1] + f_s[-1] * (uu - u_s[-1])
-                                                                    + 0.5 * k_s[-1] * (uu - u_s[-1]) ** 2)
-                                       + (uu < 0) * (0.5 * k_s[0] * uu ** 2))
-
-            self._force = interp1d(u_s, f_s, kind='linear', bounds_error=False, fill_value='extrapolate')  # type: ignore
-            self._stiffness = interp1d(u_s, k_s, kind='linear', bounds_error=False, fill_value=(k_s[0], k_s[-1]))  # type: ignore
+            self._energy = lambda uu: int_fdu(inv_u(uu))
+            self._force = lambda uu: f(inv_u(uu))
+            self._stiffness = lambda uu: df(inv_u(uu)) / du(inv_u(uu))
         elif mode == -1:
-            self._energy = lambda uu: (np.logical_and(uu >= -u_s[-1], uu <= 0) * e_inside(-uu)
-                                       + (uu < -u_s[-1]) * (e_s[-1] + f_s[-1] * (u_s[-1] - uu)
-                                                           + 0.5 * k_s[-1] * (uu - u_s[-1]) ** 2)
-                                       + (uu > 0) * (0.5 * k_s[0] * uu ** 2))
-
-            self._force = lambda uu: -interp1d(u_s, f_s, kind='linear', bounds_error=False, fill_value='extrapolate')(-uu)  # type: ignore
-            self._stiffness = lambda uu: interp1d(u_s, k_s, kind='linear', bounds_error=False, fill_value=(k_s[0], k_s[-1]))(-uu)  # type: ignore
+            self._energy = lambda uu: int_fdu(inv_u(-uu))
+            self._force = lambda uu: -f(inv_u(-uu))
+            self._stiffness = lambda uu: df(inv_u(-uu)) / du(inv_u(-uu))
         else:
             raise InvalidBehaviorParameters('This error should never be triggered '
                                             '(error: mode not -1, 0 or 1, while making behavior)')
