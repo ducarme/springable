@@ -8,6 +8,7 @@ from ..mechanics.model import Model
 from . import simpleeval as se
 from .keywords import usable_shapes, usable_behaviors
 import os
+import difflib
 
 
 DEFAULT_FLEXEL_NAME = 'SPRING'
@@ -101,7 +102,7 @@ def behavior_to_text(_behavior: MechanicalBehavior, fmt='',
 
 
 def text_to_behavior(behavior_text: str, evaluator: se.SimpleEval = None,
-                     natural_measure: float | None = None) -> MechanicalBehavior:
+                     natural_measure: float = None) -> MechanicalBehavior:
     """ if no natural measure is specified in the behavior_text, the natural_measure argument will be used
     (except if this happens when the natural_measure argument is None,
     in which case an UnknownNaturalMeasure exception is raised) """
@@ -206,18 +207,28 @@ def text_to_shape(shape_text: tuple[str, str], nodes: set[Node]) -> Shape:
         if shape_type_name == '':
             shape_type = SegmentLength
         elif shape_type_name == 'ROTATION':
-            raise NotImplementedError(f'{shape_type_name} {DEFAULT_FLEXEL_NAME} (or {shape_type_name} {ALTERNATIVE_FLEXEL_NAME}) '
+            raise ValueError(f'{shape_type_name} {DEFAULT_FLEXEL_NAME} (or {shape_type_name} {ALTERNATIVE_FLEXEL_NAME}) '
                                       f'is not valid anymore. '
                                       f'Instead, use "{usable_shapes.type_to_name[Angle]} {DEFAULT_FLEXEL_NAME}" '
                                       f'(or equivalently "{usable_shapes.type_to_name[Angle]} {ALTERNATIVE_FLEXEL_NAME}").')
         elif shape_type_name in ('LINE', 'CABLE', 'PATH LENGTH', 'PATHLENGTH'):
-            raise NotImplementedError(f'{shape_type_name} {DEFAULT_FLEXEL_NAME} (or {shape_type_name} {ALTERNATIVE_FLEXEL_NAME}) '
+            raise ValueError(f'{shape_type_name} {DEFAULT_FLEXEL_NAME} (or {shape_type_name} {ALTERNATIVE_FLEXEL_NAME}) '
                                       f'is not valid. '
                                       f'Use "{usable_shapes.type_to_name[PathLength]}" '
                                       f'(or equivalently "{usable_shapes.type_to_name[PathLength]} {ALTERNATIVE_FLEXEL_NAME}") instead '
                                       f'if your intention is to model a cable or rope passing through multiple nodes.')
         else:
-            raise NotImplementedError(f'Shape type {shape_type_name} is unknown.')
+            trials = difflib.get_close_matches(shape_type_name, usable_shapes.name_to_type.keys(), n=2)
+            trials_str = ' or '.join([f'"{t}"' for t in trials])
+            trials_str = f'Did you mean {trials_str}?' if trials_str else ''
+            if not trials_str:
+                trials_str = 'Available shape types are: '
+                trials_str += ', '.join(usable_shapes.name_to_type.keys())
+                trials_str += '.'
+            error_str = (f'Shape type "{shape_type_name}" is unknown. '
+                         f'Check spelling. {trials_str}')
+            raise NotImplementedError(error_str)
+        
     node_nbs = [int(node_nb) for node_nb in smart_split(shape_description, '-')]
     shape_nodes = []
     for node_nb in node_nbs:

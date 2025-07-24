@@ -133,11 +133,11 @@ class AssemblyAppearanceOptions(Updatable):
     angular_spring_default_color: str = '#CECECE'
     area_spring_default_opacity: float = 0.5
     area_spring_default_color: str = '#CECECE'
-    line_spring_linewidth: float = 2.
-    line_spring_default_opacity: float = 1.0
-    line_spring_default_color: str = '#CECECE'
-    line_spring_dot_color: str = "#ffffff"
-    line_spring_dot_opacity: float = 1.0
+    path_spring_linewidth: float = 2.
+    path_spring_default_opacity: float = 1.0
+    path_spring_default_color: str = '#CECECE'
+    path_spring_dot_color: str = "#ffffff"
+    path_spring_dot_opacity: float = 1.0
     distance_spring_line_linewidth: float = 1.0
     distance_spring_line_default_color: str = '#CECECE'
     distance_spring_line_default_opacity: float = 0.7

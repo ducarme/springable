@@ -10,17 +10,6 @@ import matplotlib.cm as mcm
 from matplotlib.path import Path
 import sys
 
-shape_unit_dimensions: dict[type[shape], int] = {shape.SegmentLength: 1,
-                                                 shape.Area: 2,
-                                                 shape.HoleyArea: 2,
-                                                 shape.Angle: 0,
-                                                 shape.PathLength: 1,
-                                                 shape.SignedXDist: -1,
-                                                 shape.SignedYDist: -1,
-                                                 shape.DistancePointLine: -1,
-                                                 shape.SignedDistancePointLine: -1,
-                                                 shape.SquaredDistancePointSegment: -2}
-
 
 def is_dark(hex_color):
     color = hex_color[1:]
@@ -42,7 +31,7 @@ class PropertyHandler:
         self._mapper = self._make_mapper()
 
     def _make_mapper(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def determine_property_value(self, quantity: Element | float):
         if isinstance(quantity, Element):
@@ -51,10 +40,10 @@ class PropertyHandler:
                 case 'energy':
                     return self._mapper(_element.compute_energy())
                 case 'generalized_force':
-                    return self._mapper[shape_unit_dimensions[type(_element.get_shape())]](
+                    return self._mapper[type(_element.get_shape()).get_dimension()](
                         _element.compute_generalized_force())
                 case 'generalized_stiffness':
-                    return self._mapper[shape_unit_dimensions[type(_element.get_shape())]](
+                    return self._mapper[type(_element.get_shape()).get_dimension()](
                         _element.compute_generalized_stiffness())
                 case _:
                     raise ValueError(f"Unknown mode {self._mode}")
@@ -397,7 +386,7 @@ def scan_result_and_compute_quantities_for_animations(_result: Result, assembly_
             if aa.color_elements:
                 existing_shape_unit_dimensions = set()
                 for _el in _assembly.get_elements():
-                    existing_shape_unit_dimensions.add(shape_unit_dimensions[type(_el.get_shape())])
+                    existing_shape_unit_dimensions.add(type(_el.get_shape()).get_dimension())
                 unit_dimensions |= existing_shape_unit_dimensions
             if aa.color_forces and aa.show_forces:
                 unit_dimensions |= {1}
@@ -426,7 +415,7 @@ def scan_result_and_compute_quantities_for_animations(_result: Result, assembly_
                             for dim in unit_dimensions:
                                 generalized_forces[dim] += [element_to_generalized_forces[el]
                                                             for el in _assembly.get_elements()
-                                                            if shape_unit_dimensions[type(el.get_shape())] == dim]
+                                                            if type(_el.get_shape()).get_dimension() == dim]
                         if aa.color_forces and aa.show_forces:
                             generalized_forces[1] += [force_amount[i] for force_amount in force_amounts.values()]
                             generalized_forces[1] += [preforce_amount[i]
@@ -441,7 +430,7 @@ def scan_result_and_compute_quantities_for_animations(_result: Result, assembly_
                             for dim in unit_dimensions:
                                 generalized_stiffnesses[dim] += [element_to_generalized_stiffnesses[el]
                                                                  for el in _assembly.get_elements()
-                                                                 if shape_unit_dimensions[type(el.get_shape())] == dim]
+                                                                 if type(_el.get_shape()).get_dimension() == dim]
                         if aa.color_forces and aa.show_forces:
                             generalized_stiffnesses[1] += [force_amount[i] for force_amount in force_amounts.values()]
                             generalized_stiffnesses[1] += [preforce_amount[i]

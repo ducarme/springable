@@ -9,7 +9,7 @@ usable_shapes = One2OneMapping({shape.SegmentLength: 'LONGITUDINAL',
                                 shape.SignedDistancePointLine: 'DISTANCE',
                                 shape.SignedXDist: 'X DISTANCE',
                                 shape.SignedYDist: 'Y DISTANCE',
-                                shape.SquaredDistancePointSegment: 'GAP',  # experimental
+                                # shape.SquaredDistancePointSegment: 'GAP',  # experimental
                                 })
 
 usable_behaviors = One2OneMapping({mechanical_behavior.LinearBehavior: 'LINEAR',
@@ -22,7 +22,7 @@ usable_behaviors = One2OneMapping({mechanical_behavior.LinearBehavior: 'LINEAR',
                                    mechanical_behavior.ContactBehavior: 'CONTACT',
                                    mechanical_behavior.IsothermalGas: 'ISOTHERMAL',
                                    mechanical_behavior.IsentropicGas: 'ISENTROPIC',
-                                   mechanical_behavior.SmootherZigzag2Behavior: 'SZIGZAG2',  # experimental
-                                   mechanical_behavior.Spline2Behavior: 'SPLINE2',  # experimental
+                                   # mechanical_behavior.SmootherZigzag2Behavior: 'SZIGZAG2',  # experimental
+                                   # mechanical_behavior.Spline2Behavior: 'SPLINE2',  # experimental
                                    })
 

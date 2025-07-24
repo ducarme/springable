@@ -407,7 +407,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                 plt.close(fig=fig)
             except AttributeError:
                 pass
-                # Some user reported an attribute error after saving animations, when using Visual Code Studio
+                # Some user reported an attribute error after saving animations, when using Visual Studio Code
                 # It is hard to reproduce and clarify the cause, so this is a quick and dirty solution.
             if show and filepath is not None:
                 if io.is_notebook():
