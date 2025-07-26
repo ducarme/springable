@@ -415,11 +415,12 @@ def scan_result_and_compute_quantities_for_animations(_result: Result, assembly_
                             for dim in unit_dimensions:
                                 generalized_forces[dim] += [element_to_generalized_forces[el]
                                                             for el in _assembly.get_elements()
-                                                            if type(_el.get_shape()).get_dimension() == dim]
+                                                            if type(el.get_shape()).get_dimension() == dim]
                         if aa.color_forces and aa.show_forces:
                             generalized_forces[1] += [force_amount[i] for force_amount in force_amounts.values()]
                             generalized_forces[1] += [preforce_amount[i]
                                                       for preforce_amount in preforce_amounts.values()]
+                        
                         for dim in unit_dimensions:
                             generalized_force_highs[dim].append(np.quantile(np.abs(generalized_forces[dim]), .7))
 
@@ -430,11 +431,12 @@ def scan_result_and_compute_quantities_for_animations(_result: Result, assembly_
                             for dim in unit_dimensions:
                                 generalized_stiffnesses[dim] += [element_to_generalized_stiffnesses[el]
                                                                  for el in _assembly.get_elements()
-                                                                 if type(_el.get_shape()).get_dimension() == dim]
+                                                                 if type(el.get_shape()).get_dimension() == dim]
                         if aa.color_forces and aa.show_forces:
                             generalized_stiffnesses[1] += [force_amount[i] for force_amount in force_amounts.values()]
                             generalized_stiffnesses[1] += [preforce_amount[i]
                                                            for preforce_amount in preforce_amounts.values()]
+                        
                         for dim in unit_dimensions:
                             generalized_stiffness_highs[dim].append(
                                 np.quantile(np.abs(generalized_stiffnesses[dim]), .7))

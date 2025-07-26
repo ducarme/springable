@@ -37,7 +37,7 @@ class MechanicalBehavior:
     def get_parameters(self) -> dict[str, Any]:
         return self._parameters
 
-    def get_natural_measure(self):
+    def get_natural_measure(self) -> float:
         return self._natural_measure
 
     def _check(self):
@@ -90,6 +90,7 @@ class BivariateBehavior(MechanicalBehavior):
         self.k: Callable[[np.ndarray], np.ndarray] = self._not_made
         self.dk: Callable[[np.ndarray], np.ndarray] = self._not_made
         self.d2k: Callable[[np.ndarray], np.ndarray] = self._not_made
+        self.int_bda: Callable[[np.ndarray], np.ndarray] = self._not_made
 
         # to be overriden in subclasses
         self.tmax: float = NotImplemented
@@ -167,53 +168,41 @@ class BivariateBehavior(MechanicalBehavior):
 
     def _make(self):
         mode = self._parameters['mode']
-        da0 = self._da_fun(0.0)
-        db0 = self._db_fun(0.0)
         tmax = self.tmax
-        a1 = self._a_fun(tmax)
-        da1 = self._da_fun(tmax)
-        b1 = self._b_fun(tmax)
-        db1 = self._db_fun(tmax)
 
         if mode == 0:
-            self.a = lambda t: ( (np.abs(t) <= tmax) * np.sign(t) * self._a_fun(np.abs(t))
-                                + (np.abs(t) > tmax) * np.sign(t) * (a1 + da1 * (np.abs(t) - tmax)))
-            self.b = lambda t: ( (np.abs(t) <= tmax) * np.sign(t) * self._b_fun(np.abs(t))
-                                + (np.abs(t) > tmax) * np.sign(t) * (b1 + db1 * (np.abs(t) - tmax)))
-            self.da = lambda t: ((np.abs(t) <= tmax) * self._da_fun(np.abs(t)) + (np.abs(t) > tmax) * da1)
-            self.db = lambda t: ((np.abs(t) <= tmax) * self._db_fun(np.abs(t)) + (np.abs(t) > tmax) * db1)
-            self.d2a = lambda t: (np.abs(t) <= tmax) * np.sign(t) * self._d2a_fun(np.abs(t))
-            self.d2b = lambda t: (np.abs(t) <= tmax) * np.sign(t) * self._d2b_fun(np.abs(t))
-            self.d3a = lambda t: (np.abs(t) <= tmax) * self._d3a_fun(np.abs(t))
-            self.d3b = lambda t: (np.abs(t) <= tmax) * self._d3b_fun(np.abs(t))
+            self.a = lambda t: np.sign(t) * self._a_fun(np.abs(t))
+            self.b = lambda t: np.sign(t) *self._b_fun(np.abs(t))
+            self.da = lambda t: self._da_fun(np.abs(t))
+            self.db = lambda t: self._db_fun(np.abs(t))
+            self.d2a = lambda t: np.sign(t) * self._d2a_fun(np.abs(t))
+            self.d2b = lambda t: np.sign(t) * self._d2b_fun(np.abs(t))
+            self.d3a = lambda t: self._d3a_fun(np.abs(t))
+            self.d3b = lambda t: self._d3b_fun(np.abs(t))
+            self.int_bda = lambda t: self._int_bda_fun(np.abs(t))
 
         elif mode == 1:
-            self.a = lambda t: ((t < 0) * (da0 * t) + (t > tmax) * (a1 + da1 * (t - tmax))
-                                + np.logical_and((t >= 0), (t <= tmax)) * self._a_fun(t))
-            self.b = lambda t: ((t < 0) * (db0 * t) + (t > tmax) * (b1 + db1 * (t - tmax))
-                                + np.logical_and((t >= 0), (t <= tmax)) * self._b_fun(t))
-            self.da = lambda t: ((t < 0) * da0 + (t > tmax) * da1
-                                 + np.logical_and((t >= 0), (t <= tmax)) * self._da_fun(t))
-            self.db = lambda t: ((t < 0) * db0 + (t > tmax) * db1
-                                 + np.logical_and((t >= 0), (t <= tmax)) * self._db_fun(t))
-            self.d2a = lambda t: np.logical_and((t >= 0.), (t <= tmax)) * self._d2a_fun(t)
-            self.d2b = lambda t: np.logical_and((t >= 0.), (t <= tmax)) * self._d2b_fun(t)
-            self.d3a = lambda t: np.logical_and((t >= 0.), (t <= tmax)) * self._d3a_fun(t)
-            self.d3b = lambda t: np.logical_and((t >= 0.), (t <= tmax)) * self._d3b_fun(t)
+            self.a = self._a_fun
+            self.b = self._b_fun
+            self.da = self._da_fun
+            self.db = self._db_fun
+            self.d2a = self._d2a_fun
+            self.d2b = self._d2b_fun
+            self.d3a = self._d3a_fun
+            self.d3b = self._d3b_fun
+            self.int_bda = self._int_bda_fun
 
         elif mode == -1:
-            self.a = lambda t: ((t > 0) * (da0 * t) + (t < -tmax) * (-a1 + da1 * (t + tmax))
-                                 + np.logical_and(t <= 0, t >= -tmax) * -self._a_fun(-t))
-            self.b = lambda t: ((t > 0) * (db0 * t) + (t < -tmax) * (-b1 + db1 * (t + tmax))
-                                 + np.logical_and(t <= 0, t >= -tmax) * -self._b_fun(-t))
-            self.da = lambda t: ((t > 0) * da0 + (t < -tmax) * da1
-                                  + np.logical_and((t <= 0), (t >= -tmax)) * self._da_fun(-t))
-            self.db = lambda t: ((t > 0) * db0 + (t < -tmax) * db1
-                                  + np.logical_and((t <= 0), (t >= -tmax)) * self._db_fun(-t))
-            self.d2a = lambda t: np.logical_and((t <= 0), (t >= -tmax)) * -self._d2a_fun(-t)
-            self.d2b = lambda t: np.logical_and((t <= 0), (t >= -tmax)) * -self._d2b_fun(-t)
-            self.d3a = lambda t: np.logical_and((t <= 0), (t >= -tmax)) * self._d3a_fun(-t)
-            self.d3b = lambda t: np.logical_and((t <= 0), (t >= -tmax)) * self._d3b_fun(-t)
+            self.a = lambda t: -self._a_fun(-t)
+            self.b = lambda t: -self._b_fun(-t)
+            self.da = lambda t: self._da_fun(-t)
+            self.db = lambda t: self._db_fun(-t)
+            self.d2a = lambda t: -self._d2a_fun(-t)
+            self.d2b = lambda t: -self._d2b_fun(-t)
+            self.d3a = lambda t: self._d3a_fun(-t)
+            self.d3b = lambda t: self._d3b_fun(-t)
+            self.int_bda = lambda t: self._int_bda_fun(-t)
+
         else:
             raise InvalidBehaviorParameters('This error should never be triggered '
                                             '(error: mode not -1, 0 or 1, while making behavior)')
@@ -232,48 +221,7 @@ class BivariateBehavior(MechanicalBehavior):
 
         self._d2_dbda = d2_dbda
 
-        def int_adb(t):
-            if isinstance(t, float):
-                def adb(_t): # type: ignore
-                    return self.db(_t) * self.a(_t)
 
-                return quad(adb, 0, t)[0]
-            elif isinstance(t, np.ndarray):
-                def adb(_t, _):
-                    return self.db(_t) * self.a(_t)
-
-                if t.ndim == 1:
-                    return solve_ivp(fun=adb, t_span=[np.min(t), np.max(t)], y0=[0.0], t_eval=t).y[0, :]
-                # if t.ndim == 2:
-                #     int_adbdt = solve_ivp(fun=adb, t_span=[np.min(t), np.max(t)], y0=[0.0], t_eval=t[0, :]).y[0, :]
-                #     return int_adbdt.reshape(1, -1).repeat(t.shape[0], axis=0)
-                else:
-                    raise TypeError('numpy array must be 1-dimensional')
-            else:
-                raise TypeError('must be float or numpy array')
-
-        def int_bda(t):
-            if isinstance(t, float):
-                def bda(_t):  # type: ignore
-                    return self.b(_t) * self.da(_t)
-
-                return quad(bda, 0, t)[0]
-            elif isinstance(t, np.ndarray):
-                def bda(_t, _):
-                    return self.b(_t) * self.da(_t)
-
-                if t.ndim == 1:
-                    return solve_ivp(fun=bda, t_span=[np.min(t), np.max(t)], y0=[0.0], t_eval=t).y[0, :]
-                # if t.ndim == 2:
-                #     int_bdadt = solve_ivp(fun=bda, t_span=[np.min(t), np.max(t)], y0=[0.0], t_eval=t[0, :]).y[0, :]
-                #     return int_bdadt.reshape(1, -1).repeat(t.shape[0], axis=0)
-                else:
-                    raise TypeError('numpy array must be 1-dimensional')
-            else:
-                raise TypeError('must be float or 1-dimensional numpy array')
-
-        self._int_adb = int_adb
-        self._int_bda = int_bda
         if mode == -1:
             all_t = np.linspace(-tmax, 0, round(100))
         else:
@@ -345,6 +293,9 @@ class BivariateBehavior(MechanicalBehavior):
 
     def _d3b_fun(self, t):
         raise NotImplementedError("This method is abstract.")
+    
+    def _int_bda_fun(self, t):
+        raise NotImplementedError("This method is abstract.")
 
     def get_a_extrema(self) -> np.ndarray:
         raise NotImplementedError("This method is abstract.")
@@ -353,26 +304,26 @@ class BivariateBehavior(MechanicalBehavior):
         raise NotImplementedError("This method is abstract.")
 
     def elastic_energy(self, alpha: np.ndarray, t: np.ndarray) -> np.ndarray:
-        y = alpha - self._natural_measure
-        return 0.5 * self.k(t) * (y - self.a(t)) ** 2 + y * self.b(t) - self._int_adb(t)
+        u = alpha - self._natural_measure
+        return 0.5 * self.k(t) * (u - self.a(t)) ** 2 + self.b(t) * (u - self.a(t)) + self.int_bda(t)
 
     def gradient_energy(self, alpha: np.ndarray, t: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        y = alpha - self._natural_measure
-        dvdalpha = self.k(t) * (y - self.a(t)) + self.b(t)
-        dvdt = (y - self.a(t)) * (self.db(t) - self.k(t) * self.da(t))
+        u = alpha - self._natural_measure
+        dvdalpha = self.k(t) * (u - self.a(t)) + self.b(t)
+        dvdt = (u - self.a(t)) * (self.db(t) - self.k(t) * self.da(t))
         if not self._is_k_constant:
-            dvdt += 0.5 * (y - self.a(t)) ** 2 * self.dk(t)
+            dvdt += 0.5 * (u - self.a(t)) ** 2 * self.dk(t)
         return dvdalpha, dvdt
 
     def hessian_energy(self, alpha: np.ndarray, t: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        y = alpha - self._natural_measure
+        u = alpha - self._natural_measure
         d2vdalpha2 = self.k(t)
         d2vdalphadt = self.db(t) - self.k(t) * self.da(t)
-        d2vdt2 = (y - self.a(t)) * (self.d2b(t) - self.k(t) * self.d2a(t)) + self.da(t) * (
+        d2vdt2 = (u - self.a(t)) * (self.d2b(t) - self.k(t) * self.d2a(t)) + self.da(t) * (
                 self.k(t) * self.da(t) - self.db(t))
         if not self._is_k_constant:
-            d2vdalphadt += self.dk(t) * (y - self.a(t))
-            d2vdt2 += (y - self.a(t)) * (0.5 * self.d2k(t) * (y - self.a(t)) - 2 * self.da(t) * self.dk(t))
+            d2vdalphadt += self.dk(t) * (u - self.a(t))
+            d2vdt2 += (u - self.a(t)) * (0.5 * self.d2k(t) * (u - self.a(t)) - 2 * self.da(t) * self.dk(t))
         return d2vdalpha2, d2vdalphadt, d2vdt2
 
     def get_hysteron_info(self) -> dict[str, float]:
@@ -686,9 +637,11 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
         self._parameters['f_i'] = f_i
 
         # to update in the update()
+        self._n = len(self._parameters['u_i'])
         self.tmax = self._compute_tmax()
         self._a_coefs = np.array([0.0] + self._parameters['u_i'])
         self._b_coefs = np.array([0.0] + self._parameters['f_i'])
+        self._int_bda_inside_fun = bezier_curve.create_antiderivative_of_parametric_bezier(self._b_coefs, self._a_coefs)
 
         self._check()
         self._make()
@@ -697,29 +650,56 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
         return np.sum(np.abs(np.diff(self._parameters['u_i'], prepend=0.0)))
 
     def _a_fun(self, t):
-        return bezier_curve.evaluate_poly(t/self.tmax, self._a_coefs)
-
+        return ((t <= 0) * self._n * self._a_coefs[1] * t / self.tmax
+                + np.logical_and(t > 0, t<= self.tmax) * bezier_curve.evaluate_poly(t/self.tmax, self._a_coefs)
+                + (t > self.tmax) * (self._a_coefs[-1] + self._n * (self._a_coefs[-1] - self._a_coefs[-2]) * (t / self.tmax - 1))
+                )
+                
     def _b_fun(self, t):
-        return bezier_curve.evaluate_poly(t/self.tmax, self._b_coefs)
+        return ((t <= 0) * self._n * self._b_coefs[1] * t / self.tmax
+                + np.logical_and(t > 0, t<= self.tmax) * bezier_curve.evaluate_poly(t/self.tmax, self._b_coefs)
+                + (t > self.tmax) * (self._b_coefs[-1] + self._n * (self._b_coefs[-1] - self._b_coefs[-2]) * (t / self.tmax - 1))
+                )
 
     def _da_fun(self, t):
-        return bezier_curve.evaluate_derivative_poly(t/self.tmax, self._a_coefs)/self.tmax
+        return ((t <= 0) * self._n * self._a_coefs[1] / self.tmax
+                + np.logical_and(t > 0, t<= self.tmax) * bezier_curve.evaluate_derivative_poly(t/self.tmax, self._a_coefs)/self.tmax
+                + (t > self.tmax) * self._n * (self._a_coefs[-1] - self._a_coefs[-2])  / self.tmax
+                )
 
     def _db_fun(self, t):
-        return bezier_curve.evaluate_derivative_poly(t/self.tmax, self._b_coefs)/self.tmax
+        return ((t <= 0) * self._n * self._b_coefs[1] / self.tmax
+                + np.logical_and(t > 0, t<= self.tmax) * bezier_curve.evaluate_derivative_poly(t/self.tmax, self._b_coefs)/self.tmax
+                + (t > self.tmax) * self._n * (self._b_coefs[-1] - self._b_coefs[-2])  / self.tmax
+                )
 
     def _d2a_fun(self, t):
-        return bezier_curve.evaluate_second_derivative_poly(t/self.tmax, self._a_coefs)/self.tmax**2
+        return np.logical_and(t > 0, t<= self.tmax) * bezier_curve.evaluate_second_derivative_poly(t/self.tmax, self._a_coefs)/self.tmax**2
 
     def _d2b_fun(self, t):
-        return bezier_curve.evaluate_second_derivative_poly(t/self.tmax, self._b_coefs)/self.tmax**2
+        return np.logical_and(t > 0, t<= self.tmax) * bezier_curve.evaluate_second_derivative_poly(t/self.tmax, self._b_coefs)/self.tmax**2
 
     def _d3a_fun(self, t):
-        return bezier_curve.evaluate_third_derivative_poly(t/self.tmax, self._a_coefs)/self.tmax**3
+        return np.logical_and(t > 0, t<= self.tmax) * bezier_curve.evaluate_third_derivative_poly(t/self.tmax, self._a_coefs)/self.tmax**3
 
     def _d3b_fun(self, t):
-        return bezier_curve.evaluate_third_derivative_poly(t/self.tmax, self._b_coefs)/self.tmax**3
-
+        return np.logical_and(t > 0, t<= self.tmax) * bezier_curve.evaluate_third_derivative_poly(t/self.tmax, self._b_coefs)/self.tmax**3
+    
+    def _int_bda_fun(self, t):
+        u1 = self._a_coefs[1]
+        f1 = self._b_coefs[1]
+        un = self._a_coefs[-1]
+        fn = self._b_coefs[-1]
+        un_1 = self._a_coefs[-2]
+        fn_1 = self._b_coefs[-2]
+        return ((t <= 0) * 0.5 * self._n**2 * f1 * u1 * (t / self.tmax)**2  # yes, correct!
+                + np.logical_and(t > 0, t<= self.tmax) * self._int_bda_inside_fun(t / self.tmax)
+                + (t > self.tmax) * (self._int_bda_inside_fun(1.0)
+                                     + fn * self._n * (un - un_1)  * (t / self.tmax - 1)
+                                     + 0.5 * self._n**2 * (un - un_1) * (fn - fn_1) * ((t / self.tmax - 1) ** 2)
+                                     )
+                )
+    
     def get_a_extrema(self) -> np.ndarray:
         return bezier_curve.get_extrema(self._a_coefs) * self.tmax
 
@@ -740,6 +720,8 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
         super().update(natural_measure, **parameters)
         self._a_coefs = np.array([0.0] + self._parameters['u_i'])
         self._b_coefs = np.array([0.0] + self._parameters['f_i'])
+        self._n = len(self._parameters['u_i'])
+        self._int_bda_inside_fun = bezier_curve.create_antiderivative_of_parametric_bezier(self._b_coefs, self._a_coefs)
         self.tmax = self._compute_tmax()
         self._check()
         if parameters:
@@ -799,6 +781,8 @@ class Spline2Behavior(BivariateBehavior, ControllableByPoints):
 
     def _d3b_fun(self, t):
         return self._b_spl.derivative(3)(t/self.tmax)/self.tmax**3
+    
+    # to implement int_bda
 
     def get_a_extrema(self) -> np.ndarray:
         t_roots = PPoly.from_spline(self._a_spl.derivative()).roots()
@@ -1017,7 +1001,6 @@ class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
             raise InvalidBehaviorParameters(f'Parameter epsilon must be between 0 and 1 (current value: {epsilon:.3E})')
 
         # to update in the 'update' method
-
         self.tmax = self._compute_tmax()
         self._delta = epsilon / (2 * (n - 1))
         self._k_u, self._x_u = spw.compute_piecewise_slopes_and_transitions_from_control_points(cp_t, cp_u)
@@ -1028,6 +1011,7 @@ class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
         self._raw_db_fun = spw.create_smooth_piecewise_derivative_function(self._k_f, self._x_f, self._delta)
         self._raw_d2a_fun = spw.create_smooth_piecewise_second_derivative_function(self._k_u, self._x_u, self._delta)
         self._raw_d2b_fun = spw.create_smooth_piecewise_second_derivative_function(self._k_f, self._x_f, self._delta)
+        self._raw_int_bda_fun = spw.create_antiderivative_of_parametric_piecewise(self._k_u, self._k_f, self._x_u, self._delta)
 
         self._check()
         self._make()
@@ -1058,6 +1042,9 @@ class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
 
     def _d3b_fun(self, t):
         return np.zeros_like(t)
+    
+    def _int_bda_fun(self, t):
+        return self._raw_int_bda_fun(t)
 
     def get_a_extrema(self) -> np.ndarray:
         return spw.get_extrema(self._k_u, self._x_u, self._delta) * self.tmax
@@ -1105,6 +1092,7 @@ class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
         self._raw_db_fun = spw.create_smooth_piecewise_derivative_function(self._k_f, self._x_f, self._delta)
         self._raw_d2a_fun = spw.create_smooth_piecewise_second_derivative_function(self._k_u, self._x_u, self._delta)
         self._raw_d2b_fun = spw.create_smooth_piecewise_second_derivative_function(self._k_f, self._x_f, self._delta)
+        self._raw_int_bda_fun = spw.create_antiderivative_of_parametric_piecewise(self._k_u, self._k_f, self._x_u, self._delta)
 
         self._check()
         if parameters:

@@ -190,11 +190,11 @@ class PathDrawing(ShapeDrawing):
         t = np.linspace(0, 1, 10) * lengths[-1]
         xx = interp1d(lengths, x)(t[1:-1])
         yy = interp1d(lengths, y)(t[1:-1])
-        graphic0 = self._ax.plot(x, y, lw=self._aa.line_spring_linewidth,
+        graphic0 = self._ax.plot(x, y, lw=self._aa.path_spring_linewidth,
                                  color=self._color, alpha=self._opacity, zorder=0.025)[0]
         graphic1 = self._ax.plot(xx, yy, ls='', marker='o', zorder=0.05,
-                                 markersize=self._aa.line_spring_linewidth*.9, markeredgewidth=0.01,
-                                 color=self._aa.line_spring_dot_color, alpha=self._aa.line_spring_dot_opacity)[0]
+                                 markersize=self._aa.path_spring_linewidth*.9, markeredgewidth=0.01,
+                                 color=self._aa.path_spring_dot_color, alpha=self._aa.path_spring_dot_opacity)[0]
 
         self._graphics = (graphic0, graphic1)
         self._hysteron_label_position = (np.mean(x), np.mean(y)) if self._is_hysteron else None
@@ -462,8 +462,8 @@ class ElementDrawing(Drawing):
                                         self._ax, color, opacity, self._aa)
 
         elif isinstance(_shape, shape.PathLength):
-            color = color if color is not None else self._aa.line_spring_default_color
-            opacity = opacity if opacity is not None else self._aa.line_spring_default_opacity
+            color = color if color is not None else self._aa.path_spring_default_color
+            opacity = opacity if opacity is not None else self._aa.path_spring_default_opacity
             shape_drawing = PathDrawing(_shape, self._is_hysteron,
                                         self._ax, color, opacity, self._aa)
         elif isinstance(_shape,

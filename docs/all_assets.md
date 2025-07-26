@@ -42,7 +42,7 @@ gif
 
 ### different behaviors
 ![LINEAR](https://github.com/user-attachments/assets/0dfeb1ca-3857-4d09-8bf5-36228dbc2a85)
-![LOGARITHM](https://github.com/user-attachments/assets/c53f1391-81bb-467c-bf56-4a6ebf2f5306)
+![LOGARITHMIC](https://github.com/user-attachments/assets/c53f1391-81bb-467c-bf56-4a6ebf2f5306)
 ![BEZIER](https://github.com/user-attachments/assets/34446134-1988-4691-a261-865f25290b22)
 ![BEZIER2](https://github.com/user-attachments/assets/8f5dae45-7a2e-46bd-afe1-ff1ef5814a8c)
 ![PIECEWISE](https://github.com/user-attachments/assets/66de0d4b-bd8a-4463-9c92-ef6190981e31)

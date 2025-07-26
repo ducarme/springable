@@ -416,9 +416,9 @@ Value π can be used without defining it in the section `PARAMETERS` with the ke
 or to omit it completely (no header and no content).
 
 ### Specifying a nonlinear mechanical behavior
-In `springable`, each spring (longitudinal, angularal, etc) has its own intrinsic mechanical behavior.
+In `springable`, each spring (longitudinal, angular, etc) has its own intrinsic mechanical behavior.
 An intrinsic mechanical behavior is fully characterized by a **generalized force-displacement curve**.
-For a longitudinal spring, that curve will be interpreted as a *force-displacement* curve. For a angularal spring, as a
+For a longitudinal spring, that curve will be interpreted as a *force-displacement* curve. For a angular spring, as a
 *torque-angle change* curve. For an area spring, as a *2d pressure-area change* curve. Etc.
 
 > [!NOTE]
@@ -448,7 +448,7 @@ By playing around with the interface, you will be able to create various general
 [spring model CSV file](#creating-a-csv-file-describing-the-spring-model). Herein below, more details are provided about the various types of mechanical behavior.
 
 + [Linear behavior](#linear-behavior)
-+ [Logarithm behavior](#logarithm-behavior)
++ [Logarithmic behavior](#logarithmic-behavior)
 + [Bezier behavior](#bezier-behavior)
 + [Bezier2 behavior](#bezier2-behavior)
 + [Piecewise behavior](#piecewise-behavior)
@@ -470,24 +470,24 @@ Example: `..., LINEAR(k=2.0)` or equivalently `..., 2.0`
 
 The unit of $k$ should be the unit of the generalized force $F$ divided by the unit of the generalized displacement $U$.
 
-#### Logarithm behavior
-A **logarithm** behavior is defined by a generalized force-displacement curve given by
+#### Logarithmic behavior
+A **logarithmic** behavior is defined by a generalized force-displacement curve given by
 $F=k\alpha_0\ln(\alpha/\alpha_0)$, $U=\alpha-\alpha_0$. It is useful to prevent springs from having a zero measure
-(longitudinal springs with zero length, angularal springs with zero angle, etc),
+(longitudinal springs with zero length, angular springs with zero angle, etc),
 as the generalized force approaches infinity as the measure gets close to zero.
 
-`LOGARITHM(k=<spring constant>)`
+`LOGARITHMIC(k=<spring constant>)`
 
-Example: `... , LOGARITHM(k=2.0)`
+Example: `... , LOGARITHMIC(k=2.0)`
 > A spring with a natural behavior characterized by $k$ equals `2.0` is defined.
 
 It seems like we are missing the parameter $\alpha_0$ in the specification (only $k$ is provided). This is not a problem; remember that the value of $\alpha_0$ is
 in fact automatically set to the value of the spring measure in the state defined by [the `NODES` section](#the-node-section), when not provided.
 If you want to assign a value for $\alpha_0$, you can do it by adding a comma followed by the $\alpha_0$ value
 
-Example: `... , LOGARITHM(k=2.0), 1.0`.
+Example: `... , LOGARITHMIC(k=2.0), 1.0`.
 
-> A spring is defined with a behavior of type `LOGARITHM` with `k=2.0` and a natural measure `1.0`.
+> A spring is defined with a behavior of type `LOGARITHMIC` with `k=2.0` and a natural measure `1.0`.
 
 The unit of $k$ should be the unit of the generalized force $F$ divided by the unit of the generalized displacement $U$.
 

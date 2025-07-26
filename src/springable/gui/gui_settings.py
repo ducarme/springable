@@ -16,8 +16,8 @@ LIST_DEFAULT_BEHAVIORS: list[MechanicalBehavior] = [
 
     Bezier2Behavior(DEFAULT_NATURAL_MEASURE, u_i=[1.0, 2.0, 3.0], f_i=[1.0, -1.0, 1.0]),
     Zigzag2Behavior(DEFAULT_NATURAL_MEASURE, [1.0, 2.0, 3.0], [1.0, -5.0, 1.0], 0.5),
-    Spline2Behavior(DEFAULT_NATURAL_MEASURE, [1.0, 2.0, 3.0], [1.0, -5.0, 1.0]),
-    SmootherZigzag2Behavior(DEFAULT_NATURAL_MEASURE, [1.0, 2.0, 3.0], [1.0, -5.0, 1.0], 0.5),
+    # Spline2Behavior(DEFAULT_NATURAL_MEASURE, [1.0, 2.0, 3.0], [1.0, -5.0, 1.0]),
+    # SmootherZigzag2Behavior(DEFAULT_NATURAL_MEASURE, [1.0, 2.0, 3.0], [1.0, -5.0, 1.0], 0.5),
 ]
 INITIALLY_SELECTED_BEHAVIOR = Bezier2Behavior
 
@@ -29,7 +29,7 @@ NB_SAMPLES = 400
 XLIM = (-1., 5.)
 YLIM = (-2., 2.5)
 
-# EXPERIMENTAL DATA (csv files, headers will automatically ignored)
+# EXPERIMENTAL DATA (csv files, headers will automatically be ignored)
 DISPLACEMENT_COLUMN_INDEX = 1
 FORCE_COLUMN_INDEX = 2
 DELIMITER = ';'
