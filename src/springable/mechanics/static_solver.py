@@ -852,29 +852,36 @@ class StaticSolver:
 
 
 
+class LoadStepSolver:
+    pass
+
+
 class IncrementSolver:
-    """ Class to compute successive increments of within a load step. You can also go back to a previously computed equilibrium.
+    """ Class to compute successive increments within a load step. You can also go back to a previously computed equilibrium.
     Automatically, a path is recorded, as you compute next increments.
-    After running that compute_next_increment(), the structure is moved to the next increment, and the external force vector is updated accordingly.
+    After running the 'compute_next_increment()' method, the structure is moved to the next increment, and the external force vector is updated accordingly.
     The object is created from an assembly and an external force vector assumed to be at equilibrium already (residual < tol).
     This object assumes that the boundary conditions of the underlying assembly are not changing, and that the external applied force does not change orientation
     (meaning that an object of this class is only valid within a single loadstep).
     If boundary conditions changes, a new instance must be created. """
-    def __init__(self, asb: Assembly, f_ext: np.ndarray, df: np.ndarray, radius: float, convergence_tol: float, max_nb_iterations: int, show_warnings: bool):
+    def __init__(self, asb: Assembly, f_ext: np.ndarray, df: np.ndarray,
+                 radius: float, convergence_tol: float,
+                 max_nb_iterations: int, show_warnings: bool):
         """
         Args:
             asb (Assembly): assembly assumed to be at equilibrium (res < tol) under force f_ext
-            f_ext (np.ndarray): force_vector acting on the free coordinates (size == # of free coordinates in asb)
+            f_ext (np.ndarray): force vector acting on the free coordinates (size == # of free coordinates in asb)
             df (np.ndarray): increment force vector acting on the free dofs in the direction of applied additional load (of the current loadstep)
             radius (float): radius of the constraint equation (arclength setting)
             convergence_tol (float): norm of the residual under which equilibrium is assumed
             max_nb_iterations (int): maximum number of iterations during the correction phase. Beyond that number, raises MaxNbIterationsExceeded.
             show_warnings (bool): print warning?
         """
+        self._q0 = self._asb.get_coordinates()  # initial structural coordinates
         self._u_path: list[np.ndarray] = [np.zeros_like(df)]  # in free coordinates space
         self._f_ext_path: list[np.ndarray] = [f_ext.copy()]  # in free coordinates space
-        self._asb = asb  # will be updated later
-        self._f_ext = f_ext  # will be updated later
+        self._asb = asb  # will be updated in place later
+        self._f_ext = f_ext  # will be updated in place later
         self._DF = df  # never changes
         self._NORM_DF = np.linalg.norm(df)
         self._radius = radius
@@ -886,104 +893,88 @@ class IncrementSolver:
     def set_radius(self, radius):
         self._radius = radius
 
+    def _get_reduced_stiffness_matrix(self, ks):
+        k = np.delete(ks, self._asb.get_fixed_dof_indices(), axis=0)  # delete rows
+        k = np.delete(k, self._asb.get_fixed_dof_indices(), axis=1)  # delete columns
+        if not np.isfinite(k).all():
+            raise NonfiniteMechanicalQuantity
+        return k
+
+    def _get_reduced_vector(self, vs):
+        """ Returns the vector without the entries for the fixed dofs """
+        v = np.delete(vs, self._asb.get_fixed_dof_indices())
+        if not np.isfinite(v).all():
+            raise NonfiniteMechanicalQuantity
+        return v
+
     def _get_structural_displacements(self, u):
         us = np.zeros(self._asb.get_nb_dofs())
         us[self._asb.get_free_dof_indices()] = u
         return us
-    
-    def _get_reduced_vector(self, v):
-        return v[self._asb.get_free_dof_indices()]
-    
-    def _get_reduced_stiffness_matrix(self, ks):
-        k = np.delete(ks, self._asb.get_fixed_dof_indices(), axis=0)  # delete rows
-        k = np.delete(k, self._asb.get_fixed_dof_indices(), axis=1)  # delete columns
-        return k     
-    
-    def compute_next_increment(self):
-        """Tries to compute the next increment by driving the structure to the next equilibrium point,
+
+    def go_back_to_previous_equilibrium(self):
+        """ If an exception is raised, the state did not change, else the state is set to the
+        previous equilibrium point and the last equilibrium is deleted """
+        if len(self._u_path) == 0:
+            raise ValueError("This should never happens! Check code")
+        if len(self._u_path) == 1:  
+            raise NoPreviousEquilibrium
+        
+        if len(self._u_path) == 2:
+            self._du_prev_inc = None
+        else:  # at least 3 equilibrium points
+            self._du_prev_inc = self._u_path[-2] - self._u_path[-3]
+
+        del self._u_path[-1]
+        del self._f_ext_path[-1]
+        self._asb.set_coordinates(self._q0 + self._u_path[-1])
+        self._f_ext = self._f_ext_path[-1].copy()
+        
+
+
+
+
+    def compute_next_equilibrium(self):
+        """ Tries to compute the next increment by driving the structure to the next equilibrium point,
         and computing the external force vector (parallel to df) at that new equilibrium point. If the increment
-        is successful, a new equilibrium is recorded automatically. In case of an unsuccessful 'compute_next_increment()'
-        attempt, the structure will be automatically reset to the configuration before running this method,
-        and no equilibrium is recorded.
+        is successful, a new equilibrium is recorded automatically. In case of an any event preventing from converging,
+        the structure will be automatically reset to the configuration before running this method, no equilibrium is recorded,
+        and the exception responsible for the failure is raised.
         """
         du_inc = np.zeros_like(self._DF)
         dl_inc = 0
 
-        # PREDICTION
-        # if the state of the structure hasn't been updated,
-        # computing the stiffness matrix reuses the previously computed one.
-        k = self._get_reduced_stiffness_matrix(self._asb.compute_structural_stiffness_matrix())
         try:
-            du_hat = solve(k, self._DF, assume_a='sym')
-        except np.linalg.LinAlgError:
-            # might happen on the first increment if detect_mechanism is False
-            # and the initial stiffness matrix is singular
-            k_perturbed = _perturb_singular_stiffness_matrix(k, 1e-5, show_message=self._show_warnings)
-            try:
-                du_hat = solve(k_perturbed, self._DF, assume_a='sym')
-            except np.linalg.LinAlgError:
-                raise MechanismDetected
-        
-
-        dl_ite = self._radius / np.sqrt(np.inner(du_hat, du_hat))
-        root_choice_criteria = (self._du_prev_inc is None
-                                or np.inner(du_hat, self._du_prev_inc) >= 0)
-        root_sign = +1 if root_choice_criteria else -1
-        if self._du_prev_inc is None:
-            # if neg eigvenval --> switch direction
-            root_sign *= -1
-        dl_ite *= root_sign
-
-        # Updating displacements, loads and structure + computation of the unbalanced forces
-        du_ite = dl_ite * du_hat
-        du_inc += du_ite
-        dl_inc += dl_ite
-        self._f_ext += (dl_ite * self._DF)
-        self._asb.increment_coordinates(self._get_structural_displacements(du_ite))
-        f_int = self._get_reduced_vector(self._asb.compute_elastic_force_vector())
-        r = f_int - self._f_ext
-
-        # Convergence check and preparation for next increment
-        if np.linalg.norm(r) / self._NORM_DF < self._CONVERGENCE_TOL:
-            self._du_prev_inc = du_inc.copy()
-            return
-
-
-        # CORRECTION
-        for _ in range(self._MAX_NB_ITERATIONS):
+            # PREDICTION
+            # if the state of the structure hasn't been updated,
+            # computing the stiffness matrix reuses the previously computed one.
             k = self._get_reduced_stiffness_matrix(self._asb.compute_structural_stiffness_matrix())
             try:
                 du_hat = solve(k, self._DF, assume_a='sym')
-                du_bar = solve(k, -r, assume_a='sym')
             except np.linalg.LinAlgError:
+                # might happen on the first increment if detect_mechanism is False
+                # and the initial stiffness matrix is singular
                 k_perturbed = _perturb_singular_stiffness_matrix(k, 1e-5, show_message=self._show_warnings)
-                du_hat = solve(k_perturbed, self._DF, assume_a='sym')
-                du_bar = solve(k_perturbed, -r, assume_a='sym')
+                try:
+                    du_hat = solve(k_perturbed, self._DF, assume_a='sym')
+                except np.linalg.LinAlgError:
+                    raise MechanismDetected
+            
 
-            # Root computation and selection
-            a0 = np.inner(du_hat, du_hat)
-            b0 = 2 * np.inner(du_inc, du_hat)
-            b1 = 2 * np.inner(du_bar, du_hat)
-            c0 = np.inner(du_inc, du_inc) - self._radius ** 2
-            c1 = 2 * np.inner(du_inc, du_bar)
-            c2 = np.inner(du_bar, du_bar)
-            a = a0
-            b = b0 + b1
-            c = c0 + c1 + c2
-            rho = b ** 2 - 4 * a * c
-            if rho < 0:
-                # Resetting with a smaller radius
-                break
-            else:
-                root1 = (-b + np.sqrt(rho)) / (2 * a)
-                root2 = (-b - np.sqrt(rho)) / (2 * a)
-            dl_ite = root1 if b0 / a > 0 else root2
+            dl_ite = self._radius / np.sqrt(np.inner(du_hat, du_hat))
+            root_choice_criteria = (self._du_prev_inc is None
+                                    or np.inner(du_hat, self._du_prev_inc) >= 0)
+            root_sign = +1 if root_choice_criteria else -1
+            if self._du_prev_inc is None:
+                # if neg eigvenval --> switch direction
+                root_sign *= -1
+            dl_ite *= root_sign
 
-            # Updating loads, displacements and structure + computation of the unbalanced forces
-            du_ite = du_bar + dl_ite * du_hat
+            # Updating displacements, loads and structure + computation of the unbalanced forces
+            du_ite = dl_ite * du_hat
             du_inc += du_ite
             dl_inc += dl_ite
-            self._f_ext += dl_ite * self._DF
+            self._f_ext += (dl_ite * self._DF)
             self._asb.increment_coordinates(self._get_structural_displacements(du_ite))
             f_int = self._get_reduced_vector(self._asb.compute_elastic_force_vector())
             r = f_int - self._f_ext
@@ -991,11 +982,68 @@ class IncrementSolver:
             # Convergence check and preparation for next increment
             if np.linalg.norm(r) / self._NORM_DF < self._CONVERGENCE_TOL:
                 self._du_prev_inc = du_inc.copy()
-                self._u.append()
+                self._u_path.append(self._u_path[-1] + du_inc)
+                self._f_ext_path.append(self._f_ext.copy())
                 return
-        else:  # we reached the max number of iterations
-            raise MaxNbIterationsExceeded
+
+
+            # CORRECTION
+            for _ in range(self._MAX_NB_ITERATIONS):
+                k = self._get_reduced_stiffness_matrix(self._asb.compute_structural_stiffness_matrix())
+                try:
+                    du_hat = solve(k, self._DF, assume_a='sym')
+                    du_bar = solve(k, -r, assume_a='sym')
+                except np.linalg.LinAlgError:
+                    k_perturbed = _perturb_singular_stiffness_matrix(k, 1e-5, show_message=self._show_warnings)
+                    try:
+                        du_hat = solve(k_perturbed, self._DF, assume_a='sym')
+                        du_bar = solve(k_perturbed, -r, assume_a='sym')
+                    except np.linalg.LinAlgError:
+                        raise MechanismDetected
+
+                # Root computation and selection
+                a0 = np.inner(du_hat, du_hat)
+                b0 = 2 * np.inner(du_inc, du_hat)
+                b1 = 2 * np.inner(du_bar, du_hat)
+                c0 = np.inner(du_inc, du_inc) - self._radius ** 2
+                c1 = 2 * np.inner(du_inc, du_bar)
+                c2 = np.inner(du_bar, du_bar)
+                a = a0
+                b = b0 + b1
+                c = c0 + c1 + c2
+                rho = b ** 2 - 4 * a * c
+                if rho < 0:
+                    raise CorrectionIterationFailed
+                else:
+                    root1 = (-b + np.sqrt(rho)) / (2 * a)
+                    root2 = (-b - np.sqrt(rho)) / (2 * a)
+                dl_ite = root1 if b0 / a > 0 else root2
+
+                # Updating loads, displacements and structure + computation of the unbalanced forces
+                du_ite = du_bar + dl_ite * du_hat
+                du_inc += du_ite
+                dl_inc += dl_ite
+                self._f_ext += dl_ite * self._DF
+                self._asb.increment_coordinates(self._get_structural_displacements(du_ite))
+                f_int = self._get_reduced_vector(self._asb.compute_elastic_force_vector())
+                r = f_int - self._f_ext
+
+                # Convergence check and preparation for next increment
+                if np.linalg.norm(r) / self._NORM_DF < self._CONVERGENCE_TOL:
+                    self._du_prev_inc = du_inc.copy()
+                    self._u_path.append(self._u_path[-1] + du_inc)
+                    self._f_ext_path.append(self._f_ext.copy())
+                    return
+            else:  # we reached the max number of iterations
+                raise MaxNbCorrectionIterationsExceeded
+        except Exception:  # something happened that prevented convergence, let reset to the previous eq point
+            self._asb.set_coordinates(self._q0 + self._get_structural_displacements(self._u_path[-1]))
+            self._f_ext = self._f_ext_path[-1].copy()
+            raise
         
+
+
+
 
 class MechanismDetected(Exception):
     """ raise this when the stiffness matrix is singular at the start of the simulation """
@@ -1017,8 +1065,14 @@ class NonfiniteMechanicalQuantity(Exception):
     """ raise this when the reduced force vector or the reduced stiffness matrix have nonfinite components
     or when the energy is nonfinite"""
 
-class MaxNbIterationsExceeded(Exception):
+class MaxNbCorrectionIterationsExceeded(Exception):
     """ raise this when the max number of iterations (for the correction phase of the arclength scheme) is reached """
+
+class CorrectionIterationFailed(Exception):
+    """ raise this when the root to the constraint equation (arclength scheme) cannot be found """
+
+class NoPreviousEquilibrium(Exception):
+    """ raise this when the one tries to set the structure to the previously computed equilibrium point, but there is none"""
 
 
 def _print_message_with_final_solving_stats(message,
