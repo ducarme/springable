@@ -49,6 +49,13 @@ class Assembly:
 
         self._free_dof_indices, self._fixed_dof_indices = self._determine_free_and_fixed_dof_indices()
 
+        # These following quantities values act as cached: they are reset each time the structure is updated
+        self._energy = None
+        self._force_vector = None
+        self._stiffness_matrix = None
+
+        # For debugging purposes
+
         # print("Node: DOF indices dictionary")
         # for node_nb, indices in self._nodes_dof_indices.items():
         #     print(f'{node_nb}: {indices}')
@@ -62,6 +69,8 @@ class Assembly:
         # print(self._free_dof_indices)
         # print("Fixed dof indices")
         # print(self._fixed_dof_indices)
+
+
 
     def block_nodes_along_directions(self, nodes: list[Node], directions: list[str]):
         for node, direction in zip(nodes, directions):
@@ -87,6 +96,9 @@ class Assembly:
 
     def increment_coordinates(self, coordinate_increments: np.ndarray):
         """ Updates the values of the general coordinates by applying an increment """
+        self._energy = None
+        self._force_vector = None
+        self._stiffness_matrix = None
         for _node in self._nodes:
             indices = self._nodes_dof_indices[_node.get_node_nb()]
             _node.displace(coordinate_increments[indices])
@@ -97,6 +109,9 @@ class Assembly:
 
     def set_coordinates(self, coordinates: np.ndarray):
         """ Sets the values of the nodal and internal coordinates """
+        self._energy = None
+        self._force_vector = None
+        self._stiffness_matrix = None
         for _node in self._nodes:
             indices = self._nodes_dof_indices[_node.get_node_nb()]
             _node.set_position(coordinates[indices])
@@ -125,6 +140,8 @@ class Assembly:
 
     def compute_elastic_energy(self) -> float:
         """ Returns the elastic energy currently stored in the assembly """
+        if self._energy is not None:
+            return self._energy
         energy = 0.0
         for _element in self._elements:
             energy += _element.compute_energy()
@@ -132,6 +149,8 @@ class Assembly:
 
     def compute_elastic_force_vector(self) -> np.ndarray:
         """ Computes the net internal forces for each degree of freedom """
+        if self._force_vector is not None:
+            return self._force_vector
         elastic_force_vector = np.zeros(self._nb_dofs)
         for _element in self._elements:
             indices = self._elements_dof_indices[_element.get_element_nb()]
@@ -140,6 +159,8 @@ class Assembly:
 
     def compute_structural_stiffness_matrix(self) -> np.ndarray:
         """ Computes the global stiffness matrix of the current assem structure"""
+        if self._stiffness_matrix is not None:
+            return self._stiffness_matrix
         ks = np.zeros((self._nb_dofs, self._nb_dofs))
         for _element in self._elements:
             ke = _element.compute_stiffness_matrix()
@@ -148,6 +169,7 @@ class Assembly:
         return ks
 
     def get_coordinates(self) -> np.ndarray:
+        """ returns a copy of the current coordinates """
         coordinates = np.empty(self._nb_dofs)
         for _node in self._nodes:
             indices = self._nodes_dof_indices[_node.get_node_nb()]

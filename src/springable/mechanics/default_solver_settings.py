@@ -16,7 +16,4 @@ class SolverSettings(Updatable):
     i_max: float = 5e3
     j_max: float = 15
     convergence_value: float = 1e-6
-    alpha: float = 0.0  # positive and never larger than 0.5
-    psi_p: float = 0.0
-    psi_c: float = 0.0
     detect_mechanism: bool = True
