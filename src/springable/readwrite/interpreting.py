@@ -207,15 +207,15 @@ def text_to_shape(shape_text: tuple[str, str], nodes: set[Node]) -> Shape:
         if shape_type_name == '':
             shape_type = SegmentLength
         elif shape_type_name == 'ROTATION':
-            raise ValueError(f'{shape_type_name} {DEFAULT_FLEXEL_NAME} (or {shape_type_name} {ALTERNATIVE_FLEXEL_NAME}) '
+            raise ValueError(f'{shape_type_name} {DEFAULT_FLEXEL_NAME}S (or {shape_type_name} {ALTERNATIVE_FLEXEL_NAME}S) '
                                       f'is not valid anymore. '
-                                      f'Instead, use "{usable_shapes.type_to_name[Angle]} {DEFAULT_FLEXEL_NAME}" '
-                                      f'(or equivalently "{usable_shapes.type_to_name[Angle]} {ALTERNATIVE_FLEXEL_NAME}").')
+                                      f'Instead, use "{usable_shapes.type_to_name[Angle]} {DEFAULT_FLEXEL_NAME}S" '
+                                      f'(or equivalently "{usable_shapes.type_to_name[Angle]} {ALTERNATIVE_FLEXEL_NAME}S").')
         elif shape_type_name in ('LINE', 'CABLE', 'PATH LENGTH', 'PATHLENGTH'):
-            raise ValueError(f'{shape_type_name} {DEFAULT_FLEXEL_NAME} (or {shape_type_name} {ALTERNATIVE_FLEXEL_NAME}) '
+            raise ValueError(f'{shape_type_name} {DEFAULT_FLEXEL_NAME}S (or {shape_type_name} {ALTERNATIVE_FLEXEL_NAME}S) '
                                       f'is not valid. '
-                                      f'Use "{usable_shapes.type_to_name[PathLength]}" '
-                                      f'(or equivalently "{usable_shapes.type_to_name[PathLength]} {ALTERNATIVE_FLEXEL_NAME}") instead '
+                                      f'Use "{usable_shapes.type_to_name[PathLength]} {DEFAULT_FLEXEL_NAME}S" '
+                                      f'(or equivalently "{usable_shapes.type_to_name[PathLength]} {ALTERNATIVE_FLEXEL_NAME}S") instead '
                                       f'if your intention is to model a cable or rope passing through multiple nodes.')
         else:
             trials = difflib.get_close_matches(shape_type_name, usable_shapes.name_to_type.keys(), n=2)

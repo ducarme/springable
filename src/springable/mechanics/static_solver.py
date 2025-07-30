@@ -436,9 +436,7 @@ class StaticSolver:
 
                     # solve linear system
                     if i == 0 and detect_mechanism:
-
                         if cond(k, p=1) > 1e8:
-                            print(cond(k, p=1))
                             raise MechanismDetected
                     try:
                         delta_u_hat = solve(k, g, assume_a='sym')

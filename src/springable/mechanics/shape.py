@@ -128,7 +128,6 @@ class Angle(Shape):
             raise IllDefinedShape
         if output_mode == Shape.MEASURE:
             return theta
-
         if not Angle.MIN_ANGLE_ALLOWED <= theta <= Angle.MAX_ANGLE_ALLOWED:
             raise IllDefinedShape
 

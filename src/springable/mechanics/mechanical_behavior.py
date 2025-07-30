@@ -1258,21 +1258,24 @@ class IdealGas(UnivariateBehavior):
 class IsothermalGas(IdealGas):
 
     def elastic_energy(self, alpha: np.ndarray) -> np.ndarray:
-        v = alpha
-        v0 = self._natural_measure
-        nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
-        return np.where(v < 0, np.nan, nRT * (v / v0 - 1.0 - np.log(v / v0)))
+        with np.errstate(divide='ignore'):
+            v = alpha
+            v0 = self._natural_measure
+            nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
+            return np.where(v < 0, np.nan, nRT * (v / v0 - 1.0 - np.log(v / v0)))
 
     def gradient_energy(self, alpha: np.ndarray) -> tuple[np.ndarray,]:
-        v = alpha
-        v0 = self._natural_measure
-        nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
-        return np.where(v < 0, np.nan, nRT * (v - v0) / (v * v0)),
+        with np.errstate(divide='ignore'):
+            v = alpha
+            v0 = self._natural_measure
+            nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
+            return np.where(v < 0, np.nan, nRT * (v - v0) / (v * v0)),
 
     def hessian_energy(self, alpha: np.ndarray) -> tuple[np.ndarray,]:
-        v = alpha
-        nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
-        return np.where(v < 0, np.nan, nRT / v ** 2),
+        with np.errstate(divide='ignore'):
+            v = alpha
+            nRT = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
+            return np.where(v < 0, np.nan, nRT / v ** 2),
 
 
 class IsentropicGas(IdealGas):
@@ -1299,25 +1302,28 @@ class IsentropicGas(IdealGas):
                                             f"Current value = {self._parameters['gamma']:.3E}")
 
     def elastic_energy(self, alpha: np.ndarray) -> np.ndarray:
-        v0 = self._natural_measure
-        gamma = self._parameters['gamma']
-        v = alpha
-        nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
-        return np.where(v < 0, np.nan, nRT0 * (v / v0 - 1) + nRT0 / (gamma - 1) * ((v0 / v) ** (gamma - 1) - 1))
+        with np.errstate(divide='ignore'):
+            v0 = self._natural_measure
+            gamma = self._parameters['gamma']
+            v = alpha
+            nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
+            return np.where(v < 0, np.nan, nRT0 * (v / v0 - 1) + nRT0 / (gamma - 1) * ((v0 / v) ** (gamma - 1) - 1))
 
     def gradient_energy(self, alpha: np.ndarray) -> tuple[np.ndarray,]:
-        v0 = self._natural_measure
-        gamma = self._parameters['gamma']
-        v = alpha
-        nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
-        return np.where(v < 0, np.nan, nRT0 * (1 / v0 - 1 / v * (v0 / v) ** (gamma - 1))),
+        with np.errstate(divide='ignore'):
+            v0 = self._natural_measure
+            gamma = self._parameters['gamma']
+            v = alpha
+            nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
+            return np.where(v < 0, np.nan, nRT0 * (1 / v0 - 1 / v * (v0 / v) ** (gamma - 1))),
 
     def hessian_energy(self, alpha: np.ndarray) -> tuple[np.ndarray,]:
-        v0 = self._natural_measure
-        gamma = self._parameters['gamma']
-        v = alpha
-        nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
-        return np.where(v < 0, np.nan, nRT0 * gamma / v ** 2 * (v0 / v) ** (gamma - 1)),
+        with np.errstate(divide='ignore'):
+            v0 = self._natural_measure
+            gamma = self._parameters['gamma']
+            v = alpha
+            nRT0 = self._parameters['n'] * self._parameters['R'] * self._parameters['T0']
+            return np.where(v < 0, np.nan, nRT0 * gamma / v ** 2 * (v0 / v) ** (gamma - 1)),
 
     def update(self, natural_measure=None, /, **parameters):
         super().update(natural_measure, **parameters)

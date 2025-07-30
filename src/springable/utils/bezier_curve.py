@@ -138,6 +138,12 @@ if __name__ == "__main__":
 
     def gamma_minus(s, delta_s, delta_inf, kappa):
         return beta_minus(s - delta_s, delta_inf, kappa) + delta_s
+    
+    def smax(x, y, epsilon):
+        return 0.5*(x+y) + 0.5*np.sqrt((x-y)**2 + epsilon**2)
+    
+    def smin(x, y, epsilon):
+        return 0.5*(x+y) - 0.5*np.sqrt((x-y)**2 + epsilon**2)
 
 
     _u_i = np.array([0.0,
@@ -157,8 +163,10 @@ if __name__ == "__main__":
                      -2.9956268221574343,
                      6.692176870748298])
 
-    # _u_i = np.array([0.0, 1.0, -0.65, 1.0])
-    # _f_i = np.array([0.0, 3.0, -2.0, 2.0])
+    _u_i = np.array([0.0, 1.0, -0.65, 1.0])
+    _f_i = np.array([0.0, 3.0, -2.0, 2.0])
+    _u_i = np.array([0.0, 1.0, 1.0, 2.0])
+    _f_i = np.array([0.0, 3.0, -2.0, 2.0])
     _t = np.linspace(0, 1, 300)
     u = evaluate_poly(_t, _u_i)
     f = evaluate_poly(_t, _f_i)
@@ -170,10 +178,27 @@ if __name__ == "__main__":
     u_inflexions = get_inflexions(_u_i)
 
     delta_inf = 0.0
-    kappa = 2.0
+    kappa = 0.1
     delta_s = (np.max(df[du > 0] / du[du > 0]) + np.min(df[du < 0] / du[du < 0])) / 2.
     k = ((du >= 0) * gamma_plus(df / du, delta_s, delta_inf, kappa)
          + (du < 0) * gamma_minus(df / du, delta_s, delta_inf, kappa))
+
+    # dfdu = df / du
+    # kmax = np.max(dfdu[du>0])
+    # kmin = np.min(dfdu[du<0] if (du<0).size != 0 else np.inf)
+    # deltak = kmax / 20.0
+    # kstar = min(kmin-deltak, kmax+deltak)
+    # khat = smax(dfdu+deltak, kstar, deltak) * (du > 0)  + smin(dfdu-deltak, kstar, deltak) * (du <= 0)
+    # k = kstar * np.ones_like(du) if kmin-kmax > 2 * deltak else khat
+
+    dfdu = df / du
+    kmax = np.max(dfdu[du>0])
+    kmin = np.min(dfdu[du<0]) if np.any(du<0) else np.inf
+    deltak = kmax / 20
+    kstar = min(kmax/2 + kmin/2, kmax+2*deltak)
+    khat = smax(dfdu+deltak, kstar, 10*deltak) * (du > 0)  + smin(dfdu-deltak, kstar, 10*deltak) * (du <= 0)
+    k = khat
+
 
     # fig, ax = plt.subplots()
     # uuu = np.array([0.0, 1.0, 1.01, 5.0])
@@ -182,7 +207,7 @@ if __name__ == "__main__":
     # ax.plot(_x, evaluate_poly(_x, evaluate_poly(_x, uuu)))
     # plt.show()
 
-    fig, axs = plt.subplots(1, 1, figsize=(9, 20))
+    fig, axs = plt.subplots(1, 1, figsize=(8, 8))
     if not isinstance(axs, np.ndarray):
         axs = [axs]
     # axs[0].plot(u, f, 'o', markersize=2)
@@ -208,6 +233,9 @@ if __name__ == "__main__":
     axs[0].plot(u_inflexions,
                 evaluate_derivative_poly(u_inflexions, _f_i) / evaluate_derivative_poly(u_inflexions, _u_i), 's')
     axs[0].set_ylim((-7.5, 7.5))
+    # axs[0].plot(_t, np.ones_like(_t) * kmax+2*deltak, label='kmax + delta')
+    # axs[0].plot(_t, np.ones_like(_t) * kmax/2+kmin/2, label='kavg')
+    axs[0].legend()
     for ax in axs:
         ax.grid()
     plt.show()

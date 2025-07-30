@@ -228,12 +228,26 @@ class DistanceDrawing(ShapeDrawing):
                  is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: AssemblyAppearanceOptions):
         super().__init__(dist, None, is_hysteron, ax, color, opacity, aa)
         x0, y0, x1, y1, x2, y2 = self._shape.get_nodal_coordinates()
+
         graphic0 = self._ax.plot(x0, y0, zorder=2.1, marker='.', markersize=self._aa.node_size / 2.0,
-                                 alpha=self._opacity, color=self._color)[0]
-        graphic1 = self._ax.plot([x1, x2], [y1, y2], lw=self._aa.distance_spring_line_linewidth,
-                                 alpha=self._opacity, color=self._color, zorder=0)[0]
-        graphic2 = self._ax.plot([x1, x2], [y1, y2], lw=0.75,
-                                 color=self._aa.distance_spring_line_default_color, zorder=0)[0]
+                                 alpha=self._opacity, color=self._color)[0]  # dot
+        graphic1 = self._ax.plot([x1, x2], [y1, y2],
+                                 lw=self._aa.distance_spring_line_linewidth,
+                                 ls=self._aa.distance_spring_line_linestyle,
+                                 alpha=self._opacity,
+                                 color=(self._aa.distance_spring_line_default_color
+                                        if self._aa.paint_distance_spring_line_with_default_color
+                                        else self._color),
+                                 zorder=0.1)[0]  # line
+        
+        proj = ((x0-x1) * (x2-x1) + (y0-y1)*(y2-y1)) / ((x2-x1)**2 + (y2-y1)**2)
+        xp = x1 + proj * (x2-x1)
+        yp = y1 + proj * (y2-y1)
+        graphic2 = self._ax.plot([x0, xp], [y0, yp],
+                                 lw=self._aa.distance_spring_linewidth,
+                                 ls=self._aa.distance_spring_linestyle,
+                                 color=self._color,
+                                 alpha=self._opacity, zorder=0)[0]
         self._graphics = (graphic0, graphic1, graphic2)
         self._hysteron_label_position = ((x1 + x2) / 2, (y1 + y2) / 2) if self._is_hysteron else None
 
@@ -245,16 +259,120 @@ class DistanceDrawing(ShapeDrawing):
         graphic0.set_ydata([y0])
         graphic1.set_xdata([x1, x2])
         graphic1.set_ydata([y1, y2])
-        graphic2.set_xdata([x1, x2])
-        graphic2.set_ydata([y1, y2])
+        proj = ((x0-x1) * (x2-x1) + (y0-y1)*(y2-y1)) / ((x2-x1)**2 + (y2-y1)**2)
+        xp = x1 + proj * (x2-x1)
+        yp = y1 + proj * (y2-y1)
+        graphic2.set_xdata([x0, xp])
+        graphic2.set_ydata([y0, yp])
         if color is not None:
             graphic0.set_color(color)
-            graphic1.set_color(color)
+            if not self._aa.paint_distance_spring_line_with_default_color:
+                graphic1.set_color(color)
+            graphic2.set_color(color)
         if opacity is not None:
             graphic0.set_alpha(opacity)
             graphic1.set_alpha(opacity)
+            graphic2.set_alpha(opacity)
         if self._is_hysteron:
             self._hysteron_label_position = ((x1 + x2) / 2, (y1 + y2) / 2)
+
+class XDistanceDrawing(ShapeDrawing):
+    def __init__(self, dist: shape.SignedXDist,
+                 is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: AssemblyAppearanceOptions):
+        super().__init__(dist, None, is_hysteron, ax, color, opacity, aa)
+        x0, y0, x1, y1 = self._shape.get_nodal_coordinates()
+        graphic0 = self._ax.plot([x0, x1], [(y0+y1)/2, (y0+y1)/2],
+                                ls=self._aa.distance_spring_linestyle,
+                                lw=self._aa.distance_spring_linewidth,
+                                color=self._color,
+                                alpha=self._opacity, zorder=0)[0]
+        graphic1 = self._ax.plot([x0, x0], [y0, y1],
+                                ls=self._aa.distance_spring_line_linestyle,
+                                lw=self._aa.distance_spring_line_linewidth,
+                                color=(self._aa.distance_spring_line_default_color
+                                        if self._aa.paint_distance_spring_line_with_default_color
+                                        else self._color),
+                                alpha=self._opacity, zorder=0)[0]
+        graphic2 = self._ax.plot([x1, x1], [y0, y1],
+                                ls=self._aa.distance_spring_line_linestyle,
+                                lw=self._aa.distance_spring_line_linewidth,
+                                color=(self._aa.distance_spring_line_default_color
+                                        if self._aa.paint_distance_spring_line_with_default_color
+                                        else self._color),
+                                alpha=self._opacity, zorder=0)[0]
+        self._graphics = graphic0, graphic1, graphic2
+        self._hysteron_label_position = ((x0 + x1) / 2, (y0 + y1) / 2) if self._is_hysteron else None
+
+    def update(self, color, opacity):
+        super().update(color, opacity)
+        graphic0, graphic1, graphic2 = self._graphics
+        x0, y0, x1, y1 = self._shape.get_nodal_coordinates()
+        graphic0.set_xdata([x0, x1])
+        graphic0.set_ydata([(y0+y1)/2, (y0+y1)/2])
+        graphic1.set_xdata([x0, x0])
+        graphic1.set_ydata([y0, y1])
+        graphic2.set_xdata([x1, x1])
+        graphic2.set_ydata([y0, y1])
+        if color is not None:
+            graphic0.set_color(color)
+            if not self._aa.paint_distance_spring_line_with_default_color:
+                graphic1.set_color(color)
+                graphic2.set_color(color)
+        if opacity is not None:
+            graphic0.set_alpha(opacity)
+            graphic1.set_alpha(opacity)
+            graphic2.set_alpha(opacity)
+        if self._is_hysteron:
+            self._hysteron_label_position = ((x0 + x1) / 2, (y0 + y1) / 2)
+
+class YDistanceDrawing(ShapeDrawing):
+    def __init__(self, dist: shape.SignedXDist,
+                 is_hysteron, ax: plt.Axes, color: str, opacity: float, aa: AssemblyAppearanceOptions):
+        super().__init__(dist, None, is_hysteron, ax, color, opacity, aa)
+        x0, y0, x1, y1 = self._shape.get_nodal_coordinates()
+        graphic0 = self._ax.plot([(x0+x1)/2, (x0+x1)/2], [y0, y1],
+                                ls=self._aa.distance_spring_linestyle,
+                                lw=self._aa.distance_spring_linewidth,
+                                color=self._color,
+                                alpha=self._opacity, zorder=0)[0]
+        graphic1 = self._ax.plot([x0, x1], [y0, y0],
+                                ls=self._aa.distance_spring_line_linestyle,
+                                lw=self._aa.distance_spring_line_linewidth,
+                                color=(self._aa.distance_spring_line_default_color
+                                        if self._aa.paint_distance_spring_line_with_default_color
+                                        else self._color),
+                                alpha=self._opacity, zorder=0)[0]
+        graphic2 = self._ax.plot([x0, x1], [y1, y1],
+                                ls=self._aa.distance_spring_line_linestyle,
+                                lw=self._aa.distance_spring_line_linewidth,
+                                color=(self._aa.distance_spring_line_default_color
+                                        if self._aa.paint_distance_spring_line_with_default_color
+                                        else self._color),
+                                alpha=self._opacity, zorder=0)[0]
+        self._graphics = graphic0, graphic1, graphic2
+        self._hysteron_label_position = ((x0 + x1) / 2, (y0 + y1) / 2) if self._is_hysteron else None
+
+    def update(self, color, opacity):
+        super().update(color, opacity)
+        graphic0, graphic1, graphic2 = self._graphics
+        x0, y0, x1, y1 = self._shape.get_nodal_coordinates()
+        graphic0.set_xdata([(x0+x1)/2, (x0+x1)/2])
+        graphic0.set_ydata([y0, y1])
+        graphic1.set_xdata([x0, x1])
+        graphic1.set_ydata([y0, y0])
+        graphic2.set_xdata([x0, x1])
+        graphic2.set_ydata([y1, y1])
+        if color is not None:
+            graphic0.set_color(color)
+            if not self._aa.paint_distance_spring_line_with_default_color:
+                graphic1.set_color(color)
+                graphic2.set_color(color)
+        if opacity is not None:
+            graphic0.set_alpha(opacity)
+            graphic1.set_alpha(opacity)
+            graphic2.set_alpha(opacity)
+        if self._is_hysteron:
+            self._hysteron_label_position = ((x0 + x1) / 2, (y0 + y1) / 2)
 
 
 class HoleyAreaDrawing(ShapeDrawing):
@@ -432,12 +550,7 @@ class ElementDrawing(Drawing):
         else:
             color = self._color_handler.determine_property_value(self._element)
 
-        if self._opacity_handler is None or not isinstance(self._element.get_shape(),
-                                                           (
-                                                                   shape.DistancePointLine,
-                                                                   shape.SquaredDistancePointSegment,
-                                                                   shape.SignedDistancePointLine)
-                                                           ):
+        if self._opacity_handler is None or True:  # to implement in the future
             opacity = None  # to specify later
         else:
             opacity = self._opacity_handler.determine_property_value(self._element)
@@ -468,9 +581,19 @@ class ElementDrawing(Drawing):
                                         self._ax, color, opacity, self._aa)
         elif isinstance(_shape,
                         (shape.DistancePointLine, shape.SquaredDistancePointSegment, shape.SignedDistancePointLine)):
-            color = color if color is not None else self._aa.distance_spring_line_default_color
-            opacity = opacity if opacity is not None else self._aa.distance_spring_line_default_opacity
+            color = color if color is not None else self._aa.distance_spring_default_color
+            opacity = opacity if opacity is not None else self._aa.distance_spring_default_opacity
             shape_drawing = DistanceDrawing(_shape, self._is_hysteron,
+                                            self._ax, color, opacity, self._aa)
+        elif isinstance(_shape, shape.SignedXDist):
+            color = color if color is not None else self._aa.distance_spring_default_color
+            opacity = opacity if opacity is not None else self._aa.distance_spring_default_opacity
+            shape_drawing = XDistanceDrawing(_shape, self._is_hysteron,
+                                            self._ax, color, opacity, self._aa)
+        elif isinstance(_shape, shape.SignedYDist):
+            color = color if color is not None else self._aa.distance_spring_default_color
+            opacity = opacity if opacity is not None else self._aa.distance_spring_default_opacity
+            shape_drawing = YDistanceDrawing(_shape, self._is_hysteron,
                                             self._ax, color, opacity, self._aa)
         elif isinstance(_shape, shape.HoleyArea):
             color = color if color is not None else self._aa.area_spring_default_color
@@ -514,10 +637,7 @@ class ElementDrawing(Drawing):
         opacity = None
         if self._color_handler is not None:
             color = self._color_handler.determine_property_value(self._element)
-        if (self._opacity_handler is not None
-                and isinstance(self._element.get_shape(),
-                               (shape.DistancePointLine, shape.SquaredDistancePointSegment,
-                                shape.SignedDistancePointLine))):
+        if (self._opacity_handler is not None and False):  # to implement later
             opacity = self._opacity_handler.determine_property_value(self._element)
 
         self._shape_drawing.update(color, opacity)
@@ -695,7 +815,8 @@ class ModelDrawing(Drawing):
         for loaded_node in self._loaded_nodes:
             final_force = final_force_vector[self._node_to_dof_indices[loaded_node]]
             final_force_norm = np.linalg.norm(final_force)
-            direction = final_force / final_force_norm
+            with np.errstate(invalid='ignore', divide='ignore'):
+                direction = final_force / final_force_norm
             if np.isnan(direction).any():
                 direction = None
             self._force_directions[loaded_node] = direction
@@ -704,7 +825,8 @@ class ModelDrawing(Drawing):
         for preloaded_node in self._preloaded_nodes:
             initial_force = self._initial_force_vector[self._node_to_dof_indices[preloaded_node]]
             initial_force_norm = np.linalg.norm(initial_force)
-            direction = initial_force / initial_force_norm
+            with np.errstate(invalid='ignore', divide='ignore'):
+                direction = initial_force / initial_force_norm
             if np.isnan(direction).any() or (self._aa.hide_low_preloading_forces
                                              and initial_force_norm < self._aa.low_preloading_force_threshold):
                 direction = None

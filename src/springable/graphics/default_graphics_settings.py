@@ -138,9 +138,14 @@ class AssemblyAppearanceOptions(Updatable):
     path_spring_default_color: str = '#CECECE'
     path_spring_dot_color: str = "#ffffff"
     path_spring_dot_opacity: float = 1.0
+    distance_spring_linestyle: str = '-'
+    distance_spring_linewidth: float = 1.0
+    distance_spring_default_opacity: float = 1.0
+    distance_spring_default_color: str = '#CECECE'
+    distance_spring_line_linestyle: str = '--'
     distance_spring_line_linewidth: float = 1.0
     distance_spring_line_default_color: str = '#CECECE'
-    distance_spring_line_default_opacity: float = 0.7
+    paint_distance_spring_line_with_default_color: bool = False
     node_style: str = 'simple'
     node_size: float = 3.
     node_color: str = '#101010'
