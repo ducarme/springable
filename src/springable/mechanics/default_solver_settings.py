@@ -4,7 +4,6 @@ from ..utils.dataclass_utils import Updatable
 
 @dataclass
 class SolverSettings(Updatable):
-    reference_load_parameter: float = 0.05
     radius: float = 0.05
     detect_critical_points: bool = False
     critical_point_epsilon: float = 1e-3

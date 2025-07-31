@@ -15,10 +15,9 @@ create a [TOML file](https://toml.io/en/), that is a text file saved with extens
 or TextEdit (MacOS) to do that, for example. The file will look similar to this:
 ```toml title="custom_solver_settings.toml"
 radius = 0.01
-reference_load_parameter = 0.01
 ```
-> Low values for `radius` and `reference_load_parameter` can be used to refine the solution,
-> at the cost of increasing the solving duration. Default values are 0.05 and 0.05, respectively.
+> A lower value for `radius` can be used to refine the solution,
+> at the cost of increasing the solving duration. Default value is 0.05.
 
 To use these custom solver settings, use the path to `custom_solver_settings.toml`
 as an extra argument of the `ss.simulate_model()` function, as follows:
