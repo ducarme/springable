@@ -893,12 +893,13 @@ class IncrementSolver:
     This object assumes that the boundary conditions of the underlying assembly are not changing, and that the external applied force does not change orientation
     (meaning that an object of this class is only valid within a single loadstep).
     If boundary conditions changes, a new instance must be created. """
-    def __init__(self, asb: Assembly, f_ext: np.ndarray, unit_f: np.ndarray,
+    def __init__(self, asb: Assembly, u: np.ndarray, f_ext: np.ndarray, unit_f: np.ndarray,
                  radius: float, convergence_tol: float,
                  max_nb_iterations: int, show_warnings: bool):
         """
         Args:
             asb (Assembly): assembly assumed to be at equilibrium (res < tol) under force f_ext
+            u (np.ndarray): current displacements
             f_ext (np.ndarray): current force vector acting on the structural coordinates
             unit_f (np.ndarray): step force unit vector
             radius (float): radius of the constraint equation (arclength setting)
@@ -906,20 +907,28 @@ class IncrementSolver:
             max_nb_iterations (int): maximum number of iterations during the correction phase. Beyond that number, raises MaxNbIterationsExceeded.
             show_warnings (bool): print warning?
         """
-        self._asb = asb  # will be updated in place later
+        self._asb = asb  # current assembly state, will be updated in place later
+        self._u = u  # current displacement, will be updated in place later
+        self._f_ext = f_ext  # current force vector, will be updated in place later
         self._nb_dofs = asb.get_nb_dofs()
-        self._q0 = self._asb.get_coordinates()  # initial structural coordinates
+        self._q0 = asb.get_coordinates() - u  # initial coordinates
         # self._u_path: list[np.ndarray] = [np.zeros(asb.get_nb_dofs())]  # structural displacement (relative to displacement to the starting state)
         # self._f_ext_path: list[np.ndarray] = [f_ext.copy()]  # absolute forces (structural coordinates)
 
-        self._u = np.zeros(asb.get_nb_dofs())  # will be updated in place later
-        self._f_ext = f_ext  # will be updated in place later
-        self._UNIT_F = unit_f  # never changes
+        self._u_eq: list[np.ndarray] = [u.copy()]  # saved equilibrium displacements
+        self._f_eq: list[np.ndarray] = [f_ext.copy()]  # saved equilibrium forces
+
+        # hereinbelow, in free coordinates
+        self._UNIT_F = unit_f[asb.get_free_dof_indices()]  # never changes
         self._radius = radius
-        self._du_prev_inc = None  # increment previous to the latest increment
+        self._pending_du_inc = None  # increment that led to the equilibrium pending for acceptance
+        self._du_prev_inc = None  # increment that led to the latest saved equilbrium
+
+        # settings
         self._CONVERGENCE_TOL = convergence_tol
         self._MAX_NB_ITERATIONS = max_nb_iterations
         self._show_warnings = show_warnings
+
 
     def set_radius(self, radius):
         self._radius = radius
@@ -927,59 +936,50 @@ class IncrementSolver:
     def _get_reduced_stiffness_matrix(self, ks):
         k = np.delete(ks, self._asb.get_fixed_dof_indices(), axis=0)  # delete rows
         k = np.delete(k, self._asb.get_fixed_dof_indices(), axis=1)  # delete columns
-        if not np.isfinite(k).all():
-            raise NonfiniteMechanicalQuantity
         return k
 
     def _get_reduced_vector(self, vs):
         """ Returns the vector without the entries for the fixed dofs """
-        v = np.delete(vs, self._asb.get_fixed_dof_indices())
-        if not np.isfinite(v).all():
-            raise NonfiniteMechanicalQuantity
-        return v
+        return np.delete(vs, self._asb.get_fixed_dof_indices())
 
     def _get_structural_displacements(self, u):
         us = np.zeros(self._asb.get_nb_dofs())
         us[self._asb.get_free_dof_indices()] = u
         return us
 
-    def reset_to_previous_equilibrium(self):
-        """ If an exception is raised, the state did not change, else the state is set to the
-        previous equilibrium point and the last equilibrium is deleted """
-        if len(self._u_path) == 0:
+    def reset_to_last_saved_equilibrium(self):
+        """ The state is set to the last saved equilibrium point """
+        if len(self._u_eq) == 0:
             raise ValueError("This should never happens! Check code")
-        if len(self._u_path) == 1:  
-            raise NoPreviousEquilibrium
+        self._asb.set_coordinates(self._q0 + self._u_eq[-1])
+        self._u = self._u_eq[-1].copy()
+        self._f_ext = self._f_eq[-1].copy()
+        self._pending_du_inc = None
         
-        if len(self._u_path) == 2:
-            self._du_prev_inc = None
-        else:  # at least 3 equilibrium points
-            self._du_prev_inc = self._u_path[-2] - self._u_path[-3]
-
-        del self._u_path[-1]
-        del self._f_ext_path[-1]
-        self._asb.set_coordinates(self._q0 + self._u_path[-1])
-        self._f_ext = self._f_ext_path[-1].copy()
-        
-
-
-
 
     def go_to_next_equilibrium(self):
         """ Tries to compute the next increment by driving the structure to the next equilibrium point,
-        and computing the external force vector (parallel to df) at that new equilibrium point. If the increment
-        is successful, a new equilibrium is recorded automatically. In case of an any event preventing from converging,
-        the structure will be automatically reset to the configuration before running this method, no equilibrium is recorded,
-        and the exception responsible for the failure is raised.
+        and computing the external force vector at that new equilibrium point.
+        In case of any event preventing from converging, the structure will be automatically
+        reset to the last saved equilibrium configuration and the exception responsible for the failure is raised.
         """
-        du_inc = np.zeros(self._nb_dofs)
-        dl_inc = 0
+        if self._pending_du_inc is not None:
+            # should only happen, when you go to the next equilibrium
+            # without saving or resetting in between
+            du_prev_inc = self._pending_du_inc
+            self._pending_du_inc = None
+        else:
+            du_prev_inc = self._du_prev_inc
 
+        du_inc = np.zeros_like(self._UNIT_F)
+        dl_inc = 0
         try:
             # PREDICTION
             # if the state of the structure hasn't been updated,
             # computing the stiffness matrix reuses the previously computed one.
             k = self._get_reduced_stiffness_matrix(self._asb.compute_structural_stiffness_matrix())
+            if not np.isfinite(k).all():
+                raise NonfiniteMechanicalQuantity
             try:
                 du_hat = solve(k, self._UNIT_F, assume_a='sym')
             except np.linalg.LinAlgError:
@@ -993,10 +993,10 @@ class IncrementSolver:
             
 
             dl_ite = self._radius / np.sqrt(np.inner(du_hat, du_hat))
-            root_choice_criteria = (self._du_prev_inc is None
-                                    or np.inner(du_hat, self._du_prev_inc) >= 0)
+            root_choice_criteria = (du_prev_inc is None
+                                    or np.inner(du_hat, du_prev_inc) >= 0)
             root_sign = +1 if root_choice_criteria else -1
-            if self._du_prev_inc is None:
+            if du_prev_inc is None:
                 # if neg eigvenval --> switch direction
                 root_sign *= -1
             dl_ite *= root_sign
@@ -1010,17 +1010,21 @@ class IncrementSolver:
             self._asb.increment_coordinates(self._get_structural_displacements(du_ite))
             f_int = self._asb.compute_elastic_force_vector()
             r = self._get_reduced_vector(f_int - self._f_ext)
+            if not np.isfinite(r).all():
+                raise NonfiniteMechanicalQuantity
 
             # Convergence check and preparation for next increment
             if np.linalg.norm(r) < self._CONVERGENCE_TOL:
-                self._du_prev_inc = du_inc.copy()
-                self._u_eq += self._get_structural_displacements(du_inc)
-                self._f_eq = self._f_ext.copy()
+                self._pending_du_inc = du_inc
+                self._u[self._asb.get_free_dof_indices()] += du_inc
+                return
 
 
             # CORRECTION
             for _ in range(self._MAX_NB_ITERATIONS):
                 k = self._get_reduced_stiffness_matrix(self._asb.compute_structural_stiffness_matrix())
+                if not np.isfinite(k).all():
+                    raise NonfiniteMechanicalQuantity
                 try:
                     du_hat = solve(k, self._UNIT_F, assume_a='sym')
                     du_bar = solve(k, -r, assume_a='sym')
@@ -1058,18 +1062,27 @@ class IncrementSolver:
                 self._asb.increment_coordinates(self._get_structural_displacements(du_ite))
                 f_int = self._asb.compute_elastic_force_vector()
                 r = self._get_reduced_vector(f_int - self._f_ext)
+                if not np.isfinite(r).all():
+                    raise NonfiniteMechanicalQuantity
 
                 # Convergence check and saving the equilibrium
                 if np.linalg.norm(r) < self._CONVERGENCE_TOL:
-                    self._du_prev_inc = du_inc.copy()
-                    self._u_eq += self._get_structural_displacements(du_inc)
-                    self._f_eq = self._f_ext.copy()
+                    self._pending_du_inc = du_inc
+                    self._u[self._asb.get_free_dof_indices()] += du_inc
+                    return
             else:  # we reached the max number of iterations
                 raise MaxNbCorrectionIterationsExceeded
         except Exception:  # something happened that prevented convergence, let reset to the previous eq point
-            self._asb.set_coordinates(self._q0 + self._u_eq)
-            self._f_ext = self._f_eq.copy()
+            self.reset_to_last_saved_equilibrium()
             raise
+
+
+    def save_equilibrium(self):
+        self._u_eq.append(self._u.copy())
+        self._f_eq.append(self._f_ext.copy())
+        self._du_prev_inc = self._pending_du_inc
+        self._pending_du_inc = None
+        
         
 
 
