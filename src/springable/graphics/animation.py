@@ -1,6 +1,6 @@
 from ..mechanics.static_solver import Result
 from ..mechanics import model
-from ..mechanics.result_processing import extract_loading_path, extract_unloading_path, LoadingPathEmpty
+from ..mechanics.result_processing import extract_loading_path, extract_unloading_path, LoadingPathEmpty, DiscontinuityInTheSolutionPath
 from .drawing import ModelDrawing
 from . import visual_helpers, plot
 from . import figure_formatting as ff
@@ -241,7 +241,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                 unloading_path_indices = None
                 if ao.cycling:
                     unloading_path_indices, _, _ = extract_unloading_path(_result, ao.drive_mode,
-                                                                               starting_index=loading_path_indices[-1])
+                                                                        starting_index=loading_path_indices[-1])
 
                 if ao.drive_mode == 'force':
                     if ao.cycling:
@@ -289,6 +289,15 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             except LoadingPathEmpty:
                 print(f"Cannot make the animation in {ao.drive_mode}-driven mode, "
                       f"because no stable points have been found under these loading conditions")
+                return
+            except DiscontinuityInTheSolutionPath:
+                print(f"Cannot make the animation in {ao.drive_mode}-driven mode, "
+                      f"because discontinuities have been detected in the solution path. "
+                      f"Run a more refined simulation to find a valid solution "
+                      f"(use a smaller 'radius' value in the solver settings). "
+                      f"If you still want to see the animated solution, despite being invalid, "
+                      f"set the 'drive_mode' to 'none' in the graphics settings (animation options). "
+                )
                 return
         else:
             frame_indices = np.round(np.linspace(0, u.shape[0] - 1, ao.nb_frames)).astype(int)

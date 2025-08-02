@@ -5,7 +5,7 @@ Static Assembly Problem Solver class
 import warnings
 import numpy as np
 from numpy.linalg import cond
-from scipy.linalg import solve, lstsq
+from scipy.linalg import solve
 from scipy.optimize import minimize
 from scipy.linalg import LinAlgWarning
 from dataclasses import asdict
@@ -859,13 +859,14 @@ class LoadStepSolver:
                  detect_mechanism):
         self._mdl = mdl
         self._asb = mdl.get_assembly()
+        self._u = np.zeros(self._asb.get_nb_dofs())
+        self._f_ext = np.zeros(self._asb.get_nb_dofs())
         self._loaded_dof_indices_step_list = (mdl.get_loaded_dof_indices_preloading_step_list()
                                               + [mdl.get_loaded_dof_indices()])
         self._incr_index: int = 0
         self._step_index: int = 0
-        self._f_ext : np.ndarray = np.zeros(self._asb.get_nb_dofs())
-        self._u_path: list[np.ndarray] = [np.zeros(self._asb.get_nb_dofs())]  # absolute
-        self._f_path: list[np.ndarray] = [self._f_ext.copy()]  # absolute
+        self._u_eq: list[np.ndarray] = []  # absolute
+        self._f_eq: list[np.ndarray] = []  # absolute
 
         # settings
         self._max_nb_incr = max_nb_increments
@@ -878,11 +879,15 @@ class LoadStepSolver:
     def compute_next_loadstep(self):
         step_force_vector = self._loaded_dof_indices_step_list[self._step_index]
         step_force_norm  = np.linalg.norm(step_force_vector)
-        step_force_unit_vector = step_force_vector / step_force_norm
-        inc_solver = IncrementSolver(self._asb, self._f_ext, step_force_unit_vector,
-                                     self._radius, self._convergence_tol, self._max_nb_iterations, self._show_warnings)
+        step_force_direction = step_force_vector / step_force_norm
+        inc_solver = IncrementSolver(self._asb, self._u, self._f_ext, step_force_direction,
+                                     self._radius,
+                                     self._convergence_tol,
+                                     self._max_nb_iterations,
+                                     self._show_warnings)
         while True:
-            inc_solver.compute_next_equilibrium()
+            inc_solver.go_to_next_equilibrium()
+
 
 
 
@@ -908,20 +913,19 @@ class IncrementSolver:
             show_warnings (bool): print warning?
         """
         self._asb = asb  # current assembly state, will be updated in place later
-        self._u = u  # current displacement, will be updated in place later
         self._f_ext = f_ext  # current force vector, will be updated in place later
-        self._nb_dofs = asb.get_nb_dofs()
-        self._q0 = asb.get_coordinates() - u  # initial coordinates
-        # self._u_path: list[np.ndarray] = [np.zeros(asb.get_nb_dofs())]  # structural displacement (relative to displacement to the starting state)
-        # self._f_ext_path: list[np.ndarray] = [f_ext.copy()]  # absolute forces (structural coordinates)
 
-        self._u_eq: list[np.ndarray] = [u.copy()]  # saved equilibrium displacements
-        self._f_eq: list[np.ndarray] = [f_ext.copy()]  # saved equilibrium forces
+        self._q0 = asb.get_coordinates() # starting coordinates
+        self._f_ext_0 = f_ext.copy()  # starting external force
 
         # hereinbelow, in free coordinates
+        self._u_eq: list[np.ndarray] = [np.zeros(self._asb.get_nb_dofs())]  # saved equilibrium displacements (relative to the current assembly state)
+        self._l_eq: list[float] = [0.0]  # saved load parameter at equilbrium
+
         self._UNIT_F = unit_f[asb.get_free_dof_indices()]  # never changes
         self._radius = radius
-        self._pending_du_inc = None  # increment that led to the equilibrium pending for acceptance
+        self._pending_du_inc: np.ndarray = None  # increment that led to the equilibrium pending for acceptance
+        self._pending_dl_inc: float = None  # increment in load parameter that led to the equilibrium pending for acceptance
         self._du_prev_inc = None  # increment that led to the latest saved equilbrium
 
         # settings
@@ -949,12 +953,12 @@ class IncrementSolver:
 
     def reset_to_last_saved_equilibrium(self):
         """ The state is set to the last saved equilibrium point """
-        if len(self._u_eq) == 0:
-            raise ValueError("This should never happens! Check code")
-        self._asb.set_coordinates(self._q0 + self._u_eq[-1])
-        self._u = self._u_eq[-1].copy()
-        self._f_ext = self._f_eq[-1].copy()
+        assert len(self._u_eq) > 0
+
+        self._asb.set_coordinates(self._q0 + self._get_structural_displacements(self._u_eq[-1]))
+        self._f_ext[self._asb.get_free_dof_indices()] = self._f_ext_0 + self._l_eq[-1] * self._UNIT_F
         self._pending_du_inc = None
+        self._pending_dl_inc = None
         
 
     def go_to_next_equilibrium(self):
@@ -967,10 +971,11 @@ class IncrementSolver:
             # should only happen, when you go to the next equilibrium
             # without saving or resetting in between
             du_prev_inc = self._pending_du_inc
-            self._pending_du_inc = None
         else:
             du_prev_inc = self._du_prev_inc
 
+        self._pending_du_inc = None
+        self._pending_dl_inc = None
         du_inc = np.zeros_like(self._UNIT_F)
         dl_inc = 0
         try:
@@ -1016,7 +1021,7 @@ class IncrementSolver:
             # Convergence check and preparation for next increment
             if np.linalg.norm(r) < self._CONVERGENCE_TOL:
                 self._pending_du_inc = du_inc
-                self._u[self._asb.get_free_dof_indices()] += du_inc
+                self._pending_dl_inc = dl_inc
                 return
 
 
@@ -1053,22 +1058,24 @@ class IncrementSolver:
                     root1 = (-b + np.sqrt(rho)) / (2 * a)
                     root2 = (-b - np.sqrt(rho)) / (2 * a)
                 dl_ite = root1 if b0 / a > 0 else root2
-
-                # Updating loads, displacements and structure + computation of the unbalanced forces
                 du_ite = du_bar + dl_ite * du_hat
+
+                # Updating increments, updating state, forces
                 du_inc += du_ite
                 dl_inc += dl_ite
-                self._f_ext[self._asb.get_free_dof_indices()] += (dl_ite * self._UNIT_F)
                 self._asb.increment_coordinates(self._get_structural_displacements(du_ite))
+                self._f_ext[self._asb.get_free_dof_indices()] += (dl_ite * self._UNIT_F)
+
+                # evaluating force balance
                 f_int = self._asb.compute_elastic_force_vector()
                 r = self._get_reduced_vector(f_int - self._f_ext)
                 if not np.isfinite(r).all():
                     raise NonfiniteMechanicalQuantity
 
-                # Convergence check and saving the equilibrium
+                # Convergence check
                 if np.linalg.norm(r) < self._CONVERGENCE_TOL:
                     self._pending_du_inc = du_inc
-                    self._u[self._asb.get_free_dof_indices()] += du_inc
+                    self._pending_dl_inc = dl_inc
                     return
             else:  # we reached the max number of iterations
                 raise MaxNbCorrectionIterationsExceeded
@@ -1078,10 +1085,11 @@ class IncrementSolver:
 
 
     def save_equilibrium(self):
-        self._u_eq.append(self._u.copy())
-        self._f_eq.append(self._f_ext.copy())
+        self._u_eq.append(self._u_eq[-1] + self._pending_du_inc)
+        self._l_eq.append(self._l_eq[-1] + self._pending_dl_inc)
         self._du_prev_inc = self._pending_du_inc
         self._pending_du_inc = None
+        self._pending_dl_inc = None
         
         
 

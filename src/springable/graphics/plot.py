@@ -1,5 +1,5 @@
 from ..mechanics.static_solver import Result, UnusableSolution
-from ..mechanics.result_processing import extract_branches, extract_loading_path, extract_unloading_path, LoadingPathEmpty
+from ..mechanics.result_processing import extract_branches, extract_loading_path, extract_unloading_path, LoadingPathEmpty, DiscontinuityInTheSolutionPath
 from ..mechanics.stability_states import StabilityStates
 from .default_graphics_settings import PlotOptions
 from . import figure_formatting as ff
@@ -250,6 +250,13 @@ def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: Plot
         except LoadingPathEmpty:
             print(f"Cannot draw the {po.drive_mode}-driven path, "
                   f"because not stable points have been found under these loading conditions")
+            pass
+        except DiscontinuityInTheSolutionPath:
+            print(f"Cannot draw the {po.drive_mode}-driven path, "
+                  f"because discontinuities have been detected in the solution path. "
+                  f"Run a more refined simulation to find a valid solution"
+                  f" (use a smaller 'radius' value in the solver settings)."
+            )
             pass
     elif po.driven_path_only:
         raise ValueError('Inconsistent plot options: "driven_path_only == True", and "drive_mode == "none"')

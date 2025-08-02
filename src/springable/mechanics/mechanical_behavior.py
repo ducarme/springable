@@ -1,17 +1,12 @@
 from collections.abc import Callable
 from typing import Any
-
-from ..utils import misc
 from ..utils import bezier_curve
 from ..utils import smooth_piecewise_linear_curve as spw
 from ..utils import smoother_piecewise_linear_curve as sspw
-from scipy.interpolate import interp1d, griddata, make_interp_spline, PPoly
-from scipy.integrate import quad, solve_ivp, cumulative_trapezoid
+from scipy.interpolate import interp1d, make_interp_spline, PPoly
 from scipy.optimize import minimize, LinearConstraint
 import numpy as np
 import matplotlib.pyplot as plt
-
-from ..utils.smooth_piecewise_linear_curve import create_smooth_piecewise_function
 
 
 class MechanicalBehavior:
@@ -228,7 +223,8 @@ class BivariateBehavior(MechanicalBehavior):
             all_t = np.linspace(0, tmax, round(100))
         da = self.da(all_t)
         db = self.db(all_t)
-        db_da = db / da
+        with np.errstate(divide='ignore'):
+            db_da = db / da
         kmax = np.max(db_da[da > 0]) if np.any(da > 0.0) else np.inf
         kmin = np.min(db_da[da < 0]) if np.any(da < 0.0) else np.inf
         delta = 0.05 * kmax
@@ -247,23 +243,26 @@ class BivariateBehavior(MechanicalBehavior):
             self._is_k_constant = False
 
             def k_fun(t) -> np.ndarray:
-                k_arr = np.zeros_like(t)
-                da_pos = self.da(t) >= 0
-                da_neg = self.da(t) < 0
-                k_arr[da_pos] = np.maximum(self._dbda(t[da_pos]) + delta, kstar)
-                k_arr[da_neg] = kstar
+                with np.errstate(divide='ignore'):
+                    k_arr = np.zeros_like(t)
+                    da_pos = self.da(t) >= 0
+                    da_neg = self.da(t) < 0
+                    k_arr[da_pos] = np.maximum(self._dbda(t[da_pos]) + delta, kstar)
+                    k_arr[da_neg] = kstar
                 return k_arr
 
             def dk_fun(t) -> np.ndarray:
-                dk_arr = np.zeros_like(t)
-                indices = np.logical_and(self.da(t) >= 0, self._dbda(t) + delta > kstar)
-                dk_arr[indices] = 1.0 * self._d_dbda(t[indices])
+                with np.errstate(divide='ignore'):
+                    dk_arr = np.zeros_like(t)
+                    indices = np.logical_and(self.da(t) >= 0, self._dbda(t) + delta > kstar)
+                    dk_arr[indices] = 1.0 * self._d_dbda(t[indices])
                 return dk_arr
 
             def d2k_fun(t) -> np.ndarray:
-                d2k_arr = np.zeros_like(t)
-                indices = np.logical_and(self.da(t) >= 0, self._dbda(t) + delta > kstar)
-                d2k_arr[indices] = 1.0 * self._d2_dbda(t[indices])
+                with np.errstate(divide='ignore'):
+                    d2k_arr = np.zeros_like(t)
+                    indices = np.logical_and(self.da(t) >= 0, self._dbda(t) + delta > kstar)
+                    d2k_arr[indices] = 1.0 * self._d2_dbda(t[indices])
                 return d2k_arr
 
         self.k = k_fun
@@ -755,7 +754,7 @@ class Spline2Behavior(BivariateBehavior, ControllableByPoints):
     def _check(self):
         if len(self._parameters['u_i']) < self._parameters['deg']:
             raise InvalidBehaviorParameters(f'No enough control points. '
-                                            f'At least {self._parameters['deg'] +1} are required.')
+                                            f'At least {self._parameters["deg"] +1} are required.')
         super()._check()
 
     def _a_fun(self, t):
@@ -878,7 +877,7 @@ class PiecewiseBehavior(UnivariateBehavior, ControllableByPoints):
 
     def update_from_control_points(self, cp_x, cp_y):
         if (np.diff(cp_x) < 0).any():
-            raise InvalidBehaviorParameters(f'Each control point must be on the right of the previous one.')
+            raise InvalidBehaviorParameters('Each control point must be on the right of the previous one.')
         k, u = spw.compute_piecewise_slopes_and_transitions_from_control_points(cp_x, cp_y)
         self.update(k_i=k, u_i=u)
 
@@ -927,11 +926,11 @@ class ZigzagBehavior(UnivariateBehavior, ControllableByPoints):
         if not 0.0 < epsilon < 1.0:
             raise InvalidBehaviorParameters(f'Parameter epsilon must be between 0 and 1 (current value: {epsilon:.3E})')
         if len(u_i) != len(f_i):
-            raise InvalidBehaviorParameters(f'u_i and f_i must contain the same number of elements')
+            raise InvalidBehaviorParameters('u_i and f_i must contain the same number of elements')
         if (np.diff(u_i, prepend=0.0) <= 0.0).any():
             raise InvalidBehaviorParameters(
-                f'u_i values should be positive and monotonically increasing. '
-                f'For a multivalued curve, try Zigzag2 instead.')
+                'u_i values should be positive and monotonically increasing. '
+                'For a multivalued curve, try Zigzag2 instead.')
 
     def _make(self):
         u_i, f_i, epsilon = self._parameters['u_i'], self._parameters['f_i'], self._parameters['epsilon']
@@ -1057,7 +1056,7 @@ class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
         if not 0.0 < epsilon < 1.0:
             raise InvalidBehaviorParameters(f'Parameter epsilon must be between 0 and 1 (current value: {epsilon:.3E})')
         if len(u_i) != len(f_i):
-            raise InvalidBehaviorParameters(f'u_i and f_i must contain the same number of elements')
+            raise InvalidBehaviorParameters('u_i and f_i must contain the same number of elements')
         super()._check()
 
     def get_control_points(self) -> tuple[np.ndarray, np.ndarray]:
@@ -1166,7 +1165,7 @@ class SmootherZigzag2Behavior(BivariateBehavior, ControllableByPoints):
         if not 0.0 < epsilon < 1.0:
             raise InvalidBehaviorParameters(f'Parameter epsilon must be between 0 and 1 (current value: {epsilon:.3E})')
         if len(u_i) != len(f_i):
-            raise InvalidBehaviorParameters(f'u_i and f_i must contain the same number of elements')
+            raise InvalidBehaviorParameters('u_i and f_i must contain the same number of elements')
         super()._check()
 
     def get_control_points(self) -> tuple[np.ndarray, np.ndarray]:
