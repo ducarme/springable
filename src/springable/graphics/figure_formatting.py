@@ -47,9 +47,10 @@ def adjust_spines(axs, offset, spines):
         _adjust_spines(ax, offset, spines)
 
 
-def adjust_figure_layout(fig, fig_width=None, fig_height=None, pad=0.0):
+def adjust_figure_layout(fig, fig_width=None, fig_height=None, pad=0.0, tight_layout=True):
     if fig_width is not None:
         fig.set_figwidth(fig_width)
     if fig_height is not None:
         fig.set_figheight(fig_height)
-    fig.tight_layout(pad=pad)
+    if tight_layout:
+        fig.tight_layout(pad=pad)

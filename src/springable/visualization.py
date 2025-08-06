@@ -227,13 +227,28 @@ def make_model_drawing(mdl: str | model.Model, save_dir,
     if isinstance(mdl, str):
         mdl = io.read_model(mdl)
     if not isinstance(mdl, model.Model):
-        raise ValueError("Incorrect result specification. The first argument should be the model file path, "
+        raise ValueError("Incorrect model specification. The first argument should be the model file path, "
                          "or an already loaded Model object")
     _, _, _, a_appearance = _load_graphics_settings(graphics_settings)
     a_appearance.update(assembly_appearance)
     animation.draw_model(mdl, save_dir, save_name, show=show, assembly_span=assembly_span,
                          characteristic_length=characteristic_length, xlim=xlim, ylim=ylim,
                          **a_appearance)
+    
+def make_model_construction_animation(mdl: str | model.Model, save_dir, duration_per_node=0.5, duration_per_element=0.5, duration_per_loadstep=0.5, inbetween_duration=0.0,
+                                      fps=50, rate_fun='none', save_as_gif=True, save_as_mp4=False, save_name="model_construction_animation", show=True,
+                                      assembly_span=None, characteristic_length=None, xlim: tuple[float, float] = None, ylim: tuple[float, float] = None,
+                                      graphics_settings=None, **assembly_appearance):
+    if isinstance(mdl, str):
+        mdl = io.read_model(mdl)
+    if not isinstance(mdl, model.Model):
+        raise ValueError("Incorrect model specification. The first argument should be the model file path, "
+                         "or an already loaded Model object")
+    _, _, _, a_appearance = _load_graphics_settings(graphics_settings)
+    a_appearance.update(assembly_appearance)
+    animation.animate_model_construction(mdl, save_dir, duration_per_node, duration_per_element, duration_per_loadstep, inbetween_duration,
+                                         fps, rate_fun, save_as_gif, save_as_mp4, show, save_name,
+                                         assembly_span, characteristic_length, xlim, ylim, **a_appearance)
 
 def make_equilibrium_state_drawing(result, save_dir,
                                    state_index=None,

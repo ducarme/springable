@@ -52,7 +52,10 @@ class Model:
         return self._loaded_nodes_step_list[:-1]
 
     def get_loaded_nodes(self) -> set[Node]:
-        return self._loaded_nodes_step_list[-1]
+        if len(self._loaded_nodes_step_list) > 0:
+            return self._loaded_nodes_step_list[-1]
+        else:
+            return set()
 
     def get_preloaded_nodes(self) -> set[Node]:
         preloaded_nodes = set()
@@ -64,7 +67,11 @@ class Model:
         return self._force_vector_step_list[:-1]
 
     def get_force_vector(self):
-        return self._force_vector_step_list[-1]
+        if len(self._force_vector_step_list) > 0:
+            return self._force_vector_step_list[-1]
+        else:
+            return None
+
 
     def get_force_vectors_step_list(self):
         return self._force_vector_step_list

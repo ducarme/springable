@@ -1,11 +1,12 @@
 from ..mechanics.static_solver import Result
-from ..mechanics import model
+from ..mechanics import model, assembly
 from ..mechanics.result_processing import extract_loading_path, extract_unloading_path, LoadingPathEmpty, DiscontinuityInTheSolutionPath
 from .drawing import ModelDrawing
 from . import visual_helpers, plot
 from . import figure_formatting as ff
 from .default_graphics_settings import AssemblyAppearanceOptions, AnimationOptions, PlotOptions
 from ..readwrite import fileio as io
+from ..utils import bezier_curve
 import os
 import numpy as np
 from scipy.interpolate import interp1d
@@ -52,6 +53,171 @@ def draw_model(mdl: model.Model, save_dir=None, save_name='model',
             plt.show()
         else:
             plt.close(fig=fig)
+
+def ease_inout_cubic(t: float):
+    return (0 < t < 0.5) * (4 * t**3) + (1 > t >= 0.5) * (1 - (-2 * t + 2)**3 / 2) + (t >= 1) * t + (t <= 0) * t
+
+def ease_inout_bezier(t: float):
+    return (0 < t < 0.5) * (16 * t**5) + (1 > t >= 0.5) * (1 - (-2 * t + 2)**5 / 2) + (t >= 1) * t + (t <= 0) * t
+
+
+def ease_inout_sine(t: float):
+    return (1 > t > 0) * (-(np.cos(np.pi * t) - 1) / 2) + (t >= 1) * t + (t <= 0) * t
+
+def animate_model_construction(mdl: model.Model, save_dir, duration_per_node, duration_per_element, duration_per_loadstep, inbetween_duration,
+                               fps, rate_fun='none', save_as_gif=True, save_as_mp4=False, show=True, save_name="model_construction_animation",
+                               assembly_span=None, characteristic_length=None, xlim=None, ylim=None, **assembly_appearance):
+    aa = AssemblyAppearanceOptions()
+    aa.update(**assembly_appearance)
+
+    if rate_fun == 'easeinout':
+        rate_fun = ease_inout_sine
+    elif rate_fun =='none':
+        rate_fun = lambda t: t
+    if not callable(rate_fun):
+        raise ValueError("The rate function must be callable.")
+
+    asb = mdl.get_assembly()
+    node_set = asb.get_nodes()
+    node_list = [asb.get_node_from_set(node_set, i) for i in range(len(asb.get_nodes()))]
+    element_list = asb.get_elements()
+    loadstep_list = mdl.get_loading()
+    nb_nodes = len(node_list)
+    nb_elements = len(element_list)
+    nb_loadsteps = len(loadstep_list)
+    nb_frames_inbetween = round(inbetween_duration * fps)
+    nb_frames_nodes = round(duration_per_node * fps * nb_nodes)
+    nb_frames_elements = round(duration_per_element * fps * nb_elements)
+    nb_frames_loadsteps = round(duration_per_loadstep * fps * nb_loadsteps)
+    nb_frames = nb_frames_inbetween * 4 + nb_frames_nodes + nb_frames_elements + nb_frames_loadsteps
+
+
+
+
+    if characteristic_length is None:
+        characteristic_length = mdl.get_assembly().compute_characteristic_length()
+    if assembly_span is None:
+        xmin, ymin, xmax, ymax = mdl.get_assembly().get_dimensional_bounds()
+        assembly_span = max(xmax - xmin, ymax - ymin)
+    canvas_span = 1.25 * assembly_span
+    midx, midy = (xmin + xmax) / 2, (ymin + ymax) / 2
+    xlim = (xlim if xlim is not None else (midx - canvas_span / 2, midx + canvas_span / 2))
+    ylim = (ylim if ylim is not None else (midy - canvas_span / 2, midy + canvas_span / 2))
+
+    with plt.style.context(aa.stylesheet):
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.set_aspect("equal")
+        ax.plot([0],[0] )
+
+        def update(frame_index: int):
+            nodes = set()
+            elements = []
+            loadsteps = []
+            current_index = 0
+
+            virtual_frame_index = round(rate_fun((frame_index - current_index) / (nb_frames_inbetween-1)) * (nb_frames_inbetween-1) + current_index)
+            for i in range(current_index, min(virtual_frame_index + 1, current_index + nb_frames_inbetween)):
+                pass
+            current_index += nb_frames_inbetween
+
+            virtual_frame_index = round(rate_fun((frame_index - current_index) / (nb_frames_nodes-1)) * (nb_frames_nodes-1) + current_index)
+            for i in range(current_index, min(virtual_frame_index + 1, nb_frames_nodes + current_index)):
+                if (i - current_index) % (nb_frames_nodes // nb_nodes) == 0:
+                    node_index = round((i - current_index) // (nb_frames_nodes / nb_nodes))
+                    nodes.add(node_list[node_index])
+            current_index += nb_frames_nodes
+
+            virtual_frame_index = round(rate_fun((frame_index - current_index) / (nb_frames_inbetween-1)) * (nb_frames_inbetween-1) + current_index)
+            for i in range(current_index, min(virtual_frame_index + 1, current_index + nb_frames_inbetween)):
+                pass
+            current_index += nb_frames_inbetween
+
+            virtual_frame_index = round(rate_fun((frame_index - current_index) / (nb_frames_elements-1)) * (nb_frames_elements-1) + current_index)
+            for i in range(current_index, min(virtual_frame_index + 1, nb_frames_elements + current_index)):
+                if (i - current_index) % (nb_frames_elements // nb_elements) == 0:
+                    el_index = round((i - current_index) // (nb_frames_elements / nb_elements))
+                    elements.append(element_list[el_index])
+            current_index += nb_frames_elements
+
+
+            virtual_frame_index = round(rate_fun((frame_index - current_index) / (nb_frames_inbetween-1)) * (nb_frames_inbetween-1) + current_index)
+            for i in range(current_index, min(virtual_frame_index + 1, current_index + nb_frames_inbetween)):
+                pass
+            current_index += nb_frames_inbetween
+
+            virtual_frame_index = round(rate_fun((frame_index - current_index) / (nb_frames_loadsteps-1)) * (nb_frames_loadsteps-1) + current_index)
+            for i in range(current_index, min(virtual_frame_index + 1, nb_frames_loadsteps + current_index)):
+                if (i - current_index) % (nb_frames_loadsteps // nb_loadsteps) == 0:
+                    ls_index = round((i - current_index) // (nb_frames_loadsteps / nb_loadsteps))
+                    loadsteps.append(loadstep_list[ls_index])
+            current_index += nb_frames_loadsteps
+
+            virtual_frame_index = round(rate_fun((frame_index - current_index) / (nb_frames_inbetween-1)) * (nb_frames_inbetween-1) + current_index)
+            for i in range(current_index, min(virtual_frame_index + 1, current_index + nb_frames_inbetween)):
+                pass
+            current_index += nb_frames_inbetween
+
+            ax.cla()
+            # print(len(nodes), len(elements), len(loadsteps))
+            asb_i = assembly.Assembly(nodes, elements, auto_node_numbering=False)
+            mdl_i = model.Model(asb_i, loadsteps)
+            ModelDrawing(ax, mdl_i, aa, characteristic_length, assembly_span)
+            ax.set_xlim(*xlim)
+            ax.set_ylim(*ylim)
+            ff.adjust_spines([ax], 0, ["bottom", "top", "left", "right"] if aa.show_axes else [])
+            ff.adjust_figure_layout(fig, aa.drawing_fig_width, aa.drawing_fig_height, pad=0.1, tight_layout=False)
+
+        frame_indices = list(range(nb_frames_inbetween * 4 + nb_frames_nodes + nb_frames_elements + nb_frames_loadsteps))
+        filepath = None
+        format_type = None
+        if save_as_gif or save_as_mp4:
+            ani = FuncAnimation(fig, update, frames=frame_indices)
+            if save_as_gif:
+                format_type = "image"
+                print("Generating GIF animation...")
+                filepath = os.path.join(save_dir, f"{save_name}.gif")
+                ani.save(
+                    filepath,
+                    fps=fps,
+                    dpi=aa.drawing_dpi,
+                    progress_callback=visual_helpers.print_progress,
+                )
+                print("\nGIF animation saved successfully")
+
+            if save_as_mp4:
+                format_type = "video"
+                print("Generating MP4 animation...")
+                filepath = os.path.join(save_dir, f"{save_name}.mp4")
+                ani.save(
+                    filepath,
+                    codec="h264",
+                    fps=fps,
+                    dpi=aa.drawing_dpi,
+                    progress_callback=visual_helpers.print_progress,
+                )
+                print("\nMP4 animation saved successfully")
+            try:
+                plt.close(fig=fig)
+            except AttributeError:
+                pass
+                # Some user reported an attribute error after saving animations, when using Visual Studio Code
+                # It is hard to reproduce and clarify the cause, so this is a quick and dirty solution.
+            if show and filepath is not None:
+                if io.is_notebook():
+                    io.play_media_in_notebook_if_possible(
+                        filepath, format_type=format_type
+                    )
+                else:
+                    try:
+                        io.open_file_with_default_os_app(filepath)
+                    except OSError:
+                        print(
+                            "Cannot open animation automatically. Open the result folder instead to check out the "
+                            "animation."
+                        )
+
+        
 
 
 def draw_equilibrium_state(res: Result,
@@ -159,7 +325,7 @@ def draw_equilibrium_state(res: Result,
 
 
 def animate(_result: Result, save_dir, save_name: str = None, show=True,
-            extra_init=None, extra_update=None,
+            extra_init=None, extra_update=None, characteristic_length=None, assembly_span=None,
             plot_options: dict = None, assembly_appearance: dict = None, **animation_options):
     ao = AnimationOptions()
     ao.update(**animation_options)
@@ -195,14 +361,17 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             fig, ax1, ax2, extra = extra_init(fig, ax1, ax2)
 
         ax1.axis('off')
-        (bounds, characteristic_length,
+        (bounds, characteristic_length_,
          element_color_handler,
          element_opacity_handler,
          force_color_handler,
          all_force_amounts,
          all_preforce_amounts) = visual_helpers.scan_result_and_compute_quantities_for_animations(_result, aa)
         xmin, ymin, xmax, ymax = bounds
-        assembly_span = max(xmax - xmin, ymax - ymin)
+        if assembly_span is None:
+            assembly_span = max(xmax - xmin, ymax - ymin)
+        if characteristic_length_ is None:
+            characteristic_length = characteristic_length_
         canvas_span = 1.25 * assembly_span
         midx, midy = (xmin + xmax) / 2, (ymin + ymax) / 2
         ax1.set_xlim(midx - canvas_span / 2, midx + canvas_span / 2)
