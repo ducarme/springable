@@ -1,0 +1,103 @@
+[assembly_appearance]
+show_state_of_hysterons = false
+drawing_fig_width = 3.0
+drawing_fig_height = 3.0
+show_axes = false
+stylesheet = "MODELS_FROM_SI/movies.mplstyle"
+spring_style = "elegant"
+spring_aspect = 0.0
+coloring_mode = "generalized_force"
+color_forces=false
+colormap = 'coolwarm'
+angular_spring_style = "basic"
+spring_default_color = '#7c66ac'
+angular_spring_default_color = '#7c66ac'
+area_spring_default_color = '#7c66ac'
+path_spring_default_color = '#7c66ac'
+path_spring_dot_color = '#7c66ac'
+distance_spring_default_color = '#7c66ac'
+paint_distance_spring_line_with_default_color = true
+
+node_style = 'elegant'
+node_color = "#e8e8e8"
+node_edgecolor = "#000000"
+node_edgewidth = 1.5
+node_size = 5
+
+node_nb_color = '#59595c'
+node_nb_fontsize = 7
+node_nb_shift_x = 0
+node_nb_shift_y = 6
+show_node_numbers = false
+
+force_vector_connection = 'tail'
+spring_width_scaling = 1
+spring_linewidth = 1
+spring_nb_coils = 7
+path_spring_linewidth = 2
+angular_spring_linewidth = 1
+angular_spring_radius_scaling = 1
+force_vector_style ='elegant'
+force_default_color = '#000000'
+force_vector_scaling = 1.5
+transparent=true
+
+[animation_options]
+stylesheet = "MODELS_FROM_SI/movies.mplstyle"
+fps = 60
+nb_frames = 360
+dpi = 300
+save_as_mp4 = true
+save_as_gif = false
+drive_mode = "displacement"
+cycling = true
+side_plot_mode = 'force_displacement_curve'
+animated_equilibrium_point_color = '#FA8174'
+animated_equilibrium_point_size = 1.75
+
+[plot_options]
+figure_width = 1.5
+figure_height = 1.5
+stylesheet = 'settings/article.mplstyle'
+
+plot_style='line'
+color_mode='stability'
+default_xlabel = "displacement $U$"
+default_ylabel = "force $F$"
+snapping_arrow_color='#FA8174'
+snapping_arrow_opacity = 1.0
+snapping_arrow_width = 1.0
+show_snapping_arrows = true
+
+driven_path_only = false
+show_driven_path = false
+show_driven_path_legend=false
+driven_path_color='#FA8174'
+size_for_driven_path = 0.6
+
+label_for_stable_points = 'stable'
+label_for_stabilizable_points = ''
+label_for_unstable_points = 'unstable'
+
+color_for_stable_points = "#000000"
+color_for_stabilizable_points = "#999999"
+color_for_unstable_points = "#999999"
+
+style_for_stable_branches = '-'
+style_for_stabilizable_branches = '-'
+style_for_unstable_branches = ':'
+default_color = '#000000'
+default_markersize = 3
+default_opacity = 1.0
+default_linewidth = 2
+spine_offset = 10
+show_top_spine = false
+show_bottom_spine = true
+show_left_spine = true
+show_right_spine = false
+hide_ticklabels = true
+show_stability_legend = false
+dpi=600
+
+
+

@@ -1,0 +1,23 @@
+axes.titlesize: 16
+axes.labelsize: 16
+xtick.labelsize: 16
+ytick.labelsize: 16
+legend.fontsize: 14
+axes.linewidth: 1.0
+lines.solid_capstyle:  round
+xtick.major.size: 2
+xtick.minor.size: 2
+ytick.major.size: 2
+ytick.minor.size: 2
+xtick.major.width: .75
+xtick.minor.width: .75
+ytick.major.width: .75
+ytick.minor.width: .75
+xtick.direction: in
+ytick.direction: in
+font.family : sans-serif
+font.sans-serif: Open Sans
+pdf.fonttype: 42
+savefig.transparent: True
+savefig.dpi: 400
+legend.frameon: False
