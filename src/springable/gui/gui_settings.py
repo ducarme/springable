@@ -29,10 +29,13 @@ NB_SAMPLES = 400
 XLIM = (-1., 5.)
 YLIM = (-2., 2.5)
 
+MAX_NB_CP = 18 # max number of control points,
+# for behaviors controllable by control points
+
 # EXPERIMENTAL DATA (csv files, headers will automatically be ignored)
-DISPLACEMENT_COLUMN_INDEX = 1
-FORCE_COLUMN_INDEX = 2
-DELIMITER = ';'
+DISPLACEMENT_COLUMN_INDEX = 0
+FORCE_COLUMN_INDEX = 1
+DELIMITER = ','
 
 # RESPONSE CURVE
 FMAX = 0.5

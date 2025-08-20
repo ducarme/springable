@@ -1,5 +1,8 @@
 [assembly_appearance]
-show_state_of_hysterons = false
+show_state_of_hysterons = true
+hysteron_state_label_size = 12
+
+
 drawing_fig_width = 3.0
 drawing_fig_height = 3.0
 show_axes = false
@@ -25,9 +28,9 @@ node_edgewidth = 1.5
 node_size = 5
 
 node_nb_color = '#59595c'
-node_nb_fontsize = 7
+node_nb_fontsize = 14
 node_nb_shift_x = 0
-node_nb_shift_y = 6
+node_nb_shift_y = 10
 show_node_numbers = false
 
 force_vector_connection = 'tail'
@@ -66,7 +69,7 @@ default_xlabel = "displacement $U$"
 default_ylabel = "force $F$"
 snapping_arrow_color='#FA8174'
 snapping_arrow_opacity = 1.0
-snapping_arrow_width = 1.0
+snapping_arrow_width = 2.0
 show_snapping_arrows = true
 
 driven_path_only = false

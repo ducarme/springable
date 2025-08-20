@@ -1,7 +1,7 @@
-axes.titlesize: 16
-axes.labelsize: 16
-xtick.labelsize: 16
-ytick.labelsize: 16
+axes.titlesize: 14
+axes.labelsize: 14
+xtick.labelsize: 14
+ytick.labelsize: 14
 legend.fontsize: 14
 axes.linewidth: 1.0
 lines.solid_capstyle:  round

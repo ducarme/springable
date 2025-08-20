@@ -4,7 +4,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Polygon
 from .gui_utils import SimpleToolbar, get_current_recursion_depth, get_recursion_limit
 from .gui_event_handler import GUIEventHandler
-from .gui_settings import XLIM, YLIM
+from .gui_settings import XLIM, YLIM, MAX_NB_CP
 import tkinter as tk
 import tkinter.ttk as ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -372,8 +372,8 @@ class DrawingSpace:
         if self._active_curve_interactor is not None:
             name = self._active_curve_interactor.name
             new_cp_x, new_cp_y = self.handler.get_elevated_control_points(name)
-            if new_cp_x.shape[0] > 12:
-                self.handler.show_popup('Max 12 control points!', 750)
+            if new_cp_x.shape[0] > MAX_NB_CP:
+                self.handler.show_popup(f'Max {MAX_NB_CP} control points!', 750)
                 return
 
             self.curve_control_points[name] = new_cp_x, new_cp_y

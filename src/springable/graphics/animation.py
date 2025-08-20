@@ -64,7 +64,7 @@ def ease_inout_bezier(t: float):
 def ease_inout_sine(t: float):
     return (1 > t > 0) * (-(np.cos(np.pi * t) - 1) / 2) + (t >= 1) * t + (t <= 0) * t
 
-def animate_model_construction(mdl: model.Model, save_dir, duration_per_node, duration_per_element, duration_per_loadstep, inbetween_duration,
+def animate_model_construction(mdl: model.Model, save_dir, duration_per_node, duration_per_element, duration_per_loadstep, inbetween_duration, end_duration,
                                fps, rate_fun='none', save_as_gif=True, save_as_mp4=False, show=True, save_name="model_construction_animation",
                                assembly_span=None, characteristic_length=None, xlim=None, ylim=None, **assembly_appearance):
     aa = AssemblyAppearanceOptions()
@@ -86,11 +86,10 @@ def animate_model_construction(mdl: model.Model, save_dir, duration_per_node, du
     nb_elements = len(element_list)
     nb_loadsteps = len(loadstep_list)
     nb_frames_inbetween = round(inbetween_duration * fps)
+    nb_frames_end = round(end_duration * fps)
     nb_frames_nodes = round(duration_per_node * fps * nb_nodes)
     nb_frames_elements = round(duration_per_element * fps * nb_elements)
     nb_frames_loadsteps = round(duration_per_loadstep * fps * nb_loadsteps)
-    nb_frames = nb_frames_inbetween * 4 + nb_frames_nodes + nb_frames_elements + nb_frames_loadsteps
-
 
 
 
@@ -153,10 +152,10 @@ def animate_model_construction(mdl: model.Model, save_dir, duration_per_node, du
                     loadsteps.append(loadstep_list[ls_index])
             current_index += nb_frames_loadsteps
 
-            virtual_frame_index = round(rate_fun((frame_index - current_index) / (nb_frames_inbetween-1)) * (nb_frames_inbetween-1) + current_index)
-            for i in range(current_index, min(virtual_frame_index + 1, current_index + nb_frames_inbetween)):
+            virtual_frame_index = round(rate_fun((frame_index - current_index) / (nb_frames_end-1)) * (nb_frames_end-1) + current_index)
+            for i in range(current_index, min(virtual_frame_index + 1, current_index + nb_frames_end)):
                 pass
-            current_index += nb_frames_inbetween
+            current_index += nb_frames_end
 
             ax.cla()
             # print(len(nodes), len(elements), len(loadsteps))
@@ -168,7 +167,7 @@ def animate_model_construction(mdl: model.Model, save_dir, duration_per_node, du
             ff.adjust_spines([ax], 0, ["bottom", "top", "left", "right"] if aa.show_axes else [])
             ff.adjust_figure_layout(fig, aa.drawing_fig_width, aa.drawing_fig_height, pad=0.1, tight_layout=False)
 
-        frame_indices = list(range(nb_frames_inbetween * 4 + nb_frames_nodes + nb_frames_elements + nb_frames_loadsteps))
+        frame_indices = list(range(nb_frames_inbetween * 3 + nb_frames_nodes + nb_frames_elements + nb_frames_loadsteps + nb_frames_end))
         filepath = None
         format_type = None
         if save_as_gif or save_as_mp4:
@@ -297,14 +296,10 @@ def draw_equilibrium_state(res: Result,
         xmin, ymin, xmax, ymax = bounds
         canvas_span = 1.25 * assembly_span
         midx, midy = (xmin + xmax) / 2, (ymin + ymax) / 2
-        if xlim is None:
-            ax.set_xlim(midx - canvas_span / 2, midx + canvas_span / 2)
-        else:
-            ax.set_xlim(*xlim)
-        if ylim is None:
-            ax.set_ylim(midy - canvas_span / 2, midy + canvas_span / 2)
-        else:
-            ax.set_ylim(*ylim)
+        xlim = (xlim if xlim is not None else (midx - canvas_span / 2, midx + canvas_span / 2))
+        ylim = (ylim if ylim is not None else (midy - canvas_span / 2, midy + canvas_span / 2))
+        ax.set_xlim(*xlim)
+        ax.set_ylim(*ylim)
 
 
         ff.adjust_spines([ax], 0, ['bottom', 'top', 'left', 'right'] if aa.show_axes else [])
@@ -326,6 +321,7 @@ def draw_equilibrium_state(res: Result,
 
 def animate(_result: Result, save_dir, save_name: str = None, show=True,
             extra_init=None, extra_update=None, characteristic_length=None, assembly_span=None,
+            xlim: tuple[float, float] = None, ylim: tuple[float, float] = None,
             plot_options: dict = None, assembly_appearance: dict = None, **animation_options):
     ao = AnimationOptions()
     ao.update(**animation_options)
@@ -360,7 +356,8 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
         if extra_init is not None:
             fig, ax1, ax2, extra = extra_init(fig, ax1, ax2)
 
-        ax1.axis('off')
+        if not aa.show_axes:
+            ax1.axis('off')
         (bounds, characteristic_length_,
          element_color_handler,
          element_opacity_handler,
@@ -374,8 +371,10 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             characteristic_length = characteristic_length_
         canvas_span = 1.25 * assembly_span
         midx, midy = (xmin + xmax) / 2, (ymin + ymax) / 2
-        ax1.set_xlim(midx - canvas_span / 2, midx + canvas_span / 2)
-        ax1.set_ylim(midy - canvas_span / 2, midy + canvas_span / 2)
+        xlim = (xlim if xlim is not None else (midx - canvas_span / 2, midx + canvas_span / 2))
+        ylim = (ylim if ylim is not None else (midy - canvas_span / 2, midy + canvas_span / 2))
+        ax1.set_xlim(*xlim)
+        ax1.set_ylim(*ylim)
         ax1.set_aspect('equal', 'box')
 
         _model = _result.get_model()

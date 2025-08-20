@@ -1,0 +1,33 @@
+
+PARAMETERS
+diameter, 10.0
+alpha0, 0.675
+stiffness0, 0.5
+stiffness1, 0.025
+NODES
+0,diameter/2 * COS(alpha0 + (PI-2*alpha0) / 4 * 0),diameter/2 * SIN(alpha0 + (PI-2*alpha0) / 4 * 0),1,1
+1,diameter/2 * COS(alpha0 + (PI-2*alpha0) / 4 * 1),diameter/2 * SIN(alpha0 + (PI-2*alpha0) / 4 * 1),0,0
+2,diameter/2 * COS(alpha0 + (PI-2*alpha0) / 4 * 2),diameter/2 * SIN(alpha0 + (PI-2*alpha0) / 4 * 2),0,0
+3,diameter/2 * COS(alpha0 + (PI-2*alpha0) / 4 * 3),diameter/2 * SIN(alpha0 + (PI-2*alpha0) / 4 * 3),0,0
+4,diameter/2 * COS(alpha0 + (PI-2*alpha0) / 4 * 4),diameter/2 * SIN(alpha0 + (PI-2*alpha0) / 4 * 4),1,1
+5,X4,Y4-diameter/7,1,0
+6,(X0+X4)/2,Y4-diameter/7,1,0
+7,X0,Y4-diameter/7,1,0
+SPRINGS
+0-1,k=4.0*stiffness0
+1-2,k=4.0*stiffness0
+2-3,k=4.0*stiffness0
+3-4,k=4.0*stiffness0
+ANGULAR SPRINGS
+7-0-1,k=2.94*stiffness1
+0-1-2,k=2.96*stiffness1
+1-2-3,k=3.01*stiffness1
+2-3-4,k=3.0*stiffness1
+3-4-5,k=3.02*stiffness1
+6-5-4,k=40
+7-6-5,k=40
+0-7-6,k=40
+AREA SPRINGS
+0-1-2-3-4-5-6-7, ISOTHERMAL(n=0.175; R=1.000E+00; T0=4.000E+00)
+LOADING
+6,Y,-0.25, -diameter*0.4
