@@ -33,7 +33,7 @@ def draw_model(mdl: model.Model, save_dir=None, save_name='model',
             assembly_span = max(xmax - xmin, ymax - ymin)
 
 
-        ModelDrawing(ax, mdl, aa, assembly_span=assembly_span, characteristic_length=characteristic_length)
+        ModelDrawing(ax, mdl, aa, characteristic_length=characteristic_length)
         canvas_span = 1.25 * assembly_span
         midx, midy = (xmin + xmax) / 2, (ymin + ymax) / 2
         if xlim is None:
@@ -161,7 +161,7 @@ def animate_model_construction(mdl: model.Model, save_dir, duration_per_node, du
             # print(len(nodes), len(elements), len(loadsteps))
             asb_i = assembly.Assembly(nodes, elements, auto_node_numbering=False)
             mdl_i = model.Model(asb_i, loadsteps)
-            ModelDrawing(ax, mdl_i, aa, characteristic_length, assembly_span)
+            ModelDrawing(ax, mdl_i, aa, characteristic_length)
             ax.set_xlim(*xlim)
             ax.set_ylim(*ylim)
             ff.adjust_spines([ax], 0, ["bottom", "top", "left", "right"] if aa.show_axes else [])
@@ -286,7 +286,7 @@ def draw_equilibrium_state(res: Result,
         characteristic_length = characteristic_length if characteristic_length is not None else characteristic_length_
         xmin, ymin, xmax, ymax = bounds
         assembly_span = assembly_span if assembly_span is not None else max(xmax - xmin, ymax - ymin)
-        _model_drawing = ModelDrawing(ax, mdl, aa, characteristic_length, assembly_span,
+        _model_drawing = ModelDrawing(ax, mdl, aa, characteristic_length,
                                       element_color_handler=element_color_handler,
                                       element_opacity_handler=element_opacity_handler,
                                       force_color_handler=force_color_handler, force_amounts=force_amounts,
@@ -318,7 +318,6 @@ def draw_equilibrium_state(res: Result,
 
 
 
-
 def animate(_result: Result, save_dir, save_name: str = None, show=True,
             extra_init=None, extra_update=None, characteristic_length=None, assembly_span=None,
             xlim: tuple[float, float] = None, ylim: tuple[float, float] = None,
@@ -343,6 +342,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             grid = plt.GridSpec(1, 2, wspace=0.20, hspace=0.01, bottom=0.15, left=0.01)
             ax1 = fig.add_subplot(grid[0, 0])
             ax2 = fig.add_subplot(grid[0, 1])
+            ax2.set_box_aspect(po.axis_box_aspect)
             spines = []
             spines += ['left'] if po.show_left_spine else []
             spines += ['right'] if po.show_right_spine else []
@@ -395,7 +395,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             preforce_amounts = {loaded_node: amounts[0] for loaded_node, amounts in all_preforce_amounts.items()}
         else:
             preforce_amounts = None
-        _model_drawing = ModelDrawing(ax1, _model, aa, characteristic_length, assembly_span,
+        _model_drawing = ModelDrawing(ax1, _model, aa, characteristic_length,
                                       element_color_handler=element_color_handler,
                                       element_opacity_handler=element_opacity_handler,
                                       force_color_handler=force_color_handler, force_amounts=force_amounts,

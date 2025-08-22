@@ -41,6 +41,13 @@ show_driven_path_legend = true
 
 figure_width = 4
 figure_height = 4
+axis_box_aspect = 0.75  # aspect ratio of the box defined by the axes' spines
+enforce_xlim = false
+enforce_ylim = false
+xmin = 0.0
+ymin = 0.0
+xmax = 1.0
+ymax = 1.0
 transparent = false
 dpi = 300
 
@@ -111,7 +118,6 @@ show_left_spine = true
 show_right_spine = false
 hide_ticklabels = false
 
-
 [animation_options]
 fps = 25
 nb_frames = 100
@@ -137,6 +143,12 @@ animation_height = 4.5
 [assembly_appearance]
 drawing_fig_width = 3
 drawing_fig_height = 3
+enforce_xlim = false
+enforce_ylim = false
+xmin = 0.0
+ymin = 0.0
+xmax = 1.0
+ymax = 1.0
 drawing_dpi = 300
 show_axes = false
 stylesheet = "default"  # only used when drawing the model, not used for the animation
@@ -194,8 +206,8 @@ distance_spring_line_linewidth = 1.0
 distance_spring_line_default_color = '#CECECE'
 paint_distance_spring_line_with_default_color = false
 # if true, the line from which the distance is measured will be depicted with its default color, if false its color will match the one from the distance line
-node_style = "simple"  # "minimalist", "simple", "elegant"
-node_size = 3
+node_style = "elegant"  # "minimalist", "simple", "elegant"
+node_size = 5.
 node_color = "#101010"
 node_edgecolor = "#101010"
 node_edgewidth = 1.0
@@ -210,3 +222,4 @@ preload_force_default_color = '#cecece'
 force_default_color = '#000000'
 force_vector_length_scaling = 1.0
 force_vector_connection = "tail"
+force_vector_linewidth = 1.0  # only has an effect if 'force_vector_style' is 'basic'

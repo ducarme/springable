@@ -1,0 +1,1 @@
+PIECEWISE(k_i=[1e-6; 1.0];u_i=[1e-3]; us=0.99e-3;mode=1)

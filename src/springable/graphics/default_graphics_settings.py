@@ -45,7 +45,7 @@ class PlotOptions(Updatable):
     default_xlabel: str = 'displacement'
     default_ylabel: str = 'force'
     default_color: str = '#a0a0a0'
-    default_opacity: float = 1.0,
+    default_opacity: float = 1.0
     default_marker: str = 'o'
     default_markersize: float = 2.5
     default_linewidth: float = 2.0
@@ -74,6 +74,13 @@ class PlotOptions(Updatable):
     show_left_spine: bool = True
     show_right_spine: bool = False
     hide_ticklabels: bool = False
+    axis_box_aspect: float = 0.75
+    enforce_xlim: bool = False
+    enforce_ylim: bool = False
+    xmin: float = 0.0
+    ymin: float = 0.0
+    xmax: float = 1.0
+    ymax: float = 1.0
 
 
 @dataclass
@@ -146,9 +153,9 @@ class AssemblyAppearanceOptions(Updatable):
     distance_spring_line_linewidth: float = 1.0
     distance_spring_line_default_color: str = '#CECECE'
     paint_distance_spring_line_with_default_color: bool = False
-    node_style: str = 'simple'
-    node_size: float = 3.
-    node_color: str = '#101010'
+    node_style: str = 'basic'
+    node_size: float = 5.
+    node_color: str = '#CECECE'
     node_edgecolor: str = '#101010'
     node_edgewidth: float = 1.0
     show_node_numbers: bool = False
@@ -162,3 +169,4 @@ class AssemblyAppearanceOptions(Updatable):
     force_default_color: str = '#000000'
     force_vector_scaling: float = 1.0
     force_vector_connection: str = 'tail'
+    force_vector_linewidth: float = 1.0

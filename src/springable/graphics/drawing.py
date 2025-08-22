@@ -699,12 +699,11 @@ class AssemblyDrawing(Drawing):
 
 
 class ForceDrawing(Drawing):
-    def __init__(self, ax: plt.Axes, _node: Node, force_info: dict, vector_size, assembly_appearance,
+    def __init__(self, ax: plt.Axes, _node: Node, force_info: dict, assembly_appearance,
                  color_handler=None, is_preload=False):
         super().__init__(ax, assembly_appearance)
         self._node = _node
         self._force_info = force_info
-        self._vector_size = vector_size * self._aa.force_vector_scaling
         self._color_handler = color_handler
         self._is_preload = is_preload
         self._alpha = self._aa.preload_force_opacity if self._is_preload else 1.0
@@ -727,20 +726,24 @@ class ForceDrawing(Drawing):
                                               color=to_rgba(color, self._alpha), clip_on=False, markeredgecolor='none',
                                               zorder=4.5 if not self._is_preload else 4.4)[0]
             else:
-                if self._aa.force_vector_connection == 'head':
-                    destination = np.array((self._node.get_x(), self._node.get_y()))
-                    origin = destination - self._vector_size * direction
-                else:
-                    origin = np.array((self._node.get_x(), self._node.get_y()))
-                    destination = origin + self._vector_size * direction
+                vector_dx, vector_dy = self._aa.node_size * self._aa.force_vector_scaling * 4 * direction
+                origin = (self._node.get_x(), self._node.get_y())
+                destination = (-vector_dx, -vector_dy) if self._aa.force_vector_connection == 'head' else (vector_dx, vector_dy)
+                    
                 color = (self._color_handler.determine_property_value(self._force_info['amount'])
                          if self._color_handler is not None else self._aa.force_default_color)
+
                 force_graphic = self._ax.annotate('',
-                                                  xytext=(origin[0], origin[1]),
-                                                  xy=(destination[0], destination[1]),
+                                                  xy=origin,
+                                                  xytext=destination,
+                                                  xycoords='data',
+                                                  textcoords='offset points',
                                                   verticalalignment="center",
-                                                  arrowprops=dict(width=1.5, headwidth=6, headlength=7, shrink=0.15,
-                                                                  color=to_rgba(color, alpha=self._alpha), lw=0.00, ec='none'),
+                                                  arrowprops=dict(arrowstyle="->"
+                                                                  if self._aa.force_vector_connection == 'head'
+                                                                  else "<-",
+                                                                  lw=self._aa.force_vector_linewidth,
+                                                                  color=to_rgba(color, alpha=self._alpha)),
                                                   annotation_clip=False,
                                                   zorder=4.5 if not self._is_preload else 4.4)
         else:
@@ -757,15 +760,9 @@ class ForceDrawing(Drawing):
                     color = self._color_handler.determine_property_value(self._force_info['amount'])
                     self._force_graphic.set_color(to_rgba(color, alpha=self._alpha))
             else:
-                direction = self._force_info['direction']
-                if self._aa.force_vector_connection == 'head':
-                    destination = np.array((self._node.get_x(), self._node.get_y()))
-                    origin = destination - self._vector_size * direction
-                else:
-                    origin = np.array((self._node.get_x(), self._node.get_y()))
-                    destination = origin + self._vector_size * direction
-                self._force_graphic.set_position((origin[0], origin[1]))
-                self._force_graphic.xy = (destination[0], destination[1])
+                origin = (self._node.get_x(), self._node.get_y())
+                self._force_graphic.xy = (origin[0], origin[1])
+                # self._force_graphic.xy = (destination[0], destination[1])
                 if self._color_handler is not None:
                     color = self._color_handler.determine_property_value(self._force_info['amount'])
                     self._force_graphic.arrow_patch.set_color(to_rgba(color, alpha=self._alpha))
@@ -775,7 +772,7 @@ class ForceDrawing(Drawing):
 
 class ModelDrawing(Drawing):
     def __init__(self, ax: plt.Axes, _model: Model, assembly_appearance: AssemblyAppearanceOptions,
-                 characteristic_length=None, assembly_span=None,
+                 characteristic_length=None,
                  element_color_handler=None, element_opacity_handler=None,
                  force_color_handler=None, force_amounts: dict = None,
                  force_vector_after_preloading=None, preforce_amounts: dict = None
@@ -784,9 +781,6 @@ class ModelDrawing(Drawing):
 
         if characteristic_length is None:
             characteristic_length = _model.get_assembly().compute_characteristic_length()
-        if assembly_span is None:
-            xmin, ymin, xmax, ymax = _model.get_assembly().get_dimensional_bounds()
-            assembly_span = max(xmax - xmin, ymax - ymin)
 
         self._force_amounts = (force_amounts if force_amounts is not None
                                else {n: None for n in _model.get_loaded_nodes()})
@@ -803,7 +797,6 @@ class ModelDrawing(Drawing):
         self._force_color_handler = force_color_handler
         self._node_to_dof_indices = {}
         self._characteristic_length = characteristic_length
-        self._assembly_span = assembly_span
         self._loaded_nodes = _model.get_loaded_nodes()
         self._preloaded_nodes = _model.get_preloaded_nodes()
         node_nb_to_dof_indices = self._assembly.get_nodes_dof_indices()
@@ -860,11 +853,11 @@ class ModelDrawing(Drawing):
         if self._aa.show_forces:
             for _node in self._loaded_nodes:
                 force_drawings.add(ForceDrawing(self._ax, _node, self._all_forces_info[_node],
-                                                0.1 * self._assembly_span, self._aa, self._force_color_handler,
+                                                self._aa, self._force_color_handler,
                                                 is_preload=False))
             for _node in self._preloaded_nodes:
                 force_drawings.add(ForceDrawing(self._ax, _node, self._all_preforces_info[_node],
-                                                0.1 * self._assembly_span, self._aa, self._force_color_handler,
+                                                self._aa, self._force_color_handler,
                                                 is_preload=True))
 
         return assembly_drawing, force_drawings

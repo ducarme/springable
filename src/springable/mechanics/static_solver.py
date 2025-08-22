@@ -475,7 +475,7 @@ class StaticSolver:
                     if norm_step_force_vector < 1e-9:
                         # no force has been applied on the unconstrained degrees of freedom
                         has_increment_converged = True
-                    elif np.linalg.norm(self._get_reduced_vector(r)) < convergence_value:
+                    elif np.linalg.norm(self._get_reduced_vector(r)) / norm_step_force_vector < convergence_value:
                         has_increment_converged = True
                     # print(f'\ni: {i}')
                     # print(f'delta_lambda_inc: {delta_lambda_inc}')
@@ -533,7 +533,7 @@ class StaticSolver:
                             r = f_int - f_ext
                             # Convergence check and preparation for next increment
                             if (norm_step_force_vector < 1e-9 or
-                                    np.linalg.norm(self._get_reduced_vector(r)) < convergence_value):
+                                    np.linalg.norm(self._get_reduced_vector(r)) / norm_step_force_vector < convergence_value):
                                 has_increment_converged = True
                                 break
 

@@ -1,0 +1,13 @@
+NODES
+0, 0.0, 0.0, 1, 1
+1, 1.0, 0.0, 0, 0
+2, 2.0, 0.0, 1, 1
+3, -2.0, 0.0, 0, 1
+PATH FLEXELS
+3-0-1-2, LINEAR(k=1000.0)
+ANGULAR FLEXELS
+2-1-0, FROMFILE('MODELS_FROM_SI'; 'FIG5B1'; 'tape_behavior.csv'), PI
+LOADING
+1, Y, -1e-3
+then
+3, X, +50.0, +0.75

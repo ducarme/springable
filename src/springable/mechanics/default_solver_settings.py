@@ -14,5 +14,5 @@ class SolverSettings(Updatable):
     critical_point_detection_verbose: bool = False
     i_max: float = 5e3
     j_max: float = 15
-    convergence_value: float = 1e-6
+    convergence_value: float = 1e-7
     detect_mechanism: bool = True

@@ -304,6 +304,7 @@ def parametric_curve(processing_fun: callable,
 
     with plt.style.context(po.stylesheet):
         fig, ax = plt.subplots(figsize=(po.figure_width, po.figure_height))
+        ax.set_box_aspect(po.axis_box_aspect)
         i = 0
         for res in results:
             try:
@@ -324,8 +325,12 @@ def parametric_curve(processing_fun: callable,
         ax.set_ylabel(ylabel if ylabel is not None else po.default_ylabel)
         if xlim is not None:
             ax.set_xlim(xlim)
+        elif po.enforce_xlim:
+            ax.set_xlim((po.xmin, po.xmax))
         if ylim is not None:
             ax.set_ylim(ylim)
+        elif po.enforce_ylim:
+            ax.set_ylim((po.ymin, po.ymax))
 
         spines = []
         spines += ['left'] if po.show_left_spine else []
@@ -379,6 +384,7 @@ def curve(processing_fun: callable, result: Result,
 
     with plt.style.context(po.stylesheet):
         fig, ax = plt.subplots(figsize=(po.figure_width, po.figure_height))
+        ax.set_box_aspect(po.axis_box_aspect)
         curve_in_ax(processing_fun, result, ax, po, color=color, label=label)
 
         if (label is not None
@@ -391,8 +397,12 @@ def curve(processing_fun: callable, result: Result,
         ax.set_ylabel(ylabel if ylabel is not None else po.default_ylabel)
         if xlim is not None:
             ax.set_xlim(xlim)
+        elif po.enforce_xlim:
+            ax.set_xlim((po.xmin, po.xmax))
         if ylim is not None:
             ax.set_ylim(ylim)
+        elif po.enforce_ylim:
+            ax.set_ylim((po.ymin, po.ymax))
         spines = []
         spines += ['left'] if po.show_left_spine else []
         spines += ['right'] if po.show_right_spine else []

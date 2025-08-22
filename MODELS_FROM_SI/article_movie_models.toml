@@ -17,7 +17,7 @@ spring_default_color = '#7c66ac'
 angular_spring_default_color = '#7c66ac'
 area_spring_default_color = '#7c66ac'
 path_spring_default_color = '#7c66ac'
-path_spring_dot_color = '#7c66ac'
+path_spring_dot_color = '#e0e0e0'
 distance_spring_default_color = '#7c66ac'
 paint_distance_spring_line_with_default_color = true
 
@@ -38,6 +38,7 @@ spring_width_scaling = 1
 spring_linewidth = 1
 spring_nb_coils = 7
 path_spring_linewidth = 2
+
 angular_spring_linewidth = 1
 angular_spring_radius_scaling = 1
 force_vector_style ='elegant'

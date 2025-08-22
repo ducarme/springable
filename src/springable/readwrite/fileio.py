@@ -156,6 +156,8 @@ def read_graphics_settings_file(file_path):
 
 def read_experimental_force_displacement_data(filepath,
                                               displacement_column_index=0, force_column_index=1, delimiter=','):
+    """ read a force displacement data from a csv file. Force and dispalcement values should be in separate columns.
+    Skips header automatically. """
     exp_displacements = []
     exp_forces = []
     with open(filepath, newline='') as file_object:
@@ -165,8 +167,8 @@ def read_experimental_force_displacement_data(filepath,
             if not reading_data:
                 if row:
                     try:
-                        u = float(row[displacement_column_index].replace(',', '.'))
-                        f = float(row[force_column_index].replace(',', '.'))
+                        _ = float(row[displacement_column_index].replace(',', '.'))
+                        _ = float(row[force_column_index].replace(',', '.'))
                     except ValueError:
                         continue
                     else:

@@ -4,7 +4,7 @@ final_stiffness, 0.2
 transition_displacement, 1.0
 NODES
 0, 0.0, 0.0, 1, 1
-1, 1.0, 0.0, 0, 1
+1, 5.0, 0.0, 0, 1
 SPRINGS
 0-1, PIECEWISE(k_i=[initial_stiffness;final_stiffness];u_i=[transition_displacement];us=0.2)
 LOADING
