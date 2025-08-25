@@ -222,7 +222,7 @@ def make_custom_plot(processing_fun, result, save_dir, show=True,
 
 
 def make_model_drawing(mdl: str | model.Model, save_dir,
-                 save_name='model', show=True, assembly_span=None, characteristic_length=None,
+                 save_name='model', show=True, characteristic_length=None,
                  xlim: tuple[float, float] = None, ylim: tuple[float, float] = None,
                  graphics_settings=None, **assembly_appearance):
     if isinstance(mdl, str):
@@ -232,7 +232,7 @@ def make_model_drawing(mdl: str | model.Model, save_dir,
                          "or an already loaded Model object")
     _, _, _, a_appearance = _load_graphics_settings(graphics_settings)
     a_appearance.update(assembly_appearance)
-    animation.draw_model(mdl, save_dir, save_name, show=show, assembly_span=assembly_span,
+    animation.draw_model(mdl, save_dir, save_name, show=show,
                          characteristic_length=characteristic_length, xlim=xlim, ylim=ylim,
                          **a_appearance)
     

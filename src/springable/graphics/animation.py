@@ -16,7 +16,6 @@ from matplotlib.animation import FuncAnimation
 
 def draw_model(mdl: model.Model, save_dir=None, save_name='model',
                show=True,
-               assembly_span: float = None,
                characteristic_length: float = None,
                xlim: tuple[float, float] = None,
                ylim:  tuple[float, float] = None,
@@ -28,22 +27,27 @@ def draw_model(mdl: model.Model, save_dir=None, save_name='model',
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.set_aspect('equal')
-        xmin, ymin, xmax, ymax = mdl.get_assembly().get_dimensional_bounds()
-        if assembly_span is None:
-            assembly_span = max(xmax - xmin, ymax - ymin)
-
 
         ModelDrawing(ax, mdl, aa, characteristic_length=characteristic_length)
+        xmin, ymin, xmax, ymax = mdl.get_assembly().get_dimensional_bounds()
+        assembly_span = max(xmax - xmin, ymax - ymin)
         canvas_span = 1.25 * assembly_span
         midx, midy = (xmin + xmax) / 2, (ymin + ymax) / 2
-        if xlim is None:
-            ax.set_xlim(midx - canvas_span / 2, midx + canvas_span / 2)
+        
+        if xlim is not None:
+            pass
+        elif aa.enforce_xlim:
+            xlim = (aa.xmin, aa.xmax)
         else:
-            ax.set_xlim(*xlim)
-        if ylim is None:
-            ax.set_ylim(midy - canvas_span / 2, midy + canvas_span / 2)
+            xlim = (midx - canvas_span / 2, midx + canvas_span / 2)
+        if ylim is not None:
+            pass
+        elif aa.enforce_ylim:
+            ylim = (aa.ymin, aa.ymax)
         else:
-            ax.set_ylim(*ylim)
+            ylim = (midy - canvas_span / 2, midy + canvas_span / 2)
+        ax.set_xlim(*xlim)
+        ax.set_ylim(*ylim)
 
         ff.adjust_spines([ax], 0, ['bottom', 'top', 'left', 'right'] if aa.show_axes else [])
         ff.adjust_figure_layout(fig, aa.drawing_fig_width, aa.drawing_fig_height, pad=0.1)
@@ -349,12 +353,16 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             spines += ['top'] if po.show_top_spine else []
             spines += ['bottom'] if po.show_bottom_spine else []
             ff.adjust_spines(ax2, po.spine_offset, spines)
+            if po.enforce_xlim:
+                ax2.set_xlim((po.xmin, po.xmax))
+            if po.enforce_ylim:
+                ax2.set_ylim((po.ymin, po.ymax))
         else:
             fig, ax1 = plt.subplots()
             ax2 = None
 
         if extra_init is not None:
-            fig, ax1, ax2, extra = extra_init(fig, ax1, ax2)
+            fig, ax1, ax2, extra_animables, extra_processed = extra_init(fig, ax1, ax2, _result, po, ao, aa)
 
         if not aa.show_axes:
             ax1.axis('off')
@@ -367,12 +375,23 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
         xmin, ymin, xmax, ymax = bounds
         if assembly_span is None:
             assembly_span = max(xmax - xmin, ymax - ymin)
-        if characteristic_length_ is None:
+        if characteristic_length is None:
             characteristic_length = characteristic_length_
+
         canvas_span = 1.25 * assembly_span
         midx, midy = (xmin + xmax) / 2, (ymin + ymax) / 2
-        xlim = (xlim if xlim is not None else (midx - canvas_span / 2, midx + canvas_span / 2))
-        ylim = (ylim if ylim is not None else (midy - canvas_span / 2, midy + canvas_span / 2))
+        if xlim is not None:
+            pass
+        elif aa.enforce_xlim:
+            xlim = (aa.xmin, aa.xmax)
+        else:
+            xlim = (midx - canvas_span / 2, midx + canvas_span / 2)
+        if ylim is not None:
+            pass
+        elif aa.enforce_ylim:
+            ylim = (aa.ymin, aa.ymax)
+        else:
+            ylim = (midy - canvas_span / 2, midy + canvas_span / 2)
         ax1.set_xlim(*xlim)
         ax1.set_ylim(*ylim)
         ax1.set_aspect('equal', 'box')
@@ -506,7 +525,8 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
 
             _model_drawing.update()
             if extra_update is not None:
-                extra_update(i, fig, ax1, ax2, extra)
+                extra_update(i, extra_animables, extra_processed, fig, ax1, ax2, _result, po, ao, aa)
+
             if ao.side_plot_mode == 'force_displacement_curve':
                 dot.set_xdata([deformation[i]])
                 dot.set_ydata([force[i]])

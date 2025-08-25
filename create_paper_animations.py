@@ -1,4 +1,5 @@
 from src.springable.simulation import solve_model
+from src.springable.mechanics.static_solver import Result
 from src.springable.readwrite.fileio import write_results, read_results
 from src.springable.visualization import make_model_construction_animation, make_animation, _load_graphics_settings
 import os
@@ -19,7 +20,7 @@ main_graphics_filepath = os.path.join(main_folder, 'article_movie_models.toml')
 main_result_dir = 'out'
 
 def make_animations(subfig, specific_graphics, specific_graphics_mdl_construction, remake_anim, remake_anim_construction, rerun,
-                    extra_init=None, extra_update=None, specific_plot_options=None):
+                    extra_init=None, extra_update=None, specific_plot_options=None, specific_animation_options=None):
     save_dir = os.path.join(main_result_dir, f'{subfig}_results')
     os.makedirs(save_dir, exist_ok=True)
     if rerun:
@@ -34,6 +35,8 @@ def make_animations(subfig, specific_graphics, specific_graphics_mdl_constructio
         aa.update(specific_graphics)
         if specific_plot_options is not None:
             po.update(specific_plot_options)
+        if specific_animation_options is not None:
+            ao.update(specific_animation_options)
         make_animation(res, main_result_dir, f'{subfig}_anim', graphics_settings=(go, po, ao, aa),
                        extra_init=extra_init, extra_update=extra_update)
 
@@ -119,6 +122,16 @@ rerun = False
 make_animations(subfig, specific_graphics, specific_graphics_mdl_construction,
                 remake_anim, remake_construction, rerun)
 
+subfig = 'fig4dhidepreload'
+specific_graphics = {'hide_low_preloading_forces': True, 'low_preloading_force_threshold': 100}
+specific_graphics_mdl_construction = {'show_node_numbers': False, 'spring_linewidth': 2, 'angular_spring_linewidth': 2,
+                                      'hide_low_preloading_forces': True, 'low_preloading_force_threshold': 100}
+remake_anim = True
+remake_construction = True
+rerun = True
+make_animations(subfig, specific_graphics, specific_graphics_mdl_construction,
+                remake_anim, remake_construction, rerun)
+
 
 subfig = 'fig5atop'
 specific_graphics = {'force_vector_connection':'head'}
@@ -143,49 +156,94 @@ make_animations(subfig, specific_graphics, specific_graphics_mdl_construction,
 
 
 subfig = 'fig5b1'
-specific_graphics = {}
-specific_graphics_mdl_construction = {'show_node_numbers': False, 'spring_linewidth': 2, 'angular_spring_linewidth': 2}
+specific_graphics = {'enforce_xlim': True, 'xmin': -2.5, 'xmax': 2.75, 
+                     'hide_low_preloading_forces': True, 'low_preloading_force_threshold': 100, 'force_vector_connection': 'head'}
+specific_graphics_mdl_construction = {'show_node_numbers': False, 'spring_linewidth': 2, 'angular_spring_linewidth': 2,
+                                      'force_vector_connection': 'head'}
 remake_anim = False
 remake_construction = False
 rerun = False
 make_animations(subfig, specific_graphics, specific_graphics_mdl_construction,
-                remake_anim, remake_construction, rerun, specific_plot_options={'axis_box_aspect': 1/3})
+                remake_anim, remake_construction, rerun, specific_plot_options={'axis_box_aspect': 1/3, 'enforce_ylim': True, 'ymin': -2, 'ymax': 18},
+                specific_animation_options={'nb_frames': 3600, 'cycling': False})
 
 subfig = 'fig5b2'
-specific_graphics = {}
-specific_graphics_mdl_construction = {'show_node_numbers': False, 'spring_linewidth': 2, 'angular_spring_linewidth': 2}
+specific_graphics = {'enforce_xlim': True, 'xmin': -2.5, 'xmax': 2.75, 'force_vector_connection': 'head',
+                     'hide_low_preloading_forces': True, 'low_preloading_force_threshold': 100}
+specific_graphics_mdl_construction = {'show_node_numbers': False, 'spring_linewidth': 2, 'angular_spring_linewidth': 2,
+                                      'force_vector_connection': 'tail'}
 remake_anim = False
-remake_construction = False
+remake_construction = True
 rerun = False
 make_animations(subfig, specific_graphics, specific_graphics_mdl_construction,
-                remake_anim, remake_construction, rerun, specific_plot_options={'axis_box_aspect': 1/3})
+                remake_anim, remake_construction, rerun, specific_plot_options={'axis_box_aspect': 1/3, 'enforce_ylim': True,
+                                                                                'ymin': -2, 'ymax': 18})
 
 subfig = 'fig5cleft'
-specific_graphics = {}
+specific_graphics = {'enforce_xlim': True, 'xmin': -1, 'xmax': 1, 'node_size': 3.5, 'force_vector_connection': 'head'}
 specific_graphics_mdl_construction = {'show_node_numbers': False, 'spring_linewidth': 2, 'angular_spring_linewidth': 2}
 remake_anim = False
 remake_construction = False
 rerun = False
 make_animations(subfig, specific_graphics, specific_graphics_mdl_construction,
-                remake_anim, remake_construction, rerun)
+                remake_anim, remake_construction, rerun, specific_plot_options={'axis_box_aspect': 2/3, 'enforce_ylim': True, 'ymin': -15, 'ymax': 275})
 
 subfig = 'fig5cright'
-specific_graphics = {}
+specific_graphics = {'enforce_xlim': True, 'xmin': -1, 'xmax': 1, 'node_size': 3.5, 'force_vector_connection': 'head'}
 specific_graphics_mdl_construction = {'show_node_numbers': False, 'spring_linewidth': 2, 'angular_spring_linewidth': 2}
 remake_anim = False
 remake_construction = False
 rerun = False
 make_animations(subfig, specific_graphics, specific_graphics_mdl_construction,
-                remake_anim, remake_construction, rerun)
+                remake_anim, remake_construction, rerun, specific_plot_options={'axis_box_aspect': 2/3, 'enforce_ylim': True, 'ymin': -15, 'ymax': 275})
 
 subfig = 'fig5d'
-specific_graphics = {'force_vector_connection': 'head'}
-specific_graphics_mdl_construction = {'show_node_numbers': False, 'spring_linewidth': 2, 'angular_spring_linewidth': 2, 'force_vector_connection': 'head'}
-remake_anim = True
+specific_graphics = {'force_vector_connection': 'head', 'node_size': 4}
+specific_graphics_mdl_construction = {'show_node_numbers': False, 'spring_linewidth': 2, 'angular_spring_linewidth': 2, 'force_vector_connection': 'head',
+                                      'angular_spring_radius_scaling': 1.5}
+remake_anim = False
 remake_construction = False
 rerun = False
+
+def u_pf(res: Result):
+    u, _ = res.get_equilibrium_path()
+    pinching_force = np.abs(res.get_internal_force_from_element_index(-2))
+    return u, pinching_force
+
+def extra_init(fig, ax1, ax2, _result: Result, po, ao, aa):
+    u, _ = _result.get_equilibrium_path()
+    curve_in_ax(u_pf, _result, ax2, po, color=None, label=None)
+
+    _, pinching_force = u_pf(_result) 
+
+    dot = ax2.plot([u[0]], [pinching_force[0]],
+                    'o', color=ao.animated_equilibrium_point_color,
+                    markersize=ao.animated_equilibrium_point_size * po.default_markersize,
+                    zorder=5.0)[0]
+    ax2.set_xlabel('displacement $U$')
+    ax2.set_ylabel('gripping force $|f_\\text{grip}|$')
+    if po.hide_ticklabels:
+        ax2.set_xticklabels([])
+        ax2.set_yticklabels([])
+    if ((((po.show_stability_legend and po.color_mode == 'stability') or
+            (po.show_stability_legend and po.plot_style == 'line')) and
+            not (po.show_driven_path and po.driven_path_only))
+        or (po.show_driven_path
+            and po.show_driven_path_legend
+            and po.drive_mode in ('force', 'displacement'))):
+        ax2.legend(numpoints=5, markerscale=1.5)
+    return fig, ax1, ax2, dot, (u, pinching_force)
+
+def extra_update(i, extra_animables, extra_processed, fig, ax1, ax2, _result, po, ao, aa):
+    u, pinching_force = extra_processed 
+    extra_animables.set_xdata([u[i]])
+    extra_animables.set_ydata([pinching_force[i]])
+
 make_animations(subfig, specific_graphics, specific_graphics_mdl_construction,
-                remake_anim, remake_construction, rerun, specific_plot_options={'axis_box_aspect': 1.0})
+                remake_anim, remake_construction, rerun, specific_plot_options={'axis_box_aspect': 0.8},
+                extra_init=extra_init,
+                extra_update=extra_update,
+                specific_animation_options={'side_plot_mode': 'custom'})
 
 
 
