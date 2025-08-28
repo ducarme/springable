@@ -195,8 +195,12 @@ class Assembly:
     def get_free_dof_indices(self) -> list[int]:
         return self._free_dof_indices
 
-    def get_dof_index(self, _node: Node, direction: str) -> int:
-        dof_indices = self._nodes_dof_indices[_node.get_node_nb()]
+    def get_dof_index(self, _node: Node | int, direction: str) -> int:
+        """ _node is either a Node object or its number (index)"""
+        if isinstance(_node, int):
+            dof_indices = self._nodes_dof_indices[_node]
+        else:
+            dof_indices = self._nodes_dof_indices[_node.get_node_nb()]
         match direction:
             case 'X':
                 index = dof_indices[0]

@@ -324,7 +324,7 @@ class StaticSolver:
                               show_warnings, detect_critical_points,
                               bifurcate_at_simple_bifurcations, critical_point_epsilon, bifurcation_perturbation_amplitude,
                               radius, i_max, j_max, convergence_value, verbose,
-                              critical_point_detection_verbose, detect_mechanism):
+                              critical_point_detection_verbose, detect_mechanism, must_be_stable_to_finish_loadstep):
         """
             Find equilibrium path using the arc-length method
         """
@@ -680,7 +680,7 @@ class StaticSolver:
                     f_vectors_aligned = np.inner(step_force_vector, step_f_ext) > 0
                     final_force_has_been_reached = norm_step_force_vector - step_f_ext_norm < 0.0 and f_vectors_aligned
                     force_progress = step_f_ext_norm / norm_step_force_vector if f_vectors_aligned else 0.0
-                    if final_force_has_been_reached:
+                    if final_force_has_been_reached and (not must_be_stable_to_finish_loadstep or equilibrium_stability[-1] == StabilityStates.STABLE):
                         if verbose:
                             reason = f'--> final force for loading step {current_step} has been reached'
                             reason += '\r\n'

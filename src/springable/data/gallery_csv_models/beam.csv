@@ -1,0 +1,22 @@
+PARAMETERS
+ks, 10.0
+kr, 1.0
+dl, 1.0
+NODES
+0, 0.0, 0*dl, 1, 1
+1, 0.0, 1*dl, 0, 0
+2, 0.0, 2*dl, 0, 0
+3, 0.0, 3*dl, 0, 0
+4, X0+dl, Y0, 1, 1
+SPRINGS
+0-1, ks
+1-2, ks
+2-3, ks
+ANGULAR SPRINGS
+4-0-1, kr
+0-1-2, kr, PI*0.99
+1-2-3, kr, PI*1.01
+LOADING
+3, Y, -6.0, -6*dl
+
+

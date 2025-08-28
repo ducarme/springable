@@ -194,14 +194,14 @@ def visualize_result(result: static_solver.Result | str, save_dir: str = '',
         print("Cannot make the graphics, because the calculated equilibrium path is unusable")
 
 
-def make_animation(result, save_dir, save_name: str = None, show=True, assembly_span=None, characteristic_length=None,
+def make_animation(result, save_dir, save_name: str = None, show=True, characteristic_length=None,
                    extra_init=None, extra_update=None, graphics_settings=None, **animation_options):
     result = load_result(result)
     _, plot_options, anim_options, assembly_appearance = _load_graphics_settings(graphics_settings)
     anim_options.update(animation_options)
     animation.animate(result, save_dir, save_name=save_name, show=show,
                       extra_init=extra_init, extra_update=extra_update,
-                      characteristic_length=characteristic_length, assembly_span=assembly_span,
+                      characteristic_length=characteristic_length,
                       plot_options=plot_options, assembly_appearance=assembly_appearance,
                       **anim_options)
 
@@ -257,9 +257,10 @@ def make_equilibrium_state_drawing(result, save_dir,
                                    state_index=None,
                                    start_of_loadstep_index=None,
                                    end_of_loadstep_index=None,
+                                   threshold_nodal_displacement=None,
+                                   threshold_nodal_external_force=None,
                                    save_name='equilibrium_state',
                                    show=True,
-                                   assembly_span: float = None,
                                    characteristic_length: float = None,
                                    xlim: tuple[float, float] = None,
                                    ylim: tuple[float, float] = None,
@@ -268,5 +269,6 @@ def make_equilibrium_state_drawing(result, save_dir,
     _, _, _, a_appearance = _load_graphics_settings(graphics_settings)
     a_appearance.update(assembly_appearance)
     animation.draw_equilibrium_state(result, state_index, start_of_loadstep_index, end_of_loadstep_index,
-                                     save_dir, save_name, show, assembly_span, characteristic_length, xlim, ylim,
+                                     threshold_nodal_displacement, threshold_nodal_external_force,
+                                     save_dir, save_name, show, characteristic_length, xlim, ylim,
                                      **a_appearance)

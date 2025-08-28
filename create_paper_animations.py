@@ -1,7 +1,7 @@
 from src.springable.simulation import solve_model
 from src.springable.mechanics.static_solver import Result
 from src.springable.readwrite.fileio import write_results, read_results
-from src.springable.visualization import make_model_construction_animation, make_animation, _load_graphics_settings
+from src.springable.visualization import make_model_construction_animation, make_animation, _load_graphics_settings, make_equilibrium_state_drawing, make_force_displacement_plot
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -46,6 +46,39 @@ def make_animations(subfig, specific_graphics, specific_graphics_mdl_constructio
                                         inbetween_duration=0.8, end_duration=2.5, fps=10, save_name=f'{subfig}_model_anim',
                                         graphics_settings=main_graphics_filepath,
                                         **specific_graphics_mdl_construction)
+        
+subfig = 'fig1e2'
+specific_graphics = {'spring_linewidth': 2, 'angular_spring_linewidth': 2, 'angular_spring_radius_scaling': 0.7, 'force_vector_connection': 'head'}
+specific_graphics_mdl_construction = {'show_node_numbers': False, 'spring_linewidth': 2}
+specific_plot_options = {}
+specific_animation_options = {}
+rerun = True
+
+save_dir = os.path.join(main_result_dir, f'{subfig}_results')
+os.makedirs(save_dir, exist_ok=True)
+if rerun:
+    res = solve_model(os.path.join(main_folder, subfig.upper(), f'{subfig}_model.csv'),
+                    solver_settings=os.path.join(main_folder, subfig.upper(), f'{subfig}_ss.toml'))
+    write_results(res, save_dir)
+else:
+    res = read_results(save_dir)
+
+go, po, ao , aa = _load_graphics_settings(main_graphics_filepath)
+aa.update(specific_graphics)
+if specific_plot_options is not None:
+    po.update(specific_plot_options)
+if specific_animation_options is not None:
+    ao.update(specific_animation_options)
+
+make_force_displacement_plot(res, save_dir, graphics_settings=(go, po, ao, aa))
+make_equilibrium_state_drawing(res, save_dir, start_of_loadstep_index=0,
+                               graphics_settings=(go, po, ao, aa))
+make_equilibrium_state_drawing(res, save_dir, threshold_nodal_displacement=((-2, np.inf), 2, 'Y'),
+                               graphics_settings=(go, po, ao, aa))
+
+make_animation(res, save_dir, graphics_settings=(go, po, ao, aa))
+
+
 
 subfig = 'fig1a'
 specific_graphics = {}
@@ -126,9 +159,9 @@ subfig = 'fig4dhidepreload'
 specific_graphics = {'hide_low_preloading_forces': True, 'low_preloading_force_threshold': 100}
 specific_graphics_mdl_construction = {'show_node_numbers': False, 'spring_linewidth': 2, 'angular_spring_linewidth': 2,
                                       'hide_low_preloading_forces': True, 'low_preloading_force_threshold': 100}
-remake_anim = True
-remake_construction = True
-rerun = True
+remake_anim = False
+remake_construction = False
+rerun = False
 make_animations(subfig, specific_graphics, specific_graphics_mdl_construction,
                 remake_anim, remake_construction, rerun)
 
@@ -173,7 +206,7 @@ specific_graphics = {'enforce_xlim': True, 'xmin': -2.5, 'xmax': 2.75, 'force_ve
 specific_graphics_mdl_construction = {'show_node_numbers': False, 'spring_linewidth': 2, 'angular_spring_linewidth': 2,
                                       'force_vector_connection': 'tail'}
 remake_anim = False
-remake_construction = True
+remake_construction = False
 rerun = False
 make_animations(subfig, specific_graphics, specific_graphics_mdl_construction,
                 remake_anim, remake_construction, rerun, specific_plot_options={'axis_box_aspect': 1/3, 'enforce_ylim': True,

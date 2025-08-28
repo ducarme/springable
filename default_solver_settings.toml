@@ -1,4 +1,5 @@
 radius = 0.05
+must_be_stable_to_finish_loadstep=false
 i_max = 5_000  # max number of increments to reach the prescribed force
 
 detect_critical_points = false

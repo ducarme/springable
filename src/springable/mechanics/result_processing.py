@@ -62,22 +62,29 @@ def extract_loading_path(result: Result, drive_mode: str, starting_index: int = 
 
     if starting_index < 0:
             starting_index = load.shape[0] + starting_index
+
+    # find starting branch
+    for branch_ix, branch in enumerate(branches):
+        start, end = branch
+        if starting_index < start:
+            current_index = start
+            current_branch_index = branch_ix
+            break
+        if start <= starting_index <= end:
+            current_index = starting_index
+            current_branch_index = branch_ix
+            break
+    else:  # the starting index is beyond the last stable point
+        raise LoadingPathEmpty
+
     path_indices = []
-    current_index = starting_index
-    current_branch_index = 0
     critical_indices = []
     restabilization_indices = []
-
     while True:
         # look for branch
         for i in range(current_branch_index, len(branches)):
             start, end = branches[i]
-            # when one looks for the first branch from the starting index,
-            # one should ensure that we don't land on a branch prior to the
-            # starting index
-            if current_index > end:  
-                continue
-            if load[start] <= load[current_index] <= load[end]:
+            if load[start] <= load[current_index] <= load[end]:  # should always be true for the first iteration of the while loop 
                 landing_index = int(interp1d(load[start:end + 1], 
                                              list(range(start, end + 1)),
                                              kind='next')(load[current_index]))
@@ -117,12 +124,25 @@ def extract_unloading_path(result: Result, drive_mode: str, starting_index: int 
 
     if starting_index < 0:
         starting_index = load.shape[0] + starting_index
+
+    # find starting branch
+    for branch_ix, branch in enumerate(branches[::-1]):
+        start, end = branch
+        if starting_index > end:
+            current_index = end
+            current_branch_index = len(branches) - 1 - branch_ix
+            break
+        if start <= starting_index <= end:
+            current_index = starting_index
+            current_branch_index = len(branches) - 1 - branch_ix
+            break
+    else:  # the starting index is beyond the last stable point
+        raise LoadingPathEmpty
+    
+
     path_indices = []
-    current_index = starting_index
-    current_branch_index = len(branches) - 1
     critical_indices = []
     restabilization_indices = []
-
     while True:
         # look for branch
         for i in range(current_branch_index, -1, -1):

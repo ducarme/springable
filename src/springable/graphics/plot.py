@@ -10,7 +10,7 @@ from matplotlib.patches import ArrowStyle
 import typing
 
 
-def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: PlotOptions, color, label):
+def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: PlotOptions, color, label, zorder=1.0):
     po = plot_options
     x, y = processing_fun(result)
     stability_colors = [po.color_for_stable_points,
@@ -33,13 +33,12 @@ def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: Plot
         branches = extract_branches(result)
 
         if po.plot_style == 'points':
-            ax.plot(x, y, 'k-', linewidth=0.5, zorder=1.05)
+            ax.plot(x, y, 'k-', linewidth=0.5, zorder=zorder)
 
         if color is None:  # then color is determined by 'color_mode' set in the plot options
 
             if po.color_mode == 'stability':
                 # then each point is colored by its stability
-                zorder = 1.0
                 for i, stability_state in enumerate([StabilityStates.STABLE,
                                                      StabilityStates.STABILIZABLE,
                                                      StabilityStates.UNSTABLE]):
@@ -50,6 +49,7 @@ def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: Plot
                     else:
                         lbl_i = ''
                     for j, branch in enumerate(branches[stability_state]):
+                        zorder -= 0.01
                         ax.plot(x[branch], y[branch],
                                 ls='' if po.plot_style == 'points' else stability_styles[i],
                                 lw=po.default_linewidth,
@@ -59,7 +59,6 @@ def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: Plot
                                 markersize=po.default_markersize * stability_markersizes[i],
                                 zorder=zorder,
                                 label=lbl_i if j == 0 else '')
-                        zorder -= 0.1
 
             elif po.color_mode in ('min_eigval_fd', 'min_eigval_ud'):
                 # then each point is colored by the lowest eigenvalue in the stiffness matrix
@@ -309,7 +308,7 @@ def parametric_curve(processing_fun: callable,
         for res in results:
             try:
                 curve_in_ax(processing_fun, res, ax, po, color=colors[i],
-                            label=labels[i] if labels is not None else None)
+                            label=labels[i] if labels is not None else None, zorder=i+1)
             except UnusableSolution:
                 pass
             i += 1
