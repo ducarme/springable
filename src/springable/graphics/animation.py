@@ -353,8 +353,9 @@ def draw_equilibrium_state(res: Result,
 
 def animate(_result: Result, save_dir, save_name: str = None, show=True,
             extra_init=None, extra_update=None, characteristic_length=None,
-            xlim: tuple[float, float] = None, ylim: tuple[float, float] = None,
+            xlim: tuple[float, float] = None, ylim: tuple[float, float] = None, post_processing=None,
             plot_options: dict = None, assembly_appearance: dict = None, **animation_options):
+    print('Preparing animation...')
     ao = AnimationOptions()
     ao.update(**animation_options)
 
@@ -369,7 +370,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
     po.loading_sequence = 'cycle' if ao.cycling else 'loading'
 
     with plt.style.context(ao.stylesheet):
-        if ao.side_plot_mode != 'none':
+        if ao.side_plot:
             fig = plt.figure(figsize=(ao.animation_width, ao.animation_height),
                              dpi=ao.dpi)
             grid = plt.GridSpec(1, 2, wspace=0.20, hspace=0.01, bottom=0.15, left=0.01)
@@ -518,24 +519,40 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             frame_indices = np.round(np.linspace(0, u.shape[0] - 1, ao.nb_frames)).astype(int)
 
         dot = None
-        if ao.side_plot_mode == "force_displacement_curve":
-            plot.force_displacement_curve_in_ax(_result, ax2, po)
-            dot = ax2.plot([deformation[0]], [force[0]],
-                           'o', color=ao.animated_equilibrium_point_color,
-                           markersize=ao.animated_equilibrium_point_size * po.default_markersize,
-                           zorder=1.1)[0]
-            ax2.set_xlabel(po.default_xlabel)
-            ax2.set_ylabel(po.default_ylabel)
+        if ao.side_plot:
+            if post_processing is None:
+                plot.force_displacement_curve_in_ax(_result, ax2, po)
+                ax2.set_xlabel(po.default_xlabel)
+                ax2.set_ylabel(po.default_ylabel)
+                x, y = deformation, force
+                
+            else:
+                processing_fun = post_processing['processing_fun']
+                xlabel = post_processing['xlabel']
+                ylabel = post_processing['ylabel']
+                plot.curve_in_ax(processing_fun, _result, ax2, po, color=None, label=None)
+                ax2.set_xlabel(xlabel)
+                ax2.set_ylabel(ylabel)
+                x, y = processing_fun(_result)
+
+            
+            dot = ax2.plot([x[0]], [y[0]],
+                            'o', color=ao.animated_equilibrium_point_color,
+                            markersize=ao.animated_equilibrium_point_size * po.default_markersize,
+                            zorder=1.1)[0]
+
             if po.hide_ticklabels:
-                ax2.set_xticklabels([])
-                ax2.set_yticklabels([])
+                    ax2.set_xticklabels([])
+                    ax2.set_yticklabels([])
+
             if ((((po.show_stability_legend and po.color_mode == 'stability') or
-                  (po.show_stability_legend and po.plot_style == 'line')) and
-                 not (po.show_driven_path and po.driven_path_only))
+                (po.show_stability_legend and po.plot_style == 'line')) and
+                not (po.show_driven_path and po.driven_path_only))
                 or (po.show_driven_path
                     and po.show_driven_path_legend
                     and po.drive_mode in ('force', 'displacement'))):
                 ax2.legend(numpoints=5, markerscale=1.5)
+
 
         def update(i):
             # update assembly
@@ -555,9 +572,10 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             if extra_update is not None:
                 extra_update(i, extra_animables, extra_processed, fig, ax1, ax2, _result, po, ao, aa)
 
-            if ao.side_plot_mode == 'force_displacement_curve':
-                dot.set_xdata([deformation[i]])
-                dot.set_ydata([force[i]])
+            if ao.side_plot:
+                dot.set_xdata([x[i]])
+                dot.set_ydata([y[i]])
+
 
         if save_name is None:
             save_name = ao.default_animation_name
@@ -597,7 +615,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             if ao.save_as_transparent_mov:
                 format_type = 'video'
                 fig.patch.set_visible(False)
-                if ao.side_plot_mode != 'none':
+                if ao.side_plot:
                     ax2.patch.set_visible(False)
                 print('Generating transparent MOV animation...')
                 filepath = os.path.join(save_dir, f'{save_name}.mov')
@@ -618,7 +636,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             if ao.save_as_mp4:
                 format_type = 'video'
                 fig.patch.set_visible(True)
-                if ao.side_plot_mode != 'none':
+                if ao.side_plot:
                     ax2.patch.set_visible(True)
                 print('Generating MP4 animation...')
                 filepath = os.path.join(save_dir, f'{save_name}.mp4')

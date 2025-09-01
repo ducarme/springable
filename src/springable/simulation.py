@@ -31,12 +31,13 @@ def save_results(result: static_solver.Result, save_dir):
 
 
 def simulate_model(model_path, save_dir=None, solver_settings_path: str = None, graphics_settings_path: str = None,
-                   print_model_file=False, postprocessing=None) -> str:
+                   print_model_file=False, postprocessing=None, overwrite_results=False) -> str:
     # CREATE MAIN DIRECTORY WHERE RESULT WILL BE SAVED + COPY INPUT FILES
     if save_dir is None:
-        save_dir = io.mkdir(os.path.splitext(os.path.basename(model_path))[0])
+        save_dir = io.mkdir(os.path.splitext(os.path.basename(model_path))[0], exist_ok=overwrite_results)
     else:
-        save_dir = io.mkdir(save_dir)
+        save_dir = io.mkdir(save_dir, exist_ok=overwrite_results)
+        
     io.copy_model_file(save_dir, model_path)
     if solver_settings_path is not None:
         io.copy_solver_settings_file(save_dir, solver_settings_path)

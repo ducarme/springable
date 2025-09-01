@@ -177,15 +177,23 @@ def visualize_result(result: static_solver.Result | str, save_dir: str = '',
             for pp in postprocessing:
                 at_least_one = True
                 if go.show_custom_plot:
-                    print(f"Custom '{pp['save_name']}' plot is drawn in a new window. Close the window to continue...")
+                    print(f"Custom {pp['save_name']} plot is drawn in a new window. Close the window to continue...")
                 plot.curve(pp['postprocessing_fun'], result, save_dir, save_name=pp['save_name'],
                            show=go.show_custom_plot, xlabel=pp['xlabel'], ylabel=pp['ylabel'], **plot_options)
-
         if go.generate_animation:
-            at_least_one = True
-            animation.animate(result, save_dir, show=go.show_animation,
-                              plot_options=plot_options, assembly_appearance=assembly_appearance,
-                              **animation_options)
+            if postprocessing is None:
+                at_least_one = True
+                animation.animate(result, save_dir, show=go.show_animation,
+                                plot_options=plot_options, assembly_appearance=assembly_appearance,
+                                **animation_options)
+            else:
+                for pp in postprocessing:
+                    at_least_one = True
+                    animation.animate(result, save_dir, show=go.show_animation,
+                                    plot_options=plot_options, assembly_appearance=assembly_appearance,
+                                    post_processing=pp,
+                                    **animation_options)
+
         if at_least_one:
             print(f"Post-processed results have been saved in {save_dir}.")
         else:
@@ -195,13 +203,13 @@ def visualize_result(result: static_solver.Result | str, save_dir: str = '',
 
 
 def make_animation(result, save_dir, save_name: str = None, show=True, characteristic_length=None,
-                   extra_init=None, extra_update=None, graphics_settings=None, **animation_options):
+                   extra_init=None, extra_update=None, post_processing=None, graphics_settings=None, **animation_options):
     result = load_result(result)
     _, plot_options, anim_options, assembly_appearance = _load_graphics_settings(graphics_settings)
     anim_options.update(animation_options)
     animation.animate(result, save_dir, save_name=save_name, show=show,
                       extra_init=extra_init, extra_update=extra_update,
-                      characteristic_length=characteristic_length,
+                      characteristic_length=characteristic_length, post_processing=post_processing,
                       plot_options=plot_options, assembly_appearance=assembly_appearance,
                       **anim_options)
 

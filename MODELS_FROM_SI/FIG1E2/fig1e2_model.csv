@@ -1,0 +1,9 @@
+NODES
+0, 0.0, 0.0, 1, 1
+1, 4.0, 0.0, 0, 1
+2, 8.0, 0.0, 0, 1
+LONGITUDINAL FLEXELS
+0-1, FROMFILE('MODELS_FROM_SI'; 'FIG1E2'; 'fig1c_behavior.csv')
+2-1, FROMFILE('MODELS_FROM_SI'; 'FIG1E2'; 'fig1d_behavior.csv')
+LOADING
+2, X, -0.325, -3.5

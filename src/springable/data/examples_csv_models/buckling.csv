@@ -1,0 +1,15 @@
+PARAMETERS
+    stiffness, 10.0
+    hinge_stiffness, 1.0
+    l, 5.0
+NODES
+    0,0.0,0.0,1,1
+    1,0.0,l/2,0,0
+    2,0.0,l,1,0
+SPRINGS
+    1-2,stiffness
+    1-0,stiffness
+ANGULAR SPRINGS
+    0-1-2, hinge_stiffness, PI*0.99
+LOADING
+    2, Y, -5.0

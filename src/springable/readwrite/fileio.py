@@ -307,12 +307,12 @@ def copy_graphics_settings_file(save_dir, graphics_settings_path):
     shutil.copy(graphics_settings_path, save_dir)
 
 
-def mkdir(dir_path):
+def mkdir(dir_path, exist_ok=False):
     original_dir_path = dir_path
     i = 1
     while True:
         try:
-            os.makedirs(dir_path)
+            os.makedirs(dir_path, exist_ok=exist_ok)
             break
         except FileExistsError:
             dir_path = original_dir_path + '-' + str(i)

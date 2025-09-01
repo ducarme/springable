@@ -42,6 +42,48 @@ def extract_branches_in_order(result: Result, drive_mode: str):
         branches.append((start, stability.shape[0] - 1))
     return branches
 
+def extract_transition_graph(result: Result, drive_mode: str):
+    if drive_mode not in ('force', 'displacement'):
+        raise ValueError(f'Invalid drive mode "{drive_mode}"')
+    
+    u_load, f_load = result.get_equilibrium_path()
+    branches = extract_branches_in_order(result, drive_mode)
+
+    load = f_load if drive_mode == 'force' else u_load
+
+    # check whether the load increases monotonically on each branch,
+    # otherwise it is a sign that the solution path doubled back or connects
+    # equilibria that should not be directly connected
+    for branch in branches:
+        start, end = branch
+        if (np.diff(load[start:end+1]) < 0.0).any():
+            raise DiscontinuityInTheSolutionPath
+
+    transition_graph = []    
+    for i, branch_i in enumerate(branches):
+        start_i, end_i = branch_i
+        critical_plus = load[end_i] if i != len(branches) - 1 else None
+        critical_minus = load[start_i] if i != 0 else None
+        transition_graph.append([None, None])
+        if critical_plus is not None:
+            for j, branch_j in enumerate(branches):
+                if j <= i: continue
+                start, end = branch_j
+                # look for plus-transition
+                if load[start] <= critical_plus <= load[end]:
+                    transition_graph[-1][1] = j
+                    break
+        if critical_minus is not None:
+            for jj, branch_j in enumerate(branches[::-1]):
+                j = len(branches) - 1 - jj
+                if j >= i: continue
+                start, end = branch_j
+                # look for plus-transition
+                if load[start] <= critical_minus <= load[end]:
+                    transition_graph[-1][0] = j
+                    break
+    return transition_graph
+
 def extract_loading_path(result: Result, drive_mode: str, starting_index: int = 0):
     if drive_mode not in ('force', 'displacement'):
         raise ValueError(f'Invalid drive mode "{drive_mode}"')

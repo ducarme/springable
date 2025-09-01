@@ -271,6 +271,7 @@ class StaticSolver:
                                                                                        max_displacement_map_step_list,
                                                                                        blocked_nodes_directions_step_list,
                                                                                        **asdict(self._solver_settings))
+        
         if u.ndim == 2:
             self._assembly.set_coordinates(initial_coordinates)
         for blocked_nodes, directions in blocked_nodes_directions_step_list:

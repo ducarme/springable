@@ -130,8 +130,7 @@ save_as_mp4 = false  # can only save as mp4 if ffmpeg is installed and is 'in th
 save_as_transparent_mov = false # can only save as mov if ffmpeg is installed and is 'in the PATH'
 save_as_gif = true
 save_frames_as_png = false
-side_plot_mode = "force_displacement_curve"
-# "none", "force_displacement_curve"
+side_plot = true
 stylesheet = "default"
 # one of the style names of matplotlib (see https://matplotlib.org/stable/gallery/style_sheets/style_sheets_reference.html)
 # or the path/url to a stylesheet, such as "my_style_sheets/my_favorite_style.mplstyle" (see https://matplotlib.org/stable/users/explain/customizing.html#defining-your-own-style)

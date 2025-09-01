@@ -95,7 +95,7 @@ class AnimationOptions(Updatable):
     save_as_transparent_mov: bool = False
     save_as_gif: bool = True
     save_frames_as_png: bool = False
-    side_plot_mode: str = 'force_displacement_curve'
+    side_plot: bool = True
     stylesheet: str = 'default'
     spine_offset: float = 10.
     animated_equilibrium_point_color: str = '#ff0000'

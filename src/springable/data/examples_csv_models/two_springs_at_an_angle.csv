@@ -1,0 +1,16 @@
+PARAMETERS
+    width, 8.0
+    triangle_height, 3.0
+    triangle_side_stiffness, 9.0
+    hinge_stiffness, 7.5
+NODES
+    0,0.0,0.0,1,1
+    1,width/2,triangle_height,1,0
+    2,width,0.0,1,1
+SPRINGS
+    1-2,triangle_side_stiffness
+    1-0,triangle_side_stiffness
+ANGULAR SPRINGS
+    0-1-2, hinge_stiffness
+LOADING
+    1, Y, -9.0
