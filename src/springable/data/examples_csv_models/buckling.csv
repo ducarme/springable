@@ -12,4 +12,4 @@ SPRINGS
 ANGULAR SPRINGS
     0-1-2, hinge_stiffness, PI*0.99
 LOADING
-    2, Y, -5.0
+    2, Y, -5.0, -0.9*l

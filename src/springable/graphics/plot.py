@@ -240,12 +240,15 @@ def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: Plot
                             xy=start,
                             xytext=end,
                             arrowprops=dict(
-                                arrowstyle=ArrowStyle.CurveA(),
+                                arrowstyle=ArrowStyle.CurveA(head_length=po.snapping_arrow_headlength,
+                                                             head_width=po.snapping_arrow_headwidth),
                                 color=po.snapping_arrow_color,
                                 alpha=po.snapping_arrow_opacity,
                                 linewidth=po.snapping_arrow_width,
                                 ls=po.snapping_arrow_style,
-                            ))
+                                shrinkA=0.0, shrinkB=0.0,
+                            ),
+                            annotation_clip=False)
         except LoadingPathEmpty:
             print(f"Cannot draw the {po.drive_mode}-driven path, "
                   f"because not stable points have been found under these loading conditions")
@@ -364,17 +367,19 @@ def parametric_force_displacement_curve(results: list[Result] | typing.Iterator[
 
 
 def force_displacement_curve(result: Result, save_dir=None, save_name=None, color=None, label=None,
-                             show=True, xlim=None, ylim=None, **plot_options):
+                             show=True, xlim=None, ylim=None, preplot=None, afterplot=None,
+                             **plot_options):
     def processing_fun(res: Result):
         return res.get_equilibrium_path()
 
-    curve(processing_fun, result, save_dir, save_name, color, label, show, xlim=xlim, ylim=ylim,
-          **plot_options)
+    curve(processing_fun, result, save_dir, save_name, color, label, show,
+          xlim=xlim, ylim=ylim, preplot=preplot, afterplot=afterplot, **plot_options)
 
 
 def curve(processing_fun: callable, result: Result,
           save_dir=None, save_name=None, color=None, label=None, show=True,
-          xlabel=None, ylabel=None, xlim=None, ylim=None, **plot_options):
+          xlabel=None, ylabel=None, xlim=None, ylim=None, preplot=None, afterplot=None,
+          **plot_options):
     if save_dir is None and show is None:
         print("Plot-making cancelled because no save directory and show = False")
         return
@@ -384,6 +389,9 @@ def curve(processing_fun: callable, result: Result,
     with plt.style.context(po.stylesheet):
         fig, ax = plt.subplots(figsize=(po.figure_width, po.figure_height))
         ax.set_box_aspect(po.axis_box_aspect)
+        if preplot is not None:
+            preplot(fig, ax)
+
         curve_in_ax(processing_fun, result, ax, po, color=color, label=label)
 
         if (label is not None
@@ -412,6 +420,8 @@ def curve(processing_fun: callable, result: Result,
             ax.set_yticklabels([])
         ff.adjust_spines(ax, po.spine_offset, spines)
         ff.adjust_figure_layout(fig)
+        if afterplot is not None:
+            afterplot(fig, ax)
         if save_dir is not None:
             if save_name is None:
                 save_name = po.default_plot_name

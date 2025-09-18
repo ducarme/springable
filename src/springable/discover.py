@@ -16,6 +16,7 @@ def show_examples(filename=None):
     if filename is not None:
         if filename in filenames:
             filenames = [filename]
+            filepaths = [filepath for filepath in filepaths if os.path.basename(filepath).endswith(filename)]
         else:
             print(f'The example "{filename}" is unknown.')
             print('Please choose one among the available examples:')
@@ -48,6 +49,7 @@ def show_gallery(filename=None):
     if filename is not None:
         if filename in filenames:
             filenames = [filename]
+            filepaths = [filepath for filepath in filepaths if os.path.basename(filepath).endswith(filename)]
         else:
             print(f'The example "{filename}" is unknown.')
             print('Please choose one among the available gallery items:')

@@ -9,6 +9,11 @@ usable_shapes = One2OneMapping({shape.SegmentLength: 'LONGITUDINAL',
                                 shape.SignedDistancePointLine: 'DISTANCE',
                                 shape.SignedXDist: 'X DISTANCE',
                                 shape.SignedYDist: 'Y DISTANCE',
+                                shape.SignedXDistMidToPoint: 'MID2POINT X DISTANCE',
+                                shape.SignedYDistMidToPoint: 'MID2POINT Y DISTANCE',
+                                shape.SignedXDistPointToMid: 'POINT2MID X DISTANCE',
+                                shape.SignedYDistPointToMid: 'POINT2MID Y DISTANCE',
+
                                 # shape.SquaredDistancePointSegment: 'GAP',  # experimental
                                 })
 

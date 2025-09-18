@@ -100,6 +100,10 @@ snapping_arrow_opacity = 0.35
 # only has an effect if "show_snapping_arrow" is true
 snapping_arrow_width = 2.5
 # only has an effect if "show_snapping_arrow" is true
+snapping_arrow_headwidth = 0.2
+# only has an effect if "show_snapping_arrow" is true
+snapping_arrow_headlength = 0.4
+# only has an effect if "show_snapping_arrow" is true
 
 
 # herein below scaling of the markersize to indicate stability,

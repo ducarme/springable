@@ -403,6 +403,39 @@ class SignedXDist(Shape):
         else:
             raise ValueError('Unknown mode')
 
+class SignedXDistPointToMid(Shape):
+    _DIMENSION = 1
+    def __init__(self, node0: Node, node1: Node, node2):
+        super().__init__(node0, node1, node2)
+
+    def compute(self, output_mode) \
+            -> float | tuple[float, np.ndarray] | tuple[float, np.ndarray, np.ndarray]:
+        x0, y0, x1, y1, x2, y2 = self.get_nodal_coordinates()
+        x_dist =  (x0 - (x1+x2)/2)
+        if output_mode == Shape.MEASURE:
+            return x_dist
+
+        jacobian = np.array([1, 0, -0.5, 0, -0.5, 0.0])
+        if output_mode == Shape.MEASURE_AND_JACOBIAN:
+            return x_dist, jacobian
+
+        hessian = np.zeros((6, 6))
+        if output_mode == Shape.MEASURE_JACOBIAN_AND_HESSIAN:
+            return x_dist, jacobian, hessian
+
+        else:
+            raise ValueError('Unknown mode')
+        
+class SignedXDistMidToPoint(SignedXDistPointToMid):
+
+    def compute(self, output_mode) \
+            -> float | tuple[float, np.ndarray] | tuple[float, np.ndarray, np.ndarray]:
+        out = super().compute(output_mode)
+        if isinstance(out, tuple):
+            return tuple(-o for o in out)
+        else:
+            return -out
+
 class SignedYDist(Shape):
     _DIMENSION = 1
     def __init__(self, node0: Node, node1: Node):
@@ -425,6 +458,39 @@ class SignedYDist(Shape):
 
         else:
             raise ValueError('Unknown mode')
+        
+class SignedYDistPointToMid(Shape):
+    _DIMENSION = 1
+    def __init__(self, node0: Node, node1: Node, node2):
+        super().__init__(node0, node1, node2)
+
+    def compute(self, output_mode) \
+            -> float | tuple[float, np.ndarray] | tuple[float, np.ndarray, np.ndarray]:
+        x0, y0, x1, y1, x2, y2 = self.get_nodal_coordinates()
+        y_dist =  (y0 - (y1+y2)/2)
+        if output_mode == Shape.MEASURE:
+            return y_dist
+
+        jacobian = np.array([0, 1, 0.0, -0.5, 0.0, -0.5])
+        if output_mode == Shape.MEASURE_AND_JACOBIAN:
+            return y_dist, jacobian
+
+        hessian = np.zeros((6, 6))
+        if output_mode == Shape.MEASURE_JACOBIAN_AND_HESSIAN:
+            return y_dist, jacobian, hessian
+
+        else:
+            raise ValueError('Unknown mode')
+        
+class SignedYDistMidToPoint(SignedYDistPointToMid):
+
+    def compute(self, output_mode) \
+            -> float | tuple[float, np.ndarray] | tuple[float, np.ndarray, np.ndarray]:
+        out = super().compute(output_mode)
+        if isinstance(out, tuple):
+            return tuple(-o for o in out)
+        else:
+            return -out
 
 class DistancePointLine(CompoundShape):
     _DIMENSION = 1

@@ -14,7 +14,7 @@ import time
 from .assembly import Assembly
 from .model import Model
 from .node import Node
-from .shape import IllDefinedShape
+from .shape import IllDefinedShape, Shape
 from .default_solver_settings import SolverSettings
 from .stability_states import StabilityStates
 
@@ -105,10 +105,33 @@ class Result:
             internal_force[i] = el.compute_generalized_force()
         self.get_model().get_assembly().set_coordinates(q0)
         return internal_force
-
-
-
-
+    
+    def get_stiffness_from_element_index(self, element_index: int, include_preloading=False, check_usability=True):
+        el = self.get_model().get_assembly().get_elements()[element_index]
+        q0 = self.get_model().get_assembly().get_coordinates().copy()
+        u = self.get_displacements(include_preloading, check_usability)
+        stiffness = np.empty(u.shape[0])
+        for i in range(u.shape[0]):
+            self.get_model().get_assembly().set_coordinates(q0 + u[i, :])
+            stiffness[i] = el.compute_generalized_stiffness()
+        self.get_model().get_assembly().set_coordinates(q0)
+        return stiffness
+    
+    def get_measure_from_element_index(self, element_index: int, include_preloading=False, check_usability=True):
+        el = self.get_model().get_assembly().get_elements()[element_index]
+        q0 = self.get_model().get_assembly().get_coordinates().copy()
+        u = self.get_displacements(include_preloading, check_usability)
+        measure = np.empty(u.shape[0])
+        for i in range(u.shape[0]):
+            self.get_model().get_assembly().set_coordinates(q0 + u[i, :])
+            measure[i] = el.get_shape().compute(output_mode=Shape.MEASURE)
+        self.get_model().get_assembly().set_coordinates(q0)
+        return measure
+    
+    def get_generalized_displacement_from_element_index(self, element_index: int, include_preloading=False, check_usability=True):
+        alpha = self.get_measure_from_element_index(element_index, include_preloading, check_usability)
+        alpha0 = self.get_model().get_assembly().get_elements()[element_index].get_behavior().get_natural_measure()
+        return alpha - alpha0
 
     def get_stability(self, include_preloading=False, check_usability=True):
         if include_preloading:

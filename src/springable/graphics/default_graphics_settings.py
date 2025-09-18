@@ -64,6 +64,8 @@ class PlotOptions(Updatable):
     snapping_arrow_opacity: float = 0.35
     snapping_arrow_style: str = '-'
     snapping_arrow_width: float = 2.5
+    snapping_arrow_headwidth: float = 0.2
+    snapping_arrow_headlength: float = 0.4
     size_for_stable_points: float = 1.
     size_for_stabilizable_points: float = .66
     size_for_unstable_points: float = .33

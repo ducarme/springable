@@ -215,19 +215,23 @@ def make_animation(result, save_dir, save_name: str = None, show=True, character
 
 
 def make_force_displacement_plot(result, save_dir, show=True,
-                                 graphics_settings=None, xlim=None, ylim=None, **plot_options):
+                                 graphics_settings=None, xlim=None, ylim=None,
+                                 preplot=None, afterplot=None,
+                                 **plot_options):
     result = load_result(result)
     _, p_options, _, _ = _load_graphics_settings(graphics_settings)
     p_options.update(plot_options)
     plot.force_displacement_curve(result, save_dir, show=show, xlim=xlim, ylim=ylim, **p_options)
 
 def make_custom_plot(post_processing, result, save_dir, show=True,
-                     graphics_settings=None, xlim=None, ylim=None, **plot_options):
+                     graphics_settings=None, xlim=None, ylim=None,
+                     preplot=None, afterplot=None, **plot_options):
     result = load_result(result)
     _, p_options, _, _ = _load_graphics_settings(graphics_settings)
     p_options.update(plot_options)
     plot.curve(post_processing['processing_fun'], result, save_dir, save_name=post_processing['save_name'],
-               show=show, xlim=xlim, ylim=ylim, xlabel=post_processing['xlabel'], ylabel=post_processing['ylabel'], **p_options)
+               show=show, xlim=xlim, ylim=ylim, xlabel=post_processing['xlabel'], ylabel=post_processing['ylabel'],
+               preplot=preplot, afterplot=afterplot, **p_options)
 
 
 def make_model_drawing(mdl: str | model.Model, save_dir,
