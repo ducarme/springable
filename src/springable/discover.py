@@ -1,3 +1,5 @@
+print('To show examples, run "discover.show_examples()"')
+print('To show the gallery, run "discover.show_gallery()"')
 from .simulation import simulate_model
 from .readwrite import fileio
 from .data import examples_csv_models, gallery_csv_models

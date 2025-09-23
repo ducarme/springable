@@ -54,6 +54,11 @@ class Result:
 
     def get_model(self) -> Model:
         return self._model
+    
+
+    def check_if_solution_usable(self):
+        if self._is_solution_unusable:
+            raise UnusableSolution
 
     def get_forces(self, include_preloading=False, check_usability=True):
         if include_preloading:
@@ -240,7 +245,7 @@ class Result:
             return None
         return index
 
-    def get_solving_process_info(self):
+    def get_solving_process_info(self) -> dict:
         return self._solving_process_info
 
 
@@ -362,6 +367,7 @@ class StaticSolver:
         self._free_dof_indices = self._assembly.get_free_dof_indices()
         self._nb_free_dofs = len(self._free_dof_indices)
         self._fixed_dof_indices = self._assembly.get_fixed_dof_indices()
+        termination_reason = None
 
         try:
             ks = self._assembly.compute_structural_stiffness_matrix()
@@ -376,11 +382,13 @@ class StaticSolver:
                                                         0, 0, 0, 0, 0, 0, 0)
                 end = time.time()
                 print(f"Solving duration: {end - start:.4f} s")
+                termination_reason = 'ill defined shape'
             solving_process_info = {'duration (s)': 0,
                                     '# stiffness matrix evals': 1,
                                     '# linear system resolutions': 0,
                                     '# increment retries': 0,
                                     '# avoided singular stiffness matrices': 0,
+                                    'termination': termination_reason
                                     }
             return (np.array([np.nan]), np.array([np.nan]), np.array(['nan'], dtype=str),
                     np.array([np.nan]), np.array([0], dtype=int), solving_process_info)
@@ -710,6 +718,7 @@ class StaticSolver:
                             reason += '\r\n'
                             update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i,
                                             i_max, reason, stability=equilibrium_stability[-1])
+                            termination_reason = 'final force reached'
                         break  # go to next loading step
 
                     # Checking if max displacement has been reached. If yes, we go to the next loading step.
@@ -726,11 +735,12 @@ class StaticSolver:
                             reason += '\r\n'
                             update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i,
                                             i_max, reason, stability=equilibrium_stability[-1])
+                            termination_reason = 'max displacement reached'
                         break  # go to next loading step
 
                     # Checking if the max number of iteration has been reached. If yes, the solving process is aborted.
                     if i == i_max:
-                        raise MaxNbIterationReached
+                        raise MaxNbIterationsReached
 
                     if verbose:
                         update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max,
@@ -742,11 +752,12 @@ class StaticSolver:
                                                         total_nb_increment_retries, total_nb_singular_matrices_avoided,
                                                         nb_limit_points_detected, nb_bifurcation_points_detected)
 
-        except MaxNbIterationReached:
+        except MaxNbIterationsReached:
             if verbose:
                 reason = '--> max nb of increments has been reached\r\n'
                 update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max, reason,
                                 stability=equilibrium_stability[-1])
+                termination_reason = 'max nb iterations reached'
                 _print_message_with_final_solving_stats('Full equilibrium path was not retrieved',
                                                         i, stiffness_matrix_eval_counter, linear_system_solving_counter,
                                                         total_nb_increment_retries, total_nb_singular_matrices_avoided,
@@ -757,6 +768,7 @@ class StaticSolver:
                           'Boundary conditions most likely allow rigid-body modes.\r\n')
                 update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max, reason,
                                 stability=equilibrium_stability[-1])
+                termination_reason = 'mechanism detected'
                 _print_message_with_final_solving_stats('Full equilibrium path was not retrieved',
                                                         i, stiffness_matrix_eval_counter, linear_system_solving_counter,
                                                         total_nb_increment_retries, total_nb_singular_matrices_avoided,
@@ -766,6 +778,7 @@ class StaticSolver:
                 reason = f'--> aborted (increment {i} could not converge)\r\n'
                 update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max, reason,
                                 stability=equilibrium_stability[-1])
+                termination_reason = 'convergence error'
                 _print_message_with_final_solving_stats('Full equilibrium path was not retrieved',
                                                         i, stiffness_matrix_eval_counter, linear_system_solving_counter,
                                                         total_nb_increment_retries, total_nb_singular_matrices_avoided,
@@ -775,6 +788,7 @@ class StaticSolver:
                 reason = '--> aborted (the shape of an element has become ill-defined)\r\n'
                 update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max, reason,
                                 stability=equilibrium_stability[-1])
+                termination_reason = 'ill defined shape'
                 _print_message_with_final_solving_stats('Full equilibrium path was not retrieved',
                                                         i, stiffness_matrix_eval_counter, linear_system_solving_counter,
                                                         total_nb_increment_retries, total_nb_singular_matrices_avoided,
@@ -784,6 +798,7 @@ class StaticSolver:
                 reason = '--> aborted (the mechanical behavior of an element has produced a nonfinite value)\r\n'
                 update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max, reason,
                                 stability=equilibrium_stability[-1])
+                termination_reason = 'nonfinite mechanical quantity'
                 _print_message_with_final_solving_stats('Full equilibrium path was not retrieved',
                                                         i, stiffness_matrix_eval_counter, linear_system_solving_counter,
                                                         total_nb_increment_retries, total_nb_singular_matrices_avoided,
@@ -799,6 +814,7 @@ class StaticSolver:
                                 '# linear system resolutions': linear_system_solving_counter,
                                 '# increment retries': total_nb_increment_retries,
                                 '# avoided singular stiffness matrices': total_nb_singular_matrices_avoided,
+                                'termination': termination_reason
                                 }
 
         return (np.array(equilibrium_displacements), np.array(equilibrium_forces),
@@ -1128,7 +1144,7 @@ class ConvergenceError(Exception):
     """ raise this when the algorithm cannot converge """
 
 
-class MaxNbIterationReached(Exception):
+class MaxNbIterationsReached(Exception):
     """ raise this when the max number of iteration is reached """
 
 
