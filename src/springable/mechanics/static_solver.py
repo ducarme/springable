@@ -137,6 +137,16 @@ class Result:
         alpha = self.get_measure_from_element_index(element_index, include_preloading, check_usability)
         alpha0 = self.get_model().get_assembly().get_elements()[element_index].get_behavior().get_natural_measure()
         return alpha - alpha0
+    
+    def get_elemental_hysteron_ids_at_state_index(self, i, include_preloading=False, check_usability=True):
+        q0 = self.get_model().get_assembly().get_coordinates().copy()
+        u = self.get_displacements(include_preloading, check_usability)
+        elemental_hysteron_ids = []
+        self.get_model().get_assembly().set_coordinates(q0 + u[i, :])
+        for el in self.get_model().get_assembly().get_elements():
+            elemental_hysteron_ids.append(el.get_hysteron_branch_id()) 
+        self.get_model().get_assembly().set_coordinates(q0)
+        return elemental_hysteron_ids
 
     def get_stability(self, include_preloading=False, check_usability=True):
         if include_preloading:

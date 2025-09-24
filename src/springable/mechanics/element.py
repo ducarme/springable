@@ -1,7 +1,7 @@
 import numpy as np
 from .node import Node
 from . import shape
-from .mechanical_behavior import MechanicalBehavior
+from .mechanical_behavior import MechanicalBehavior, BivariateBehavior
 
 
 class Element:
@@ -68,6 +68,17 @@ class Element:
         if self._behavior.get_nb_dofs() == 1:
             raise ValueError("The element does not have any internal degree of freedom")
         return self._vx
+    
+    def get_hysteron_branch_id(self):
+        branch_id = ''
+        if isinstance(self._behavior, BivariateBehavior):
+            hysteron_info = self._behavior.get_hysteron_info()
+            if hysteron_info:
+                for i, interval in enumerate(hysteron_info['branch_intervals']):
+                    if interval[0] <= self._x <= interval[1]:
+                        branch_id = hysteron_info['branch_ids'][i]
+                        break
+        return branch_id
 
     def compute_energy(self) -> float:
         """ Computes and returns the elastic energy currently stored in the element """
