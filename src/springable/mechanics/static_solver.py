@@ -7,6 +7,7 @@ import numpy as np
 from numpy.linalg import cond
 from scipy.linalg import solve
 from scipy.optimize import minimize
+from scipy.interpolate import interp1d
 from scipy.linalg import LinAlgWarning
 from dataclasses import asdict
 import sys
@@ -130,6 +131,18 @@ class Result:
         for i in range(u.shape[0]):
             self.get_model().get_assembly().set_coordinates(q0 + u[i, :])
             measure[i] = el.get_shape().compute(output_mode=Shape.MEASURE)
+        self.get_model().get_assembly().set_coordinates(q0)
+        return measure
+    
+    def get_measure_from_element_index_at_state_findex(self, element_index: int, findex: float, include_preloading=False, check_usability=True) -> float:
+        el = self.get_model().get_assembly().get_elements()[element_index]
+        q0 = self.get_model().get_assembly().get_coordinates().copy()
+        u = self.get_displacements(include_preloading, check_usability)
+        i0 = min(max(0, int(findex)), u.shape[0]-1)
+        i1 = min(i0 + 1, u.shape[0]-1)
+        q_i = q0 + interp1d([i0, i1], u[[i0, i1], :], axis=0)(findex)
+        self.get_model().get_assembly().set_coordinates(q_i)
+        measure = el.get_shape().compute(output_mode=Shape.MEASURE)
         self.get_model().get_assembly().set_coordinates(q0)
         return measure
     
@@ -393,12 +406,13 @@ class StaticSolver:
                 end = time.time()
                 print(f"Solving duration: {end - start:.4f} s")
                 termination_reason = 'ill defined shape'
-            solving_process_info = {'duration (s)': 0,
-                                    '# stiffness matrix evals': 1,
+            solving_process_info = {'duration (s)': end - start,
+                                    '# equilibria': 0,
+                                    '# stiffness matrix evals': stiffness_matrix_eval_counter,
                                     '# linear system resolutions': 0,
                                     '# increment retries': 0,
                                     '# avoided singular stiffness matrices': 0,
-                                    'termination': termination_reason
+                                    'termination': termination_reason,
                                     }
             return (np.array([np.nan]), np.array([np.nan]), np.array(['nan'], dtype=str),
                     np.array([np.nan]), np.array([0], dtype=int), solving_process_info)
@@ -820,6 +834,7 @@ class StaticSolver:
             print(f"Solving duration: {duration:.4f} s")
 
         solving_process_info = {'duration (s)': duration,
+                                '# equilibria': len(equilibrium_displacements),
                                 '# stiffness matrix evals': stiffness_matrix_eval_counter,
                                 '# linear system resolutions': linear_system_solving_counter,
                                 '# increment retries': total_nb_increment_retries,

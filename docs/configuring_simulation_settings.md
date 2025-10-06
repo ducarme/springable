@@ -30,7 +30,7 @@ import springable.simulation as ss
 
 ss.simulate_model(model_path='my_spring_model.csv',
                   save_dir='my_simulation_result',
-                  solver_settings_path='custom_solver_settings.toml')
+                  solver_settings='custom_solver_settings.toml')
 ```
 
 
@@ -62,8 +62,8 @@ import springable.simulation as ss
 
 ss.simulate_model(model_path='my_spring_model.csv',
                   save_dir='my_simulation_result',
-                  solver_settings_path='custom_solver_settings.toml',
-                  graphics_settings_path='custom_graphics_settings.toml')
+                  solver_settings='custom_solver_settings.toml',
+                  graphics_settings='custom_graphics_settings.toml')
 ```
 
 

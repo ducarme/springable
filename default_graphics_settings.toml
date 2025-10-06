@@ -124,7 +124,7 @@ hide_ticklabels = false
 
 [animation_options]
 fps = 25
-nb_frames = 100
+nb_frames = 50
 dpi = 200
 drive_mode = "none"
 # "none" (nothing driven), "force" (force-driven), "displacement" (displacement-driven)

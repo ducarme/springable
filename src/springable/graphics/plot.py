@@ -387,6 +387,8 @@ def curve(processing_fun: callable, result: Result,
     po.update(**plot_options)
 
     with plt.style.context(po.stylesheet):
+        result.check_if_solution_usable()
+        
         fig, ax = plt.subplots(figsize=(po.figure_width, po.figure_height))
         ax.set_box_aspect(po.axis_box_aspect)
         if preplot is not None:

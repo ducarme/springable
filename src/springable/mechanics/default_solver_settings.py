@@ -5,7 +5,7 @@ from ..utils.dataclass_utils import Updatable
 @dataclass
 class SolverSettings(Updatable):
     radius: float = 0.05
-    must_be_stable_to_finish_loadstep:bool = False
+    must_be_stable_to_finish_loadstep: bool = False
     detect_critical_points: bool = False
     critical_point_epsilon: float = 1e-3
     bifurcate_at_simple_bifurcations: bool = False

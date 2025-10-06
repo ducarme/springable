@@ -4,9 +4,9 @@ For a longitudinal spring, that curve will be interpreted as a *force-displaceme
 *torque-angle change* curve. For an area spring, as a *2d pressure-area change* curve. Etc.
 
 !!! info
-    Mathematically speaking, the generalized force $F$ is defined as the derivative of the elastic energy with respect to the *measure* $\alpha$
+    Mathematically speaking, the generalized force $f$ is defined as the derivative of the elastic energy with respect to the *measure* $\alpha$
     of the spring. The measure $\alpha$ is the *length* for a longitudinal spring, the *angle* for a angular spring, the *area* for an area spring, etc.
-    The generalized displacement $U$ is defined as the difference between the current measure $\alpha$ and the *natural* measure $\alpha_0$, that is, the measure
+    The generalized displacement $u$ is defined as the difference between the current measure $\alpha$ and the *natural* measure $\alpha_0$, that is, the measure
     of the spring in its natural configuration (wherein no force is generated and no elastic energy is stored).
 
 
@@ -43,7 +43,7 @@ By playing around with the interface, you will be able to create various general
 
 
 ## Linear behavior
-For a **linear** generalized force-displacement curve $F=kU$, where $k$ is the spring constant.
+For a **linear** generalized force-displacement curve $f=ku$, where $k$ is the spring constant.
 
 `LINEAR(k=<value>)` or `<value>`
 
@@ -62,13 +62,13 @@ Example: `..., LINEAR(k=2.0)` or equivalently `..., 2.0`
 
 
 ??? question "Units?"
-    The unit of $k$ should be the unit of the generalized force $F$
-    divided by the unit of the generalized displacement $U$.
+    The unit of $k$ should be the unit of the generalized force $f$
+    divided by the unit of the generalized displacement $u$.
 
 
 ## Logarithmic behavior
 A **logarithmic** behavior is defined by a generalized force-displacement curve given by
-$F=k\alpha_0\ln(\alpha/\alpha_0)$, $U=\alpha-\alpha_0$. It is useful to prevent springs from having a zero measure
+$f=k\alpha_0\ln(\alpha/\alpha_0)$, $u=\alpha-\alpha_0$. It is useful to prevent springs from having a zero measure
 (longitudinal springs with zero length, angular springs with zero angle, etc),
 as the generalized force approaches infinity as the measure gets close to zero.
 
@@ -96,14 +96,14 @@ Example: `... , LOGARITHMIC(k=2.0)`
     > A spring is defined with a behavior of type `LOGARITHMIC` with `k=2.0` and a natural measure `2.5`.
 
 ??? question "Units?"
-    The unit of $k$ should be the unit of the generalized force $F$
-    divided by the unit of the generalized displacement $U$.
+    The unit of $k$ should be the unit of the generalized force $f$
+    divided by the unit of the generalized displacement $u$.
 
 
 
 ## Bezier behavior
 A **Bezier** behavior is described by a generalized force-displacement curve defined as a [Bezier curve](https://en.wikipedia.org/wiki/B%C3%A9zier_curve).
-More precisely, the $F-U$ curve is given by $F(t)=\sum_{i=1}^n f_i b_{i,n}(t)$ and $U(t)=\sum_{i=1}^n u_i b_{i,n}(t)$, where $u_i$ and $f_i$ describe
+More precisely, the $f-u$ curve is given by $f(t)=\sum_{i=1}^n f_i b_{i,n}(t)$ and $u(t)=\sum_{i=1}^n u_i b_{i,n}(t)$, where $u_i$ and $f_i$ describe
 the coordinates of [control points](https://en.wikipedia.org/wiki/Control_point_(mathematics)),
 $b_{i,n}$ are the [Bernstein polynomials](https://en.wikipedia.org/wiki/Bernstein_polynomial) of degree $n$,
 and $t$ is the curve parameter that runs from 0 to 1.
@@ -122,12 +122,12 @@ Example: `..., BEZIER(u_i=[1.0;1.2;3.0];f_i=[2.0;-3.0;2.4])`
 
 
 ??? question "Units?"
-    The unit of each $u_i$ should be the unit of the generalized displacement $U$.
-    The unit of each $f_i$ should be the unit of the generalized force $F$.
+    The unit of each $u_i$ should be the unit of the generalized displacement $u$.
+    The unit of each $f_i$ should be the unit of the generalized force $f$.
 
 !!! note
-    For a generalized displacement $U$ larger than $u_n$, the corresponding generalized force is extrapolated linearly based on the slope at the last control point.
-    Also, the generalized force-displacement relation is defined for negative generalized displacements $U<0$ by imposing the symmetry $F(U<0)=-F(|U|)$.
+    For a generalized displacement $u$ larger than $u_n$, the corresponding generalized force is extrapolated linearly based on the slope at the last control point.
+    Also, the generalized force-displacement relation is defined for negative generalized displacements $u<0$ by imposing the symmetry $f(u<0)=-f(|u|)$.
 
 
 
@@ -144,7 +144,7 @@ meaning that at a certain generalized displacement value, multiple force values 
 Example: `..., BEZIER2(u_i=[2.5;-1.0;2.0];f_i=[2.0;-1.0;1.0])`
 > A spring is defined with a generalized force-displacement relation described as a Bezier curve of degree 3
 > with control points (0, 0), (`2.5`, `2.0`), (`-1.0`, `-1.0`) and (`2.0`, `1.0`).
-> This curve curves back; it cannot be described a function $F(U)$.
+> This curve curves back; it cannot be described a function $f(u)$.
 > 
 > ![](https://github.com/user-attachments/assets/8f5dae45-7a2e-46bd-afe1-ff1ef5814a8c){ width="300"}
 > ///caption
@@ -154,8 +154,8 @@ Example: `..., BEZIER2(u_i=[2.5;-1.0;2.0];f_i=[2.0;-1.0;1.0])`
 
 
 ??? question "Units?"
-    The unit of each $u_i$ should be the unit of the generalized displacement $U$.
-    The unit of each $f_i$ should be the unit of the generalized force $F$.
+    The unit of each $u_i$ should be the unit of the generalized displacement $u$.
+    The unit of each $f_i$ should be the unit of the generalized force $f$.
 
 !!! note "Important"
     Due to implementation details, the way the curve folds and unfolds should respect some conditions. First, the curve cannot have [cusps](https://en.wikipedia.org/wiki/Cusp_(singularity)).
@@ -163,7 +163,7 @@ Example: `..., BEZIER2(u_i=[2.5;-1.0;2.0];f_i=[2.0;-1.0;1.0])`
     (it is perfectly fine for the tangent to point vertically downward).
  
     Also, a Bezier2 behavior introduces an extra [degree of freedom (DOF)](https://en.wikipedia.org/wiki/Degrees_of_freedom_(mechanics))
-    in order to disambiguate the state of the spring, as the generalized displacement $U$ is not enough to fully define its state.
+    in order to disambiguate the state of the spring, as the generalized displacement $u$ is not enough to fully define its state.
     Using a **Bezier** behavior instead when the curve does not curve back helps keep the number of DOFs low.
 
 ## Piecewise behavior
@@ -193,14 +193,14 @@ Example: `..., PIECEWISE(k_i=[1.0;-1.0;2.0]; u_i=[1.0;2.0]; us=0.2)`
 
 
 ??? question "Units?"
-    The unit of each $k_i$ should be the unit of the generalized force $F$
-    divided by the unit of the generalized displacement $U$.
-    The unit of each $u_i$ and the unit of $u_s$ should be the unit of the generalized displacement $U$.
+    The unit of each $k_i$ should be the unit of the generalized force $f$
+    divided by the unit of the generalized displacement $u$.
+    The unit of each $u_i$ and the unit of $u_s$ should be the unit of the generalized displacement $u$.
 
 !!! note
     The quantity $u_s$ must be positive and lower than $\min((u_1-0.0), (u_2-u_1)/2, ..., (u_{n-1}-u_{n-2})/2)$.
-    Also, the generalized force-displacement relation is defined for negative generalized displacements $U<0$
-    by imposing the symmetry $F(U<0)=-F(|U|)$.
+    Also, the generalized force-displacement relation is defined for negative generalized displacements $u<0$
+    by imposing the symmetry $f(u<0)=-f(|u|)$.
 
 ## Zigzag behavior
 A **zigzag** behavior is described by a generalized force-displacement curve defined as a
@@ -221,13 +221,13 @@ Example: `..., ZIGZAG(u_i=[1.0; 2.0; 3.0]; f_i=[1.0; -0.5; 2.0]; epsilon=0.8)`
 > ///
 
 ??? question "Units?"
-    The unit of each $u_i$ should be the unit of the generalized displacement $U$.
-    The unit of each $f_i$ should be the unit of the generalized force $F$.
+    The unit of each $u_i$ should be the unit of the generalized displacement $u$.
+    The unit of each $f_i$ should be the unit of the generalized force $f$.
     The smoothing parameter $\epsilon$ has no dimension.
 
 !!! note
-    The generalized force-displacement relation is defined for negative generalized displacements $U<0$
-    by imposing the symmetry $F(U<0)=-F(|U|)$.
+    The generalized force-displacement relation is defined for negative generalized displacements $u<0$
+    by imposing the symmetry $f(u<0)=-f(|u|)$.
 
 ## Zigzag2 behavior
 A **zigzag2** behavior is the same as a [zigzag behavior](#zigzag-behavior).
@@ -241,15 +241,15 @@ Example: `..., ZIGZAG2(u_i=[2.0; 1.0; 3.0]; f_i=[2.0; 0.0; 1.0]; epsilon=0.4)`
 > A spring is defined with a generalized force-displacement relation described as a smoothed zigzag curve
 > with control points (0, 0), (`2.0`, `2.0`), (`1.0`, `0.0`) and (`3.0`, `1.0`).
 > The corners are smoothed using $\epsilon=$`0.4`
-> This curve curves back; it cannot be described a function $F(U)$.
+> This curve curves back; it cannot be described a function $f(u)$.
 > 
 > ![](https://github.com/user-attachments/assets/2e44e2ca-29eb-4298-88d8-537482379d6a){ width="300"}
 > ///caption
 > ///
 
 ??? question "Units?"
-    The unit of each $u_i$ should be the unit of the generalized displacement $U$.
-    The unit of each $f_i$ should be the unit of the generalized force $F$.
+    The unit of each $u_i$ should be the unit of the generalized displacement $u$.
+    The unit of each $f_i$ should be the unit of the generalized force $f$.
     The smoothing parameter $\epsilon$ has no dimension.
 
 !!! note "Important"
@@ -258,39 +258,42 @@ Example: `..., ZIGZAG2(u_i=[2.0; 1.0; 3.0]; f_i=[2.0; 0.0; 1.0]; epsilon=0.4)`
     (it is perfectly fine for the tangent to point vertically downward).
  
     Also, a zigzag2 behavior introduces an extra [degree of freedom (DOF)](https://en.wikipedia.org/wiki/Degrees_of_freedom_(mechanics))
-    in order to disambiguate the state of the spring, as the generalized displacement $U$ is not enough to fully define its state.
+    in order to disambiguate the state of the spring, as the generalized displacement $u$ is not enough to fully define its state.
     Using a **zigzag** behavior instead when the curve does not curve back helps keep the number of DOFs low.
 
 
 ## Contact behavior
 A **contact** behavior is described by a generalized force-displacement curve that
-is perfectly zero for large displacement $U \geq u_\Delta$ and yields a relatively strong repulsion force for low displacement $U<u_\Delta$.
+is perfectly zero for large displacement $u \geq \alpha_\Delta - \alpha_0$ and yields a relatively strong repulsion force for low displacement $u<\alpha_\Delta - \alpha_0$.
 More precisely, the generalized force-displacement curve is given by
 
 $$
-F(U) = \begin{cases}
-    0&\text{if $U \ge u_\Delta$}\\
-    -f_0\left(\dfrac{u_\Delta-U}{u_\text{c}}\right)^3&\text{if $U < u_\Delta$},
+f(u) = \begin{cases}
+    0&\text{if $u \ge \alpha_\Delta - \alpha_0$}\\
+    -f_0\left(\dfrac{\alpha_\Delta - \alpha_0-u}{u_\text{c}}\right)^3&\text{if $u < \alpha_\Delta - \alpha_0$},
 \end{cases}
 $$
 
-where $f_0$ is the magnitude of the generalized force $F$ when the generalized displacement $U$ is decreased by $u_\text{c}$ from $u_\Delta$.
+where $f_0$ is the magnitude of the generalized force $f$ when the generalized displacement $u$ is decreased by $u_\text{c}$ from $\alpha_\Delta - \alpha_0$.
 It is useful to model contact, as a relatively significant force is generated but only below a certain threshold.
 
-`CONTACT(f0=<value1>; uc=<value2>)`
+`CONTACT(f0=<value1>; uc=<value2>; delta=<value3>)`
 
 
-Example: `..., CONTACT(f0=3.0; uc=0.2; u_delta=1.4)`
-> A spring is defined with a contact behavior. When the generalized displacement $U=\alpha-\alpha_0$ of the spring becomes less than `1.4`,
-> an increasingly strong repulsion generalized force is generated, reaching -`3.0` when the displacement $U=$`1.4`-`0.2`$=1.2$.
+Example: `..., CONTACT(f0=3.0; uc=0.01; delta=0.5)`
+> A spring is defined with a contact behavior. When the measure $\alpha$ of the spring becomes less than `delta=0.5`,
+> an increasingly strong repulsion generalized force is generated, reaching -`3.0` when the measure is decreased by `0.01` from the configuration where $\alpha=$ `0.5`.
 > 
-> ![](https://github.com/user-attachments/assets/a8f17fe5-cd4f-41fe-b7a1-65842625f7d9){width="300"}
+<!-- > ![](https://github.com/user-attachments/assets/a8f17fe5-cd4f-41fe-b7a1-65842625f7d9){width="300"}
 > ///caption
-> ///
+> /// -->
 
 ??? question "Units?"
-    The unit of $u_c$ should be the unit of the generalized displacement $U$.
-    The unit of $f_0$ should be the unit of the generalized force $F$.
+    The unit of $u_c$ should be the unit of the generalized displacement $u$.
+    The unit of $f_0$ should be the unit of the generalized force $f$.
+
+!!! note
+    For a spring with a contact behavior, the natural measure $\alpha_0$ does not have any effect, as the force produced by the contact behavior solely depends on the measure $\alpha$; it is independent of the natural measure $\alpha_0$.
 
 ## Isothermal behavior
 
@@ -306,12 +309,12 @@ where $p_0$ is the ambient pressure, $V_0$ is the volume of the gas at ambient p
 $T_0$ is the temperature of the gas (constant), $p$ is the current pressure, $V$ is the current volume,
 $n$ is the amount of substance (constant), $R$ is the gas constant.
 
-More precisely, the generalized force $F$ plays the role of the pressure difference, $F=p_0-p$,
-while the generalized displacement plays the role of volume change, $U=V-V_0$. The measure $\alpha$ and
-natural measure $\alpha_0$ are mapped to $\alpha=V$ and $\alpha_0=V_0$, respectively. The $F-U$ curve is therefore given by
+More precisely, the generalized force $f$ plays the role of the pressure difference, $f=p_0-p$,
+while the generalized displacement plays the role of volume change, $u=V-V_0$. The measure $\alpha$ and
+natural measure $\alpha_0$ are mapped to $\alpha=V$ and $\alpha_0=V_0$, respectively. The $f-u$ curve is therefore given by
 
 $$
-F = nRT_0\frac{U}{(U+\alpha_0)\alpha_0}.
+f = nRT_0\frac{u}{(u+\alpha_0)\alpha_0}.
 $$
 
 `ISOTHERMAL_GAS(n=<n_value>; R=<R_value>; T0=<T0_value>)`
@@ -338,12 +341,12 @@ Example: `..., ISOTHERMAL_GAS(n=1.0; R=8.3; T0=300)`
 
 ??? question "Units?"
     The unit of the quantity $nRT_0$ should be a unit of energy; more precisely,
-    it should be the unit of the generalized force $F$
-    multiplied by the unit of the generalized displacement $U$.
+    it should be the unit of the generalized force $f$
+    multiplied by the unit of the generalized displacement $u$.
 
 !!! note
-    A negative generalized force $F<0$ corresponds to a compressed state
-    (the pressure is greater than the ambient pressure, $p>p_0$). A positive generalized force $F>0$ corresponds to
+    A negative generalized force $f<0$ corresponds to a compressed state
+    (the pressure is greater than the ambient pressure, $p>p_0$). A positive generalized force $f>0$ corresponds to
     a *vacuumed* state (the pressure is smaller than the ambient pressure, $p<p_0$).
 
 
@@ -364,12 +367,12 @@ $T_0$ is the temperature of the gas at ambient pressure, $p$ is the current pres
 $n$ is the amount of substance (constant), $R$ is the gas constant and $\gamma$ is the
 [heat capacity ratio](https://en.wikipedia.org/wiki/Heat_capacity_ratio) (constant).
 
-More precisely, the generalized force $F$ plays the role of the pressure difference, $F=p_0-p$,
-while the generalized displacement plays the role of volume change, $U=V-V_0$. The measure $\alpha$ and
-natural measure $\alpha_0$ are mapped to $\alpha=V$ and $\alpha_0=V_0$, respectively. The $F-U$ curve is therefore given by
+More precisely, the generalized force $f$ plays the role of the pressure difference, $f=p_0-p$,
+while the generalized displacement plays the role of volume change, $u=V-V_0$. The measure $\alpha$ and
+natural measure $\alpha_0$ are mapped to $\alpha=V$ and $\alpha_0=V_0$, respectively. The $f-u$ curve is therefore given by
 
 $$
-F(U) = nRT_0\left(\dfrac1{\alpha_0} - \dfrac1{U+\alpha_0}\left(\dfrac{\alpha_0}{U+\alpha_0}\right)^{\gamma-1}\right).
+f(u) = nRT_0\left(\dfrac1{\alpha_0} - \dfrac1{u+\alpha_0}\left(\dfrac{\alpha_0}{u+\alpha_0}\right)^{\gamma-1}\right).
 $$
 
 `ISENTROPIC_GAS(n=<n_value>; R=<R_value>; T0=<T0_value>; gamma=<gamma_value>)`
@@ -397,12 +400,12 @@ Example: `..., ISENTROPIC_GAS(n=1.0; R=8.3; T0=300; gamma=1.4)`
 
 ??? question "Units?"
     The unit of the quantity $nRT_0$ should be a unit of energy;
-    more precisely, it should be the unit of the generalized force $F$
-    multiplied by the unit of the generalized displacement $U$. The heat capacity ratio $\gamma$ has no dimension.
+    more precisely, it should be the unit of the generalized force $f$
+    multiplied by the unit of the generalized displacement $u$. The heat capacity ratio $\gamma$ has no dimension.
 
 !!! note
-    A negative generalized force $F<0$ corresponds to a compressed state
-    (the pressure is greater than the ambient pressure, $p>p_0$). A positive generalized force $F>0$ corresponds to
+    A negative generalized force $f<0$ corresponds to a compressed state
+    (the pressure is greater than the ambient pressure, $p>p_0$). A positive generalized force $f>0$ corresponds to
     a *vacuumed* state (the pressure is smaller than the ambient pressure, $p<p_0$).
 
 

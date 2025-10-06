@@ -1,0 +1,26 @@
+PARAMETERS
+k, 0.5
+a, 1.0
+b, 1.0
+c, 1.5
+prestress, 1e-5
+NODES
+0, 0.0, 0.0, 1, 1
+1, X0+COS(ARCSIN(c/2/a))*a, Y0+c/2, 0, 0
+2, X1+b, Y1, 0, 0
+3, X2+COS(ARCSIN(c/2/a))*a, Y0, 1, 1
+4, X2, -Y2, 0, 0
+5, X1, -Y1, 0, 0
+LONGITUDINAL FLEXELS
+# cables
+0-1, PIECEWISE(k_i=[1e-6; 1.0];u_i=[1e-3]; us=0.99e-3;mode=1), a * (1-prestress)
+1-2, PIECEWISE(k_i=[1e-6; 1.0];u_i=[1e-3]; us=0.99e-3;mode=1), b * (1-prestress)
+2-3, PIECEWISE(k_i=[1e-6; 1.0];u_i=[1e-3]; us=0.99e-3;mode=1), a * (1-prestress)
+3-4, PIECEWISE(k_i=[1e-6; 1.0];u_i=[1e-3]; us=0.99e-3;mode=1), a * (1-prestress)
+4-5, PIECEWISE(k_i=[1e-6; 1.0];u_i=[1e-3]; us=0.99e-3;mode=1), b * (1-prestress)
+5-0, PIECEWISE(k_i=[1e-6; 1.0];u_i=[1e-3]; us=0.99e-3;mode=1), a * (1-prestress)
+# struts
+1-5, LINEAR(k=k), c * (1+prestress)
+2-4, LINEAR(k=k), c * (1+prestress)
+LOADING
+5, X, +0.1, -0.001

@@ -1,0 +1,32 @@
+PARAMETERS
+diameter, 10.0
+alpha0, 0.675
+kl, 2.0
+kr, 0.075
+NODES
+0, diameter/2 * COS(alpha0 + (PI-2*alpha0) / 4 * 0), diameter/2 * SIN(alpha0 + (PI-2*alpha0) / 4 * 0), 1, 1
+1, diameter/2 * COS(alpha0 + (PI-2*alpha0) / 4 * 1), diameter/2 * SIN(alpha0 + (PI-2*alpha0) / 4 * 1), 0, 0
+2, diameter/2 * COS(alpha0 + (PI-2*alpha0) / 4 * 2), diameter/2 * SIN(alpha0 + (PI-2*alpha0) / 4 * 2), 0, 0
+3, diameter/2 * COS(alpha0 + (PI-2*alpha0) / 4 * 3), diameter/2 * SIN(alpha0 + (PI-2*alpha0) / 4 * 3), 0, 0
+4, diameter/2 * COS(alpha0 + (PI-2*alpha0) / 4 * 4), diameter/2 * SIN(alpha0 + (PI-2*alpha0) / 4 * 4), 1, 1
+5, X4, Y4-diameter/7, 1, 0
+6, (X0+X4)/2, Y4-diameter/7, 1, 0
+7, X0, Y4-diameter/7, 1, 0
+LONGITUDINAL FLEXELS
+0-1, LINEAR(k=kl)
+1-2, LINEAR(k=kl)
+2-3, LINEAR(k=kl)
+3-4, LINEAR(k=kl)
+ANGULAR FLEXELS
+7-0-1, LINEAR(k=0.99*kr)
+0-1-2, LINEAR(k=0.98*kr)
+1-2-3, LINEAR(k=1.01*kr)
+2-3-4, LINEAR(k=1.00*kr)
+3-4-5, LINEAR(k=1.02*kr)
+6-5-4, LINEAR(k=40.0)
+7-6-5, LINEAR(k=40.0)
+0-7-6, LINEAR(k=40.0)
+AREA FLEXELS
+0-1-2-3-4-5-6-7, ISOTHERMAL(n=0.14; R=1.0; T0=4.0)
+LOADING
+6, Y, -0.25, -diameter*1.2

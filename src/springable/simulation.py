@@ -1,4 +1,4 @@
-from .mechanics import static_solver
+from .mechanics import static_solver, default_solver_settings
 from .readwrite import fileio as io
 from .graphics.default_graphics_settings import GeneralOptions
 from .graphics import animation
@@ -6,9 +6,13 @@ from .mechanics import model
 from . import visualization
 import numpy as np
 import os.path
+from ..springable import __version__
 
 
-def solve_model(_model: model.Model | str, solver_settings: dict | str = None) -> static_solver.Result:
+
+def solve_model(_model: model.Model | str,
+                solver_settings: dict | str = None,
+                print_custom_solver_settings=False) -> static_solver.Result:
     if not isinstance(_model, model.Model):
         _model = io.read_model(_model)
         if not isinstance(_model, model.Model):
@@ -17,10 +21,25 @@ def solve_model(_model: model.Model | str, solver_settings: dict | str = None) -
         if isinstance(solver_settings, str):
             solver_settings = io.read_solver_settings_file(solver_settings)
         if not isinstance(solver_settings, dict):
-            ValueError('Invalid second argument. When specified, it should be the solver-settings file path, '
+            ValueError('Invalid second argument. When specified, it should be the solver settings file path, '
                        'or a dictionary of settings')
     else:
         solver_settings = {}
+    
+    if print_custom_solver_settings:
+        dss = default_solver_settings.SolverSettings()
+        matching_dss = {k: getattr(dss, k, None) for k in solver_settings.keys()
+                                                 if getattr(dss, k, None) is not None}
+        if solver_settings:
+            settings_str = ', '.join([f'{k} = {v:.2E} (default: {matching_dss[k]:.2E})'
+                                      if isinstance(v, float)
+                                      else f'{k} = {v} (default: {matching_dss[k]})'.lower()
+                                      for k, v in solver_settings.items()
+                                      if k in matching_dss.keys()])
+            print(f'Solving with the following custom solver setting(s): {settings_str}...')
+        else:
+            print('Solving with default solver settings...')
+
     slv = static_solver.StaticSolver(_model, **solver_settings)
     slv.guide_spring_assembly_to_natural_configuration()
     return slv.solve()
@@ -30,8 +49,11 @@ def save_results(result: static_solver.Result, save_dir):
     io.write_results(result, save_dir)
 
 
-def simulate_model(model_path, save_dir=None, solver_settings_path: str = None, graphics_settings_path: str = None,
-                   print_model_file=False, postprocessing=None, overwrite_results=False) -> str:
+def simulate_model(model_path, save_dir=None,
+                   solver_settings: str | dict = None,
+                   graphics_settings: str | tuple[dict, dict, dict, dict] | list[dict] = None,
+                   print_model_file=False, print_custom_solver_settings=True,
+                   postprocessing=None, overwrite_results=False) -> str:
     # CREATE MAIN DIRECTORY WHERE RESULT WILL BE SAVED + COPY INPUT FILES
     if save_dir is None:
         save_dir = io.mkdir(os.path.splitext(os.path.basename(model_path))[0], exist_ok=overwrite_results)
@@ -39,28 +61,28 @@ def simulate_model(model_path, save_dir=None, solver_settings_path: str = None, 
         save_dir = io.mkdir(save_dir, exist_ok=overwrite_results)
         
     io.copy_model_file(save_dir, model_path)
-    if solver_settings_path is not None:
-        io.copy_solver_settings_file(save_dir, solver_settings_path)
-    if graphics_settings_path is not None:
-        io.copy_graphics_settings_file(save_dir, graphics_settings_path)
+
+    if isinstance(solver_settings, str):
+        io.copy_solver_settings_file(save_dir, solver_settings)
+    elif isinstance(solver_settings, dict):
+        io.write_solver_settings(solver_settings, save_dir)
+            
+    if isinstance(graphics_settings, str):
+        io.copy_graphics_settings_file(save_dir, graphics_settings)
+    elif isinstance(graphics_settings, (tuple, list)):
+        io.write_graphics_settings(graphics_settings, save_dir)
 
     if print_model_file:
         io.print_model_file(model_path)
 
     # READ INPUT FILES
     mdl = io.read_model(model_path)
+
     general_options = GeneralOptions()
-    if graphics_settings_path is not None:
-        graphics_settings = io.read_graphics_settings_file(graphics_settings_path)
-        (custom_general_options,
-         custom_plot_options,
-         custom_animation_options,
-         custom_assembly_appearance) = graphics_settings
-    else:
-        (custom_general_options,
-         custom_plot_options,
-         custom_animation_options,
-         custom_assembly_appearance) = {}, {}, {}, {}
+    (custom_general_options,
+     custom_plot_options,
+     custom_animation_options,
+     custom_assembly_appearance) = io.load_graphics_settings(graphics_settings)
     general_options.update(**custom_general_options)
 
     if general_options.generate_model_drawing:
@@ -68,7 +90,7 @@ def simulate_model(model_path, save_dir=None, solver_settings_path: str = None, 
             print("Model is drawn in new window. Close the window to continue with the simulation...")
         animation.draw_model(mdl, save_dir, show=general_options.show_model_drawing, **custom_assembly_appearance)
 
-    result = solve_model(mdl, solver_settings_path)
+    result = solve_model(mdl, solver_settings, print_custom_solver_settings=print_custom_solver_settings)
     save_results(result, save_dir)
     print(f"Simulation results have been saved in {save_dir}.")
     custom_general_options['generate_model_drawing'] = False

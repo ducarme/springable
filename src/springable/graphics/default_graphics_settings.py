@@ -88,7 +88,7 @@ class PlotOptions(Updatable):
 @dataclass
 class AnimationOptions(Updatable):
     fps: int = 25
-    nb_frames: int = 100
+    nb_frames: int = 50
     dpi: int = 200
     drive_mode: str = 'none'
     cycling: bool = False

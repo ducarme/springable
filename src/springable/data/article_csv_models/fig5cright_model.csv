@@ -1,0 +1,29 @@
+PARAMETERS
+kr0, 1.0
+kr1, 27.0
+d, 0.25
+h, 1.0
+eps, 1e-4
+NODES
+0, 0.0, h, 1, 0
+1, X0+d, Y0, 1, 0
+2, X0+eps, Y0 - h/2, 0, 0
+3, X1-eps, Y1 - h/2, 0, 0
+4, X0, Y0 - h, 1, 1
+5, X1, Y1 - h, 1, 1
+6, (X0+X1)/2, (Y0+Y1)/2+0.1, 1, 0
+LONGITUDINAL FLEXELS
+0-2, LINEAR(k=1e3)
+2-4, LINEAR(k=1e3)
+1-3, LINEAR(k=3e3)
+3-5, LINEAR(k=3e3)
+ANGULAR FLEXELS
+0-2-4, LINEAR(k=kr0)
+1-3-5, LINEAR(k=kr1)
+X DISTANCE FLEXELS
+3-2, CONTACT(f0=5.0;uc=0.001;delta=0.0)
+Y DISTANCE FLEXELS
+6-0, LINEAR(k=1e5)
+6-1, LINEAR(k=1e5)
+LOADING
+6, Y, -500.0, -h/3.0

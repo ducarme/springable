@@ -8,6 +8,7 @@ import csv
 import shutil
 import json
 import sys
+from pathlib import Path
 from collections.abc import Iterator
 
 if sys.version_info >= (3, 11):
@@ -19,7 +20,7 @@ else:
 def print_model_file(model_path, print_title=True):
     title = ''
     if print_title:
-        title = f'MODEL: {os.path.basename(model_path)}'
+        title = f'model file: {os.path.basename(model_path)}'
         print(''.join(['-']*(len(title) + 4)))
         print(f'| {title} |')
         print(''.join(['-']*(len(title) + 4)))
@@ -37,6 +38,7 @@ def read_model(model_path, parameters: dict[str, float | str] = None) -> Model:
     if parameters is not None:
         _parameters.update(parameters)
     evaluator = se.SimpleEval(names=_parameters)
+    evaluator.names.update({'HERE': Path(model_path).parent})
     model_text = ''
     reading_model = False
     with open(model_path, 'r') as file:
@@ -129,12 +131,26 @@ def read_parameters_from_model_file(model_path) -> tuple[dict[str, float | str],
     return parameters, design_parameter_data
 
 
-def write_solver_parameters(solver_parameters, save_dir, save_name='solver_parameters.csv'):
+def write_dictionary(d: dict, save_dir, save_name):
     # Save the values of the solver parameters used for this simulation
     with open(os.path.join(save_dir, save_name), 'w', newline='') as output_file:
         writer = csv.writer(output_file)
-        for k, v in solver_parameters.items():
+        for k, v in d.items():
             writer.writerow([k, v])
+
+def read_dictionary(file_path) ->dict:
+    d = {}
+    try:
+        with open(file_path, mode='r') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                try:
+                    d[row[0]] = float(row[1])
+                except ValueError:
+                    d[row[0]] = row[1]
+    except FileNotFoundError:
+        return None
+    return d
 
 
 def _read_settings_file(file_path):
@@ -142,10 +158,20 @@ def _read_settings_file(file_path):
         settings = load_toml_file(f)
     return settings
 
+def _basic_dict_to_toml_string(d, f):
+    for key, value in d.items():
+        if isinstance(value, str):
+            f.write(f'{key} = "{value}"\n')
+        else:
+            f.write(f"{key} = {value}\n")    
+
 
 def read_solver_settings_file(file_path):
     return _read_settings_file(file_path)
 
+def write_solver_settings(ss: dict, save_dir, save_name='solver_settings.toml'):
+    with open(os.path.join(save_dir, save_name), "w") as f:
+        _basic_dict_to_toml_string(ss, f)
 
 def read_graphics_settings_file(file_path):
     settings = _read_settings_file(file_path)
@@ -153,6 +179,36 @@ def read_graphics_settings_file(file_path):
             settings.get('plot_options', {}),
             settings.get('animation_options', {}),
             settings.get('assembly_appearance', {}))
+
+def write_graphics_settings(gs: tuple[dict, dict, dict, dict] | list[dict],
+                            save_dir, save_name='graphics_settings.toml'):
+    with open(os.path.join(save_dir, save_name), "w") as f:
+        f.write('[general_options]\n')
+        _basic_dict_to_toml_string(gs[0], f)
+        f.write('[plot_options]\n')
+        _basic_dict_to_toml_string(gs[1], f)
+        f.write('[animation_options]\n')
+        _basic_dict_to_toml_string(gs[2], f)
+        f.write('[assembly_appearance]\n')
+        _basic_dict_to_toml_string(gs[3], f)
+
+def load_graphics_settings(graphics_settings: str | tuple | list):
+    if graphics_settings is not None:
+        if isinstance(graphics_settings, str):
+            graphics_settings = read_graphics_settings_file(graphics_settings)
+        valid = isinstance(graphics_settings, (tuple, list))
+        if valid:
+            for options in graphics_settings:
+                if not isinstance(options, dict):
+                    valid = False
+                    break
+        if not valid:
+            raise ValueError("Incorrect graphics settings specification. If specified, the argument must "
+                             "be the path to the graphics settings file, or an already loaded graphics settings "
+                             "variable, that is a list or tuple of 4 dictionaries")
+    else:
+        graphics_settings = {}, {}, {}, {}
+    return graphics_settings
 
 def read_experimental_force_displacement_data(filepath,
                                               displacement_column_index=0, force_column_index=1, delimiter=','):

@@ -505,6 +505,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
             except LoadingPathEmpty:
                 print(f"Cannot make the animation in {ao.drive_mode}-driven mode, "
                       f"because no stable points have been found under these loading conditions")
+                plt.close(fig=fig)
                 return
             except DiscontinuityInTheSolutionPath:
                 print(f"Cannot make the animation in {ao.drive_mode}-driven mode, "
@@ -514,6 +515,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                       f"If you still want to see the animated solution, despite being invalid, "
                       f"set the 'drive_mode' to 'none' in the graphics settings (animation options). "
                 )
+                plt.close(fig=fig)
                 return
         else:
             frame_indices = np.round(np.linspace(0, u.shape[0] - 1, ao.nb_frames)).astype(int)

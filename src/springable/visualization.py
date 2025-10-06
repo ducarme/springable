@@ -25,25 +25,6 @@ def _print_progress(title, index, length):
     sys.stdout.flush()
 
 
-def _load_graphics_settings(graphics_settings: str | tuple | list):
-    if graphics_settings is not None:
-        if isinstance(graphics_settings, str):
-            graphics_settings = io.read_graphics_settings_file(graphics_settings)
-        valid = isinstance(graphics_settings, (tuple, list))
-        if valid:
-            for options in graphics_settings:
-                if not isinstance(options, dict):
-                    valid = False
-                    break
-        if not valid:
-            raise ValueError("Incorrect graphics settings specification. If specified, the last argument must "
-                             "be the path to the graphic-settings file, or an already loaded graphic-settings "
-                             "variable, that is a list or tuple of 4 dictionaries")
-    else:
-        graphics_settings = {}, {}, {}, {}
-    return graphics_settings
-
-
 def load_result(_result: str | static_solver.Result) -> static_solver.Result:
     if isinstance(_result, str):
         _result = io.read_results(_result)
@@ -55,7 +36,7 @@ def load_result(_result: str | static_solver.Result) -> static_solver.Result:
 
 def visualize_scan_results(scan_results_dir: str, save_dir: str = '',
                            graphics_settings: list[dict] | tuple[dict] | str = None, postprocessing = None):
-    general_options, plot_options, animation_options, assembly_appearance = _load_graphics_settings(graphics_settings)
+    general_options, plot_options, animation_options, assembly_appearance = io.load_graphics_settings(graphics_settings)
     go = GeneralOptions()
     go.update(**general_options)
 
@@ -154,7 +135,7 @@ def visualize_scan_results(scan_results_dir: str, save_dir: str = '',
 def visualize_result(result: static_solver.Result | str, save_dir: str = '',
                      graphics_settings: list | tuple | str = None, postprocessing = None):
     result = load_result(result)
-    general_options, plot_options, animation_options, assembly_appearance = _load_graphics_settings(graphics_settings)
+    general_options, plot_options, animation_options, assembly_appearance = io.load_graphics_settings(graphics_settings)
 
     go = GeneralOptions()
     go.update(**general_options)
@@ -205,7 +186,7 @@ def visualize_result(result: static_solver.Result | str, save_dir: str = '',
 def make_animation(result, save_dir, save_name: str = None, show=True, characteristic_length=None,
                    extra_init=None, extra_update=None, post_processing=None, graphics_settings=None, **animation_options):
     result = load_result(result)
-    _, plot_options, anim_options, assembly_appearance = _load_graphics_settings(graphics_settings)
+    _, plot_options, anim_options, assembly_appearance = io.load_graphics_settings(graphics_settings)
     anim_options.update(animation_options)
     animation.animate(result, save_dir, save_name=save_name, show=show,
                       extra_init=extra_init, extra_update=extra_update,
@@ -219,7 +200,7 @@ def make_force_displacement_plot(result, save_dir, show=True,
                                  preplot=None, afterplot=None,
                                  **plot_options):
     result = load_result(result)
-    _, p_options, _, _ = _load_graphics_settings(graphics_settings)
+    _, p_options, _, _ = io.load_graphics_settings(graphics_settings)
     p_options.update(plot_options)
     plot.force_displacement_curve(result, save_dir, show=show, xlim=xlim, ylim=ylim, **p_options)
 
@@ -227,7 +208,7 @@ def make_custom_plot(post_processing, result, save_dir, show=True,
                      graphics_settings=None, xlim=None, ylim=None,
                      preplot=None, afterplot=None, **plot_options):
     result = load_result(result)
-    _, p_options, _, _ = _load_graphics_settings(graphics_settings)
+    _, p_options, _, _ = io.load_graphics_settings(graphics_settings)
     p_options.update(plot_options)
     plot.curve(post_processing['processing_fun'], result, save_dir, save_name=post_processing['save_name'],
                show=show, xlim=xlim, ylim=ylim, xlabel=post_processing['xlabel'], ylabel=post_processing['ylabel'],
@@ -243,7 +224,7 @@ def make_model_drawing(mdl: str | model.Model, save_dir,
     if not isinstance(mdl, model.Model):
         raise ValueError("Incorrect model specification. The first argument should be the model file path, "
                          "or an already loaded Model object")
-    _, _, _, a_appearance = _load_graphics_settings(graphics_settings)
+    _, _, _, a_appearance = io.load_graphics_settings(graphics_settings)
     a_appearance.update(assembly_appearance)
     animation.draw_model(mdl, save_dir, save_name, show=show,
                          characteristic_length=characteristic_length, xlim=xlim, ylim=ylim,
@@ -259,7 +240,7 @@ def make_model_construction_animation(mdl: str | model.Model, save_dir, duration
     if not isinstance(mdl, model.Model):
         raise ValueError("Incorrect model specification. The first argument should be the model file path, "
                          "or an already loaded Model object")
-    _, _, _, a_appearance = _load_graphics_settings(graphics_settings)
+    _, _, _, a_appearance = io.load_graphics_settings(graphics_settings)
     a_appearance.update(assembly_appearance)
     animation.animate_model_construction(mdl, save_dir, duration_per_node, duration_per_element, duration_per_loadstep, inbetween_duration,
                                          end_duration,
@@ -279,7 +260,7 @@ def make_equilibrium_state_drawing(result, save_dir,
                                    ylim: tuple[float, float] = None,
                                    graphics_settings=None, **assembly_appearance):
     result = load_result(result)
-    _, _, _, a_appearance = _load_graphics_settings(graphics_settings)
+    _, _, _, a_appearance = io.load_graphics_settings(graphics_settings)
     a_appearance.update(assembly_appearance)
     animation.draw_equilibrium_state(result, state_index, start_of_loadstep_index, end_of_loadstep_index,
                                      threshold_nodal_displacement, threshold_nodal_external_force,
