@@ -22,7 +22,7 @@ def start_behavior_creation():
     if not DEBUG:
         suppress_output()
     window.wm_title('Behavior creation')
-    handler = GUIEventHandler()
+    handler = GUIEventHandler(window)
     main_frame = ttk.Frame(window, padding=(3, 3, 12, 12))
     main_frame.grid(column=0, row=0)
     drawing_frame = ttk.Frame(main_frame, borderwidth=5, relief="ridge", width=200, height=100)

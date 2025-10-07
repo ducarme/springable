@@ -1,6 +1,6 @@
 from dataclasses import dataclass
-from tkinter import filedialog, messagebox
-from .gui_utils import show_popup, get_current_recursion_depth, get_recursion_limit
+from tkinter import filedialog, messagebox, Tk
+from .gui_utils import show_popup, get_current_recursion_depth, get_recursion_limit, ask_csv_options
 from ..mechanics.mechanical_behavior import *
 from ..utils import bezier_curve
 from ..readwrite.interpreting import behavior_to_text
@@ -22,7 +22,11 @@ print_messages = False
 
 
 class GUIEventHandler:
-    def __init__(self):
+    def __init__(self, window: Tk):
+        self._default_u_col_index = DISPLACEMENT_COLUMN_INDEX
+        self._default_f_col_index = FORCE_COLUMN_INDEX
+        self._default_del = DELIMITER
+        self._win = window
         self._behaviors: dict[str, MechanicalBehavior] = {}
         self._behavior_errors: dict[str, str] = {}
         self._umin = XLIM[0]
@@ -361,10 +365,15 @@ class GUIEventHandler:
                 filetypes=[("CSV Files", "*.csv")],
             )
             if file_path:
+                csv_options = ask_csv_options(self._win, self._default_u_col_index, self._default_f_col_index, self._default_del)
+                self._default_u_col_index = csv_options['u_col_index']
+                self._default_f_col_index = csv_options['f_col_index']
+                self._default_del = csv_options['delimiter']
+
                 u, f = fileio.read_experimental_force_displacement_data(file_path,
-                                                                        displacement_column_index=DISPLACEMENT_COLUMN_INDEX,
-                                                                        force_column_index=FORCE_COLUMN_INDEX,
-                                                                        delimiter=DELIMITER)
+                                                                        displacement_column_index=csv_options['u_col_index'],
+                                                                        force_column_index=csv_options['f_col_index'],
+                                                                        delimiter=csv_options['delimiter'])
             else:
                 return False
             if u.shape[0] == 0 or f.shape[0] == 0:

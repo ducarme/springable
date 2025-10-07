@@ -222,6 +222,8 @@ def read_experimental_force_displacement_data(filepath,
         for row in reader:
             if not reading_data:
                 if row:
+                    if len(row) < max(displacement_column_index, force_column_index) + 1:
+                        continue
                     try:
                         _ = float(row[displacement_column_index].replace(',', '.'))
                         _ = float(row[force_column_index].replace(',', '.'))

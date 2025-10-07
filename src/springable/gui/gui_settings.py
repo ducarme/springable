@@ -24,6 +24,7 @@ INITIALLY_SELECTED_BEHAVIOR = Bezier2Behavior
 DEFAULT_BEHAVIORS = {usable_behaviors.type_to_name[type(b)]: b for b in LIST_DEFAULT_BEHAVIORS}
 INITIALLY_SELECTED_BEHAVIOR_INDEX = next(i for i, b in enumerate(DEFAULT_BEHAVIORS.values()) if isinstance(b, INITIALLY_SELECTED_BEHAVIOR))
 
+ZOOMING_SCROLL_RATE = 1.1
 
 NB_SAMPLES = 400
 XLIM = (-1., 5.)

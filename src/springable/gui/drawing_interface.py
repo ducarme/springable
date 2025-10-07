@@ -4,7 +4,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Polygon
 from .gui_utils import SimpleToolbar, get_current_recursion_depth, get_recursion_limit
 from .gui_event_handler import GUIEventHandler
-from .gui_settings import XLIM, YLIM, MAX_NB_CP
+from .gui_settings import XLIM, YLIM, MAX_NB_CP, ZOOMING_SCROLL_RATE
 import tkinter as tk
 import tkinter.ttk as ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -57,8 +57,8 @@ class DrawingSpace:
         self._yaxis_line, = self.ax.plot([0, 0], [ymin, ymax], 'k-', lw=1, animated=True)
 
         fig_frame = ttk.Frame(drawing_frame)
-        self.ax.set_xlabel("generalized displacement $U=\\alpha-\\alpha_0$ ")
-        self.ax.set_ylabel("generalized force $F=\\partial_{\\alpha} E$")
+        self.ax.set_xlabel("generalized displacement $u=\\alpha-\\alpha_0$ ")
+        self.ax.set_ylabel("generalized force $f=\\partial_{\\alpha} E$")
         self.canvas = FigureCanvasTkAgg(fig, master=fig_frame)
         toolbar = SimpleToolbar(self.canvas, fig_frame, self._reset_axis)
         toolbar.update()
@@ -75,6 +75,8 @@ class DrawingSpace:
         self._exp_curves = []
         self._active_curve_interactor: CurveInteractor | None = None
         self.cid = self.canvas.mpl_connect("draw_event", self.on_draw)
+        self.canvas.mpl_connect("scroll_event", self._on_scroll)
+
 
         bottom_frame = ttk.Frame(drawing_frame)
 
@@ -114,6 +116,48 @@ class DrawingSpace:
         self.xmax_entry.insert(0, f"{XLIM[1]}")
         self.ymin_entry.insert(0, f"{YLIM[0]}")
         self.ymax_entry.insert(0, f"{YLIM[1]}")
+        self._update_xaxis_limits()
+        self._update_yaxis_limits()
+
+    def _on_scroll(self, event):
+        base_scale = ZOOMING_SCROLL_RATE
+        if event.button == 'up':
+            scale = 1 / base_scale  # zoom in
+        elif event.button == 'down':
+            scale = base_scale      # zoom out
+        else:
+            return
+
+        try:
+            xmin = float(self.xmin_entry.get())
+            xmax = float(self.xmax_entry.get())
+            ymin = float(self.ymin_entry.get())
+            ymax = float(self.ymax_entry.get())
+        except ValueError:
+            return
+
+        x_center = (xmin + xmax) / 2
+        y_center = (ymin + ymax) / 2
+
+        new_width = (xmax - xmin) * scale
+        new_height = (ymax - ymin) * scale
+
+        new_xmin = x_center - new_width / 2
+        new_xmax = x_center + new_width / 2
+        new_ymin = y_center - new_height / 2
+        new_ymax = y_center + new_height / 2
+
+        # update entries
+        self.xmin_entry.delete(0, tk.END)
+        self.xmax_entry.delete(0, tk.END)
+        self.ymin_entry.delete(0, tk.END)
+        self.ymax_entry.delete(0, tk.END)
+        self.xmin_entry.insert(0, f"{new_xmin:.3g}")
+        self.xmax_entry.insert(0, f"{new_xmax:.3g}")
+        self.ymin_entry.insert(0, f"{new_ymin:.3g}")
+        self.ymax_entry.insert(0, f"{new_ymax:.3g}")
+
+        # reuse your update logic
         self._update_xaxis_limits()
         self._update_yaxis_limits()
 

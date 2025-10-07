@@ -5,6 +5,47 @@ from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
 import sys
 
 
+def ask_csv_options(parent, default_u_col_index: int,
+                    default_f_col_index: int,
+                    default_del: str, title="CSV options"):
+    win = tk.Toplevel(parent)
+    win.title(title)
+    win.grab_set() 
+    win.resizable(False, False)
+
+    options = {}
+
+    container = ttk.Frame(win, padding=5)
+    container.grid(row=0, column=0)
+    container.grid_columnconfigure(0, weight=1)
+
+    tk.Label(container, text="Displacement column #:").grid(row=0, column=0, sticky="e", padx=5, pady=5)
+    a_var = tk.IntVar(value=default_u_col_index+1)
+    ttk.Spinbox(container, from_=1, to=99, textvariable=a_var, width=6).grid(row=0, column=1, padx=5)
+
+    tk.Label(container, text="Force column #:").grid(row=1, column=0, sticky="e", padx=5, pady=5)
+    b_var = tk.IntVar(value=default_f_col_index+1)
+    ttk.Spinbox(container, from_=1, to=99, textvariable=b_var, width=6).grid(row=1, column=1, padx=5)
+
+    tk.Label(container, text="Delimiter:").grid(row=2, column=0, sticky="ne", padx=5, pady=5)
+    delim_var = tk.StringVar(value=default_del)
+    frame = ttk.Frame(container)
+    frame.grid(row=2, column=1, sticky="w")
+
+    for text, val in [("comma", ","), ("semicolon", ";"), ("space", " ")]:
+        ttk.Radiobutton(frame, text=text, variable=delim_var, value=val).pack(anchor="w")
+
+    def on_ok():
+        options["u_col_index"] = a_var.get() - 1
+        options["f_col_index"] = b_var.get() - 1
+        options["delimiter"] = delim_var.get()
+        win.destroy()
+
+    ttk.Button(container, text="OK", command=on_ok).grid(row=3, column=0, columnspan=2, pady=10)
+    win.wait_window()
+    return options
+
+
 def get_current_recursion_depth():
     """
     Returns the current recursion depth of the call stack.
