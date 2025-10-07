@@ -160,6 +160,7 @@ Each section is described in details herein below.
 + [The `ANGULAR SPRINGS` section](#the-angular-springs-section)
 + [The `AREA SPRINGS` section](#the-area-springs-section)
 + [The `PATH SPRINGS` section](#the-line-springs-section)
++ [The `DISTANCE SPRINGS` section](#the-distance-springs-section)
 + [The `LOADING` section](#the-loading-section)
 + [A complete example](#a-complete-example)
 + [Additional notes](#additional-notes)
@@ -351,6 +352,35 @@ The displacement versus tension relation is defined by the spring constant set t
 Here, no natural length was provided, so the natural length will be automatically set to
 the length of the polygonal chain defined by the nodes `0`, `2`, and `1` as defined in the section `NODES`.
 
+#### The `DISTANCE SPRINGS` section
+The `DISTANCE SPRINGS` section serves to define **distance springs**, that is, springs whose elastic energy is a function of the signed distance between a point and an infinite line.
+They are useful when modelling mechanical systems involving contact.
+Those springs are defined by specifying **3 nodes**. The first node is the point while the last two nodes define the line. If the node is on the left of the vector formed by the last two nodes, the distance is positive, else negative.
+
+Along with its three nodes, the **mechanical behavior** must be specified, and optionally the natural length of the distance
+spring. If no natural length is provided, the natural length is automatically set to the length defined by the
+three specified nodes. The mechanical behavior describes its intrinsic force-displacement relation. It can be a linear behavior
+(the distance spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
+(see section [Specifying a nonlinear mechanical behavior](#specifying-a-nonlinear-mechanical-behavior). To model contact, it is convenient to use a [CONTACT](#contact-behavior) nonlinear behavior.
+
+To define a distance spring, a line with the following structure is added to the section `DISTANCE SPRINGS`:\
+`<node index>-<node index>-<node index>, <mechanical behavior>, [natural length]`.
+* `<node index>` is the index of a first node (the point),
+* `<node index>` is the index of the second node (to form the line),
+* `<node index>` is the index of the third node (to form the line),
+* `<mechanical behavior>` is the mechanical behavior of the distance spring. To specify a **linear** distance spring,
+the mechanical behavior is simply the **spring constant** (positive float), that is the slope of its tension-displacement curve.
+* `[natural length]` is the natural length of the distance spring (float). 
+It is an optional parameter; if not provided the natural length of the distance spring will automatically be set to the distance defined by the three nodes as created in the `NODES` section.
+
+
+Example:
+```csv
+DISTANCE SPRINGS
+0-2-1, CONTACT(f0=3.0; uc=0.02; delta=0.0)
+```
+>A distance spring is defined. The force it generates is described by a [CONTACT](#contact-behavior) nonlinear behavior. In this case, the repulsion force remains 0 as long as the signed distance is larger than `delta=0.0`. Once the signed distance is lower than `delta=0.0`, the repulsion force will grow cubically with the compression displacement, reaching `f0=3.0` when the distance is `delta-uc=-0.02`.
+
 
 #### The `LOADING` section
 The `LOADING` section serves to set the forces applied on some specific nodes along a specific direction (horizontal or vertical).
@@ -409,11 +439,10 @@ LOADING
 #### Additional notes
 * Empty lines have no semantic meaning. Adding/removing some will not change the spring model.
 * `#` is used to indicate a line comment. Each line starting with `#` will be ignored when reading the file.
-* Parameters can be combined in mathematical expression in all sections but `PARAMETERS`. Supported operations include
-`(...)`, `+`, `-`, `*`, `/`, `SIN(...)` (sine), `COS(...)` (cosine), `TAN(...)` (tangent), `SQRT(...)` (square root). 
-Value π can be used without defining it in the section `PARAMETERS` with the keyword `PI`.
-* If your spring assembly does not include a certain type of spring, feel free to leave the corresponding section empty (header only)
-or to omit it completely (no header and no content).
+* Parameters can be combined in mathematical expression in all sections but `PARAMETERS`. Supported operations and functions include
+`(...)`, `+`, `-`, `*`, `/`, `**` (exponentiation), `SQRT(...)` (square root), `SIN(...)` (sine), `COS(...)` (cosine), `TAN(...)` (tangent), `ARCSIN`(...) (arc-sine), `ARCCOS(...)` (arc-cosine), `ARCTAN(...) (arc-tangent)`.
+* The value π can be used without defining it in the section `PARAMETERS` with the keyword `PI`.
+* If your spring assembly does not include a certain type of spring, feel free to leave the corresponding section empty (header only) or to omit it completely (no header and no content).
 
 ### Specifying a nonlinear mechanical behavior
 In `springable`, each spring (longitudinal, angular, etc) has its own intrinsic mechanical behavior.
@@ -703,11 +732,11 @@ The unit of the quantity $nRT_0$ should be a unit of energy; more precisely, it 
 * A nonlinear behavior can be saved in a separate CSV file and used in a model file using
 `FROMFILE(<nonlinear behavior csv file>)`
 
-Example:
-`..., FROMFILE('custom_nonlinear_behavior.csv')`
+  Example:
+  `..., FROMFILE('custom_nonlinear_behavior.csv')`
 
-where the `custom_nonlinear_behavior.csv` is for example:
-`BEZIER2(u_i=[0.21; -0.1; 3.14]; f_i=[1.0; -2.0; +3.0])`
+  where the `custom_nonlinear_behavior.csv` is, for example,
+  `BEZIER2(u_i=[0.21; -0.1; 3.14]; f_i=[1.0; -2.0; +3.0])`.
 
 
 

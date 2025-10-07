@@ -115,7 +115,7 @@ automatically set to the distance between the nodes connected by the spring.
 
 The mechanical behavior describes its intrinsic axial force-displacement relation. It can be a linear behavior
 (the spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
-(see section [Specifying a nonlinear mechanical behavior](#specifying-a-nonlinear-mechanical-behavior)).
+(see section [Specifying a nonlinear mechanical behavior](specifying_a_nonlinear_mechanical_behavior.md)).
 
 To define a longitudinal spring, a line with the following structure is added to the section `SPRINGS`.
 
@@ -150,7 +150,7 @@ Along with its three nodes, the **mechanical behavior** must be specified, and o
 spring (in radians). If no natural angle is provided, the natural angle is automatically set to the angle defined by the
 three specified nodes. The mechanical behavior describes its intrinsic (torque)-(angle-change) relation. It can be a linear behavior
 (the angular spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
-(see section [Specifying a nonlinear mechanical behavior](#specifying-a-nonlinear-mechanical-behavior)).
+(see section [Specifying a nonlinear mechanical behavior](specifying_a_nonlinear_mechanical_behavior.md)).
 
 To define a angular spring, a line with the following structure is added to the section `ANGULAR SPRINGS`.
 
@@ -187,7 +187,7 @@ Along with its $n$ nodes, the **mechanical behavior** must be specified, and opt
 spring. If no natural area is provided, the natural area is automatically set to the area defined by the
 n specified nodes. The mechanical behavior describes its intrinsic (2d-pressure)-(area-change) relation. It can be a linear behavior
 (the area spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
-(see section [Specifying a nonlinear mechanical behavior](#specifying-a-nonlinear-mechanical-behavior)).
+(see section [Specifying a nonlinear mechanical behavior](specifying_a_nonlinear_mechanical_behavior.md)).
 
 To define an area spring, a line with the following structure is added to the section `AREA SPRINGS`.
 
@@ -225,11 +225,11 @@ They are useful when modelling mechanical systems involving cable-driven actuati
 Those springs are defined by specifying  $n$ **nodes** ($n \ge 2$), which together define a polygonal chain. More precisely, the nodes are the vertices listed sequentially that form the chain.
 The sequence of nodes does not need to (but can) be closed (first and last node can be different or identical).
 
-Along with its $n$ nodes, the **mechanical behavior** must be specified, and optionally the natural length of the line
+Along with its $n$ nodes, the **mechanical behavior** must be specified, and optionally the natural length of the path
 spring. If no natural length is provided, the natural length is automatically set to the length defined by the
 n specified nodes. The mechanical behavior describes its intrinsic tension-displacement relation. It can be a linear behavior
 (the path spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
-(see section [Specifying a nonlinear mechanical behavior](#specifying-a-nonlinear-mechanical-behavior)).
+(see section [Specifying a nonlinear mechanical behavior](specifying_a_nonlinear_mechanical_behavior.md)).
 
 To define a path spring, a line with the following structure is added to the section `PATH SPRINGS`.
 
@@ -255,6 +255,36 @@ PATH SPRINGS
 The displacement versus tension relation is defined by the spring constant set to `1.0`.
 Here, no natural length was provided, so the natural length will be automatically set to
 the length of the polygonal chain defined by the nodes `0`, `2`, and `1` as defined in the section `NODES`.
+
+#### The `DISTANCE SPRINGS` section
+The `DISTANCE SPRINGS` section serves to define **distance springs**, that is, springs whose elastic energy is a function of the signed distance between a point and an infinite line.
+They are useful when modelling mechanical systems involving contact.
+Those springs are defined by specifying **3 nodes**. The first node is the point while the last two nodes define the line. If the node is on the left of the vector formed by the last two nodes, the distance is positive, else negative.
+
+Along with its three nodes, the **mechanical behavior** must be specified, and optionally the natural length of the distance
+spring. If no natural length is provided, the natural length is automatically set to the length defined by the
+three specified nodes. The mechanical behavior describes its intrinsic force-displacement relation. It can be a linear behavior
+(the distance spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
+(see section [Specifying a nonlinear mechanical behavior](specifying_a_nonlinear_mechanical_behavior.md). To model contact, it is convenient to use a [CONTACT](specifying_a_nonlinear_mechanical_behavior.md#contact-behavior) nonlinear behavior.
+
+To define a distance spring, a line with the following structure is added to the section `DISTANCE SPRINGS`:\
+`<node index>-<node index>-<node index>, <mechanical behavior>, [natural length]`.
+
+* `<node index>` is the index of a first node (the point),
+* `<node index>` is the index of the second node (to form the line),
+* `<node index>` is the index of the third node (to form the line),
+* `<mechanical behavior>` is the mechanical behavior of the distance spring. To specify a **linear** distance spring,
+the mechanical behavior is simply the **spring constant** (positive float), that is the slope of its tension-displacement curve.
+* `[natural length]` is the natural length of the distance spring (float). 
+It is an optional parameter; if not provided the natural length of the distance spring will automatically be set to the distance defined by the three nodes as created in the `NODES` section.
+
+
+Example:
+```csv
+DISTANCE SPRINGS
+0-2-1, CONTACT(f0=3.0; uc=0.02; delta=0.0)
+```
+>A distance spring is defined. The force it generates is described by a [CONTACT](#contact-behavior) nonlinear behavior. In this case, the repulsion force remains 0 as long as the signed distance is larger than `delta=0.0`. Once the signed distance is lower than `delta=0.0`, the repulsion force will grow cubically with the compression displacement, reaching `f0=3.0` when the distance is `delta-uc=-0.02`.
 
 
 #### The `LOADING` section

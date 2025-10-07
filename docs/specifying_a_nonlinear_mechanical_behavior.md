@@ -416,21 +416,35 @@ Example: `..., ISENTROPIC(n=1.0; R=8.3; T0=300; gamma=1.4)`
 * A nonlinear behavior can be saved in a separate CSV file and used in a model file using
 `FROMFILE(<nonlinear behavior csv file>)`
 
-Example:
-`..., FROMFILE('custom_nonlinear_behavior.csv')`
+    Example:
+    `..., FROMFILE('custom_nonlinear_behavior.csv')`
 
-where the `custom_nonlinear_behavior.csv` is for example:
-`BEZIER2(u_i=[0.21; -0.1; 3.14]; f_i=[1.0; -2.0; +3.0])`
+    where the `custom_nonlinear_behavior.csv` is, for example,
 
-The file path to the behavior is relative to the working directory, that is, the directory from where the script is run. If the CSV behavior file lives in a subdirectory `path/to/behavior.csv` relative to the working directory, then we would use
-`FROMFILE('path'; 'to'; 'behavior.csv')`
+    `BEZIER2(u_i=[0.21; -0.1; 3.14]; f_i=[1.0; -2.0; +3.0])`.
 
-To specify a CSV behavior file that would live in a subdirectory `relative/path/to/behavior.csv` relative to the CSV model file instead, we can use the keyword `HERE` that encodes the directory where the CSV model file lives (relative to the working directory) as follows:
-`FROMFILE(HERE; 'relative; 'path'; 'to'; 'behavior.csv')`
+    !!! note
+        The natural measure $\alpha_0$ can optionally be specified in the CSV behavior file. For example, to set a natural measure $\alpha_0=2$, we would use the following CSV behavior file:
 
-*Nonlinear behaviors can be interactively tuned and created using the behavior creation graphical interface, which can be started by running the following Python script
-```
+        `BEZIER2(u_i=[0.21; -0.1; 3.14]; f_i=[1.0; -2.0; +3.0]), 2.0`.
+
+        If a natural measure $\alpha_0$ is also set in the CSV model file, for example,
+        `FROMFILE('custom_nonlinear_behavior.csv'), 3.0`,
+        it will be ignored and the natural measure remains the one specified in the CSV behavior file. In this case, the natural measure will be `2.0`, not `3.0`.
+
+        If no natural measure is specified in the CSV behavior file, then the natural measure is the one specified in the CSV model file. If also not specified in CSV model file, then it will be automatically computed from the node positions as specified in [the `NODES` section](creating_the_spring_model_csv_file.md/#the-nodes-section).
+
+
+
+    The file path to the behavior is relative to the working directory, that is, the directory from where the script is run. If the CSV behavior file lives in a subdirectory `path/to/behavior.csv` relative to the working directory, then we would use
+    `FROMFILE('path'; 'to'; 'behavior.csv')`
+
+    To specify a CSV behavior file that would live in a subdirectory `relative/path/to/behavior.csv` relative to the CSV model file instead, we can use the keyword `HERE` that encodes the directory where the CSV model file lives (relative to the working directory) as follows:
+    `FROMFILE(HERE; 'relative; 'path'; 'to'; 'behavior.csv')`
+
+* Nonlinear behaviors can be interactively created, tuned, edited, compared, copied and saved using the behavior creation graphical interface, which can be started by running the following Python script
+```python
 from springable.behavior_creation import start
-```
 
 start()
+```

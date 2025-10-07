@@ -28,10 +28,10 @@ On top of that, the library allows you to define the energy potential of each in
 - [Creating a CSV file describing the spring model (+examples)](creating_the_spring_model_csv_file)
 - [Specifying a nonlinear mechanical behavior (+examples)](specifying_a_nonlinear_mechanical_behavior)
 - [Configuring simulation settings (+examples)](configuring_simulation_settings)
-- [Advanced topics](advanced_topics)
+<!-- - [Advanced topics](advanced_topics)
     + [Area spring with holes](advanced_topics/#area-spring-with-holes)
     + [Complex loading descriptions](advanced_topics/#complex-loading-descriptions)
-    + [Scanning parameters](advanced_topics/#scanning-parameters)
+    + [Scanning parameters](advanced_topics/#scanning-parameters) -->
 
 
 
