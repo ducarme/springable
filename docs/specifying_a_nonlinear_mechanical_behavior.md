@@ -317,9 +317,9 @@ $$
 f = nRT_0\frac{u}{(u+\alpha_0)\alpha_0}.
 $$
 
-`ISOTHERMAL_GAS(n=<n_value>; R=<R_value>; T0=<T0_value>)`
+`ISOTHERMAL(n=<n_value>; R=<R_value>; T0=<T0_value>)`
 
-Example: `..., ISOTHERMAL_GAS(n=1.0; R=8.3; T0=300)`
+Example: `..., ISOTHERMAL(n=1.0; R=8.3; T0=300)`
 > A spring is defined with an isothermal behavior. Its generalized force-displacement relation follows the behavior
 > of `1` mole of an ideal gas at constant temperature $T_0$=`300`K.
 > 
@@ -334,7 +334,7 @@ Example: `..., ISOTHERMAL_GAS(n=1.0; R=8.3; T0=300)`
     when not provided.
     If you want to assign a value for $\alpha_0$, you can do it by adding a comma followed by the $\alpha_0$ value.
 
-    Example: `... , ISOTHERMAL_GAS(n=1.0; R=8.3; T0=300), 1.0`
+    Example: `... , ISOTHERMAL(n=1.0; R=8.3; T0=300), 1.0`
 
     > A spring is defined with an isothermal behavior. Its generalized force-displacement relation follows the behavior
     > of `1` mole of an ideal gas at constant temperature $T_0$=`300`K. Its *volume*/measure at ambient pressure is `1.0`.
@@ -375,9 +375,9 @@ $$
 f(u) = nRT_0\left(\dfrac1{\alpha_0} - \dfrac1{u+\alpha_0}\left(\dfrac{\alpha_0}{u+\alpha_0}\right)^{\gamma-1}\right).
 $$
 
-`ISENTROPIC_GAS(n=<n_value>; R=<R_value>; T0=<T0_value>; gamma=<gamma_value>)`
+`ISENTROPIC(n=<n_value>; R=<R_value>; T0=<T0_value>; gamma=<gamma_value>)`
 
-Example: `..., ISENTROPIC_GAS(n=1.0; R=8.3; T0=300; gamma=1.4)`
+Example: `..., ISENTROPIC(n=1.0; R=8.3; T0=300; gamma=1.4)`
 > A spring is defined with an isentropic behavior. Its generalized force-displacement relation follows the behavior
 > of `1` mole of an ideal gas initially at $T_0$=`300`K, with $\gamma$=`1.4` (heat capacity ratio of air), at constant entropy.
 >
@@ -392,7 +392,7 @@ Example: `..., ISENTROPIC_GAS(n=1.0; R=8.3; T0=300; gamma=1.4)`
     when not provided.
     If you want to assign a value for $\alpha_0$, you can do it by adding a comma followed by the $\alpha_0$ value.
 
-    Example: `... , ISENTROPIC_GAS(n=1.0; R=8.3; T0=300; gamma=1.4), 1.0`
+    Example: `... , ISENTROPIC(n=1.0; R=8.3; T0=300; gamma=1.4), 1.0`
 
     > A spring is defined with an isentropic behavior. Its generalized force-displacement relation follows the behavior
     > of `1` mole of an ideal gas initially at $T_0$=`300`K, with $\gamma$=`1.4`, at constant entropy.
@@ -412,3 +412,25 @@ Example: `..., ISENTROPIC_GAS(n=1.0; R=8.3; T0=300; gamma=1.4)`
 
 
 ## Additional notes
+
+* A nonlinear behavior can be saved in a separate CSV file and used in a model file using
+`FROMFILE(<nonlinear behavior csv file>)`
+
+Example:
+`..., FROMFILE('custom_nonlinear_behavior.csv')`
+
+where the `custom_nonlinear_behavior.csv` is for example:
+`BEZIER2(u_i=[0.21; -0.1; 3.14]; f_i=[1.0; -2.0; +3.0])`
+
+The file path to the behavior is relative to the working directory, that is, the directory from where the script is run. If the CSV behavior file lives in a subdirectory `path/to/behavior.csv` relative to the working directory, then we would use
+`FROMFILE('path'; 'to'; 'behavior.csv')`
+
+To specify a CSV behavior file that would live in a subdirectory `relative/path/to/behavior.csv` relative to the CSV model file instead, we can use the keyword `HERE` that encodes the directory where the CSV model file lives (relative to the working directory) as follows:
+`FROMFILE(HERE; 'relative; 'path'; 'to'; 'behavior.csv')`
+
+*Nonlinear behaviors can be interactively tuned and created using the behavior creation graphical interface, which can be started by running the following Python script
+```
+from springable.behavior_creation import start
+```
+
+start()

@@ -422,9 +422,9 @@ For a longitudinal spring, that curve will be interpreted as a *force-displaceme
 *torque-angle change* curve. For an area spring, as a *2d pressure-area change* curve. Etc.
 
 > [!NOTE]
-> Mathematically speaking, the generalized force $F$ is defined as the derivative of the elastic energy with respect to the *measure* $\alpha$
+> Mathematically speaking, the generalized force $f$ is defined as the derivative of the elastic energy with respect to the *measure* $\alpha$
 > of the spring. The measure $\alpha$ is the *length* for a longitudinal spring, the *angle* for a angular spring, the *area* for an area spring, etc.
-> The generalized displacement $U$ is defined as the difference between the current measure $\alpha$ and the *natural* measure $\alpha_0$, that is, the measure
+> The generalized displacement $u$ is defined as the difference between the current measure $\alpha$ and the *natural* measure $\alpha_0$, that is, the measure
 > of the spring in its default configuration.
 
 
@@ -493,7 +493,7 @@ The unit of $k$ should be the unit of the generalized force $f$ divided by the u
 
 #### Bezier behavior
 A **Bezier** behavior is described by a generalized force-displacement curve defined as a [Bezier curve](https://en.wikipedia.org/wiki/B%C3%A9zier_curve).
-More precisely, the $F-U$ curve is given by $f(t)=\sum_{i=1}^n f_i b_{i,n}(t)$ and $u(t)=\sum_{i=1}^n u_i b_{i,n}(t)$, where $u_i$ and $f_i$ describe
+More precisely, the $f-u$ curve is given by $f(t)=\sum_{i=1}^n f_i b_{i,n}(t)$ and $u(t)=\sum_{i=1}^n u_i b_{i,n}(t)$, where $u_i$ and $f_i$ describe
 the coordinates of [control points](https://en.wikipedia.org/wiki/Control_point_(mathematics)),
 $b_{i,n}$ are the [Bernstein polynomials](https://en.wikipedia.org/wiki/Bernstein_polynomial) of degree $n$,
 and $t$ is the curve parameter that runs from 0 to 1.
@@ -509,7 +509,7 @@ The unit of each $f_i$ should be the unit of the generalized force $f$.
 
 
 > [!NOTE]
-> For a generalized displacement $U$ larger than $u_n$, the corresponding generalized force is extrapolated linearly based on the slope at the last control point.
+> For a generalized displacement $u$ larger than $u_n$, the corresponding generalized force is extrapolated linearly based on the slope at the last control point.
 > Also, the generalized force-displacement relation is defined for negative generalized displacements $u<0$ by imposing the symmetry $f(u<0)=-f(|u|)$.
 
 #### Bezier2 behavior
@@ -531,7 +531,7 @@ Example: `..., BEZIER2(u_i=[2.5;-1.0;2.0];f_i=[2.0;-1.0;1.0])`
 > (it is perfectly fine for the tangent to point vertically downward).
 > 
 > Also, a Bezier2 behavior introduces an extra [degree of freedom (DOF)](https://en.wikipedia.org/wiki/Degrees_of_freedom_(mechanics))
-> in order to disambiguate the state of the spring, as the generalized displacement $U$ is not enough to fully define its state.
+> in order to disambiguate the state of the spring, as the generalized displacement $u$ is not enough to fully define its state.
 > Using a **Bezier** behavior instead when the curve does not curve back helps keep the number of DOFs low.
 
 #### Piecewise behavior
@@ -621,9 +621,94 @@ Example: `..., CONTACT(f0=3.0; uc=0.01; delta=0.5)`
 > an increasingly strong repulsion generalized force is generated, reaching -`3.0` when the measure is decreased further by `0.01`, that is, when $\alpha=$ `0.5`.
 > 
 
+> [!NOTE]
+>    For a spring with a contact behavior, the natural measure $\alpha_0$ does not have any effect, as the force produced by the contact behavior solely depends on the measure $\alpha$; it is independent of the natural measure $\alpha_0$.
+
 #### Isothermal behavior
+
+An **isothermal** behavior is described by a generalized force-displacement curve that respects the pressure-volume
+relation of an [ideal gas](https://en.wikipedia.org/wiki/Ideal_gas_law) during an isothermal process (constant temperature).
+That relation can be expressed as follows,
+
+$$
+p - p_0 = nRT_0 \left( 1/V - 1/V_0\right),
+$$
+
+where $p_0$ is the ambient pressure, $V_0$ is the volume of the gas at ambient pressure,
+$T_0$ is the temperature of the gas (constant), $p$ is the current pressure, $V$ is the current volume,
+$n$ is the amount of substance (constant), $R$ is the gas constant.
+
+More precisely, the generalized force $f$ plays the role of the pressure difference, $f=p_0-p$,
+while the generalized displacement plays the role of volume change, $u=V-V_0$. The measure $\alpha$ and
+natural measure $\alpha_0$ are mapped to $\alpha=V$ and $\alpha_0=V_0$, respectively. The $f-u$ curve is therefore given by
+
+$$
+f = nRT_0\frac{u}{(u+\alpha_0)\alpha_0}.
+$$
+
+`ISOTHERMAL(n=<n_value>; R=<R_value>; T0=<T0_value>)`
+
+Example: `..., ISOTHERMAL(n=1.0; R=8.3; T0=300)`
+> A spring is defined with an isothermal behavior. Its generalized force-displacement relation follows the behavior
+> of `1` mole of an ideal gas at constant temperature $T_0$=`300`K.
+> 
+
+The unit of the quantity $nRT_0$ should be a unit of energy; more precisely, it should be the unit of the generalized force $f$ multiplied by the unit of the generalized displacement $u$.
+
+> [!NOTE]
+>    A negative generalized force $f<0$ corresponds to a compressed state
+    (the pressure is greater than the ambient pressure, $p>p_0$). A positive generalized force $f>0$ corresponds to
+    a *vacuumed* state (the pressure is smaller than the ambient pressure, $p<p_0$).
+
+
 #### Isentropic behavior
+
+An **isentropic** behavior is described by a generalized force-displacement curve that respects the pressure-volume
+relation of an [ideal gas](https://en.wikipedia.org/wiki/Ideal_gas_law) during an
+[isentropic process](https://en.wikipedia.org/wiki/Isentropic_process) (constant entropy).
+That relation can be expressed as follows,
+
+$$
+ p-p_0 = nRT_0\left(\dfrac1V\left(\dfrac{V_0}{V}\right)^{\gamma-1} - \dfrac1{V_0}\right),
+$$
+
+where $p_0$ is the ambient pressure, $V_0$ is the volume of the gas at ambient pressure,
+$T_0$ is the temperature of the gas at ambient pressure, $p$ is the current pressure, $V$ is the current volume,
+$n$ is the amount of substance (constant), $R$ is the gas constant and $\gamma$ is the
+[heat capacity ratio](https://en.wikipedia.org/wiki/Heat_capacity_ratio) (constant).
+
+More precisely, the generalized force $f$ plays the role of the pressure difference, $f=p_0-p$,
+while the generalized displacement plays the role of volume change, $u=V-V_0$. The measure $\alpha$ and
+natural measure $\alpha_0$ are mapped to $\alpha=V$ and $\alpha_0=V_0$, respectively. The $f-u$ curve is therefore given by
+
+$$
+f(u) = nRT_0\left(\dfrac1{\alpha_0} - \dfrac1{u+\alpha_0}\left(\dfrac{\alpha_0}{u+\alpha_0}\right)^{\gamma-1}\right).
+$$
+
+`ISENTROPIC(n=<n_value>; R=<R_value>; T0=<T0_value>; gamma=<gamma_value>)`
+
+Example: `..., ISENTROPIC(n=1.0; R=8.3; T0=300; gamma=1.4)`
+> A spring is defined with an isentropic behavior. Its generalized force-displacement relation follows the behavior of `1` mole of an ideal gas initially at $T_0$=`300`K, with $\gamma$=`1.4` (heat capacity ratio of air), at constant entropy.
+>
+
+
+
+The unit of the quantity $nRT_0$ should be a unit of energy; more precisely, it should be the unit of the generalized force $f$ multiplied by the unit of the generalized displacement $u$. The heat capacity ratio $\gamma$ has no dimension.
+
+>[!NOTE]
+> A negative generalized force $f<0$ corresponds to a compressed state (the pressure is greater than the ambient pressure, $p>p_0$). A positive generalized force $f>0$ corresponds to a *vacuumed* state (the pressure is smaller than the ambient pressure, $p<p_0$).
+
+
 #### Additional notes
+* A nonlinear behavior can be saved in a separate CSV file and used in a model file using
+`FROMFILE(<nonlinear behavior csv file>)`
+
+Example:
+`..., FROMFILE('custom_nonlinear_behavior.csv')`
+
+where the `custom_nonlinear_behavior.csv` is for example:
+`BEZIER2(u_i=[0.21; -0.1; 3.14]; f_i=[1.0; -2.0; +3.0])`
+
 
 
 ### Configuring simulation settings
@@ -647,7 +732,7 @@ or TextEdit (MacOS) to do that, for example. The file will look similar to this:
 radius = 0.01
 ```
 *A lower value for `radius` can be used to refine the solution,
-at the cost of increasing the solving duration. Default values is 0.05.*
+at the cost of increasing the solving duration. Default value is 0.05.*
 
 To use these custom solver settings, use the path to `custom_solver_settings.toml`
 as an extra argument of the `ss.simulate_model()` function, as follows:

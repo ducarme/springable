@@ -49,8 +49,8 @@ gif
 ![ZIGZAG](https://github.com/user-attachments/assets/31c61352-53b9-4ab8-b190-0f4d326e4333)
 ![ZIGZAG2](https://github.com/user-attachments/assets/2e44e2ca-29eb-4298-88d8-537482379d6a)
 ![CONTACT](https://github.com/user-attachments/assets/a8f17fe5-cd4f-41fe-b7a1-65842625f7d9)
-![ISOTHERMAL_GAS](https://github.com/user-attachments/assets/b9d2d7d8-b502-4249-9218-7e79cbf44ebd)
-![ISENTROPIC_GAS](https://github.com/user-attachments/assets/986d1eaf-9619-4750-924a-542f27a4c68c)
+![ISOTHERMAL](https://github.com/user-attachments/assets/b9d2d7d8-b502-4249-9218-7e79cbf44ebd)
+![ISENTROPIC](https://github.com/user-attachments/assets/986d1eaf-9619-4750-924a-542f27a4c68c)
 
 
 
