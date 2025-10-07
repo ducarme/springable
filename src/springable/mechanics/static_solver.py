@@ -18,6 +18,8 @@ from .node import Node
 from .shape import IllDefinedShape, Shape
 from .default_solver_settings import SolverSettings
 from .stability_states import StabilityStates
+from .. import __version__
+
 
 
 class Result:
@@ -322,6 +324,7 @@ class StaticSolver:
                                                                                        max_displacement_map_step_list,
                                                                                        blocked_nodes_directions_step_list,
                                                                                        **asdict(self._solver_settings))
+        info['version'] = __version__
         
         if u.ndim == 2:
             self._assembly.set_coordinates(initial_coordinates)

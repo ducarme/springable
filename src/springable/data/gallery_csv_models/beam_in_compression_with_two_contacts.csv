@@ -1,0 +1,107 @@
+PARAMETERS
+ks, 10.0
+kr, 1.0
+dl, 1.0
+dy0, 1.0
+dy1, 1.75, [1.75;2.25;5]
+NODES
+0, 0*dl, 0.0, 1, 1
+1, 1*dl, 0.0, 0, 1
+2, 2*dl, 0.0, 0, 0
+3, 3*dl, 0.0, 0, 0
+4, 4*dl, 0.0, 0, 0
+5, 5*dl, 0.0, 0, 0
+6, 6*dl, 0.0, 0, 0
+7, 7*dl, 0.0, 0, 0
+8, 8*dl, 0.0, 0, 0
+9, 9*dl, 0.0, 0, 0
+10,10*dl,0.0, 0, 0
+11,11*dl,0.0, 0, 0
+12,12*dl,0.0, 0, 0
+13,13*dl,0.0, 0, 0
+14,14*dl,0.0, 0, 1
+15,15*dl,0.0, 0, 1
+16, 0, -dy0, 1, 1
+17, 0, +dy1, 1, 1
+SPRINGS
+0-1,  ks
+1-2,  ks
+2-3,  ks
+3-4,  ks
+4-5,  ks
+5-6,  ks
+6-7,  ks
+7-8,  ks
+8-9,  ks
+9-10, ks
+10-11,ks
+11-12,ks
+12-13,ks
+13-14,ks
+14-15,ks
+ANGULAR SPRINGS
+#0-1-2, LOGARITHMIC(k=50*kr)
+#1-2-3, LOGARITHMIC(k=kr)
+#2-3-4, LOGARITHMIC(k=kr)
+#3-4-5, LOGARITHMIC(k=kr)
+#4-5-6, LOGARITHMIC(k=kr)
+#5-6-7, LOGARITHMIC(k=kr)
+#6-7-8, LOGARITHMIC(k=kr), PI*1.005
+#7-8-9, LOGARITHMIC(k=kr)
+#8-9-10,LOGARITHMIC(k=kr), PI*1.001
+#9-10-11,LOGARITHMIC(k=kr)
+#10-11-12,LOGARITHMIC(k=kr)
+#11-12-13,LOGARITHMIC(k=kr)
+#12-13-14,LOGARITHMIC(k=kr)
+#13-14-15,LOGARITHMIC(k=50*kr)
+
+0-1-2, LINEAR(k=15*kr)
+1-2-3, LINEAR(k=kr), PI*0.95
+2-3-4, LINEAR(k=kr)
+3-4-5, LINEAR(k=kr)
+4-5-6, LINEAR(k=kr)
+5-6-7, LINEAR(k=kr), PI*1.025
+6-7-8, LINEAR(k=kr), PI*1.025
+7-8-9, LINEAR(k=kr)
+8-9-10,LINEAR(k=kr), PI*1.05
+9-10-11,LINEAR(k=kr)
+10-11-12,LINEAR(k=kr)
+11-12-13,LINEAR(k=kr), PI*1.05
+12-13-14,LINEAR(k=kr)
+13-14-15,LINEAR(k=15*kr)
+
+
+Y DISTANCE SPRINGS
+2-16, CONTACT(f0=1.0; uc=dl/10; delta=0)
+3-16, CONTACT(f0=1.0; uc=dl/10; delta=0)
+4-16, CONTACT(f0=1.0; uc=dl/10; delta=0)
+5-16, CONTACT(f0=1.0; uc=dl/10; delta=0)
+6-16, CONTACT(f0=1.0; uc=dl/10; delta=0)
+7-16, CONTACT(f0=1.0; uc=dl/10; delta=0)
+8-16, CONTACT(f0=1.0; uc=dl/10; delta=0)
+9-16, CONTACT(f0=1.0; uc=dl/10; delta=0)
+10-16,CONTACT(f0=1.0; uc=dl/10; delta=0)
+11-16,CONTACT(f0=1.0; uc=dl/10; delta=0)
+12-16,CONTACT(f0=1.0; uc=dl/10; delta=0)
+13-16,CONTACT(f0=1.0; uc=dl/10; delta=0)
+
+
+17-2, CONTACT(f0=1.0; uc=dl/10; delta=0)
+17-3, CONTACT(f0=1.0; uc=dl/10; delta=0)
+17-4, CONTACT(f0=1.0; uc=dl/10; delta=0)
+17-5, CONTACT(f0=1.0; uc=dl/10; delta=0)
+17-6, CONTACT(f0=1.0; uc=dl/10; delta=0)
+17-7, CONTACT(f0=1.0; uc=dl/10; delta=0)
+17-8, CONTACT(f0=1.0; uc=dl/10; delta=0)
+17-9, CONTACT(f0=1.0; uc=dl/10; delta=0)
+17-10,CONTACT(f0=1.0; uc=dl/10; delta=0)
+17-11,CONTACT(f0=1.0; uc=dl/10; delta=0)
+17-12,CONTACT(f0=1.0; uc=dl/10; delta=0)
+17-13,CONTACT(f0=1.0; uc=dl/10; delta=0)
+LOADING
+15, X, -1.5, -4.5*dl
+
+
+
+
+

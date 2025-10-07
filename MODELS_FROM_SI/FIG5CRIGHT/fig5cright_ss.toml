@@ -1,4 +1,0 @@
-radius=0.0025
-i_max = 15000
-convergence_value=0.5E-7
-detect_critical_points = true

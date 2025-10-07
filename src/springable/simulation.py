@@ -6,7 +6,6 @@ from .mechanics import model
 from . import visualization
 import numpy as np
 import os.path
-from . import __version__
 
 
 
