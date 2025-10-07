@@ -461,18 +461,18 @@ By playing around with the interface, you will be able to create various general
 
 
 #### Linear behavior
-For a **linear** generalized force-displacement curve $F=kU$, where $k$ is the spring constant.
+For a **linear** generalized force-displacement curve $f=ku$, where $k$ is the spring constant.
 
 `LINEAR(k=<value>)` or `<value>`
 
 Example: `..., LINEAR(k=2.0)` or equivalently `..., 2.0`
 > A spring with a linear behavior characterized by a spring constant `2.0` is defined.
 
-The unit of $k$ should be the unit of the generalized force $F$ divided by the unit of the generalized displacement $U$.
+The unit of $k$ should be the unit of the generalized force $f$ divided by the unit of the generalized displacement $u$.
 
 #### Logarithmic behavior
 A **logarithmic** behavior is defined by a generalized force-displacement curve given by
-$F=k\alpha_0\ln(\alpha/\alpha_0)$, $U=\alpha-\alpha_0$. It is useful to prevent springs from having a zero measure
+$f=k\alpha_0\ln(\alpha/\alpha_0)$, $u=\alpha-\alpha_0$. It is useful to prevent springs from having a zero measure
 (longitudinal springs with zero length, angular springs with zero angle, etc),
 as the generalized force approaches infinity as the measure gets close to zero.
 
@@ -489,11 +489,11 @@ Example: `... , LOGARITHMIC(k=2.0), 1.0`.
 
 > A spring is defined with a behavior of type `LOGARITHMIC` with `k=2.0` and a natural measure `1.0`.
 
-The unit of $k$ should be the unit of the generalized force $F$ divided by the unit of the generalized displacement $U$.
+The unit of $k$ should be the unit of the generalized force $f$ divided by the unit of the generalized displacement $u$.
 
 #### Bezier behavior
 A **Bezier** behavior is described by a generalized force-displacement curve defined as a [Bezier curve](https://en.wikipedia.org/wiki/B%C3%A9zier_curve).
-More precisely, the $F-U$ curve is given by $F(t)=\sum_{i=1}^n f_i b_{i,n}(t)$ and $U(t)=\sum_{i=1}^n u_i b_{i,n}(t)$, where $u_i$ and $f_i$ describe
+More precisely, the $F-U$ curve is given by $f(t)=\sum_{i=1}^n f_i b_{i,n}(t)$ and $u(t)=\sum_{i=1}^n u_i b_{i,n}(t)$, where $u_i$ and $f_i$ describe
 the coordinates of [control points](https://en.wikipedia.org/wiki/Control_point_(mathematics)),
 $b_{i,n}$ are the [Bernstein polynomials](https://en.wikipedia.org/wiki/Bernstein_polynomial) of degree $n$,
 and $t$ is the curve parameter that runs from 0 to 1.
@@ -504,13 +504,13 @@ Example: `..., BEZIER(u_i=[1.0;1.2;3.0];f_i=[2.0;-3.0;2.4])`
 > A spring is defined with a generalized force-displacement relation described as a Bezier curve of degree 3
 > with control points (0, 0), (`1.0`, `2.0`), (`1.2`, `-3.0`) and (`3.0`, `2.4`).
 
-The unit of each $u_i$ should be the unit of the generalized displacement $U$.
-The unit of each $f_i$ should be the unit of the generalized force $F$.
+The unit of each $u_i$ should be the unit of the generalized displacement $u$.
+The unit of each $f_i$ should be the unit of the generalized force $f$.
 
 
 > [!NOTE]
 > For a generalized displacement $U$ larger than $u_n$, the corresponding generalized force is extrapolated linearly based on the slope at the last control point.
-> Also, the generalized force-displacement relation is defined for negative generalized displacements $U<0$ by imposing the symmetry $F(U<0)=-F(|U|)$.
+> Also, the generalized force-displacement relation is defined for negative generalized displacements $u<0$ by imposing the symmetry $f(u<0)=-f(|u|)$.
 
 #### Bezier2 behavior
 A **Bezier2** behavior is the same as a [Bezier behavior](#bezier-behavior).
@@ -523,7 +523,7 @@ meaning that at a certain generalized displacement value, multiple force values 
 Example: `..., BEZIER2(u_i=[2.5;-1.0;2.0];f_i=[2.0;-1.0;1.0])`
 > A spring is defined with a generalized force-displacement relation described as a Bezier curve of degree 3
 > with control points (0, 0), (`2.5`, `2.0`), (`-1.0`, `-1.0`) and (`2.0`, `1.0`).
-> This curve curves back; it cannot be described a function $F(U)$.
+> This curve curves back; it cannot be described a function $f(u)$.
 
 > [!IMPORTANT]
 > Due to implementation details, the way the curve folds and unfolds should respect some conditions. First, the curve cannot have [cusps](https://en.wikipedia.org/wiki/Cusp_(singularity)).
@@ -553,8 +553,8 @@ Example: `..., PIECEWISE(k_i=[1.0;-1.0;2.0]; u_i=[1.0;2.0]; us=0.2)`
 
 > [!NOTE]
 > The quantity $u_s$ must be positive and lower than $\min((2u_1-0.0), (u_2-u_1), ..., (u_{n-1}-u_{n-2}))/2$.
-> Also, the generalized force-displacement relation is defined for negative generalized displacements $U<0$
-> by imposing the symmetry $F(U<0)=-F(|U|)$.
+> Also, the generalized force-displacement relation is defined for negative generalized displacements $u<0$
+> by imposing the symmetry $f(u<0)=-f(|u|)$.
 
 #### Zigzag behavior
 A **zigzag** behavior is described by a generalized force-displacement curve defined as a
@@ -571,8 +571,8 @@ Example: `..., ZIGZAG(u_i=[1.0; 2.0; 3.0]; f_i=[1.0; -0.5; 2.0]; epsilon=0.8)`
 > $\epsilon=$`0.8`
 
 > [!NOTE]
-> The generalized force-displacement relation is defined for negative generalized displacements $U<0$
-> by imposing the symmetry $F(U<0)=-F(|U|)$.
+> The generalized force-displacement relation is defined for negative generalized displacements $u<0$
+> by imposing the symmetry $f(u<0)=-f(|u|)$.
 
 #### Zigzag2 behavior
 A **zigzag2** behavior is the same as a [zigzag behavior](#zigzag-behavior).
@@ -586,7 +586,7 @@ Example: `..., ZIGZAG2(u_i=[2.0; 1.0; 3.0]; f_i=[2.0; 0.0; 1.0]; epsilon=0.4)`
 > A spring is defined with a generalized force-displacement relation described as a smoothed zigzag curve
 > with control points (0, 0), (`2.0`, `2.0`), (`1.0`, `0.0`) and (`3.0`, `1.0`).
 > The corners are smoothed using $\epsilon=$`0.4`
-> This curve curves back; it cannot be described a function $F(U)$.
+> This curve curves back; it cannot be described a function $f(u)$.
 
 > [!IMPORTANT]
 > Due to implementation details, the way the curve folds and unfolds should respect some conditions. First, the curve cannot have [cusps](https://en.wikipedia.org/wiki/Cusp_(singularity)).
@@ -594,11 +594,33 @@ Example: `..., ZIGZAG2(u_i=[2.0; 1.0; 3.0]; f_i=[2.0; 0.0; 1.0]; epsilon=0.4)`
 > (it is perfectly fine for the tangent to point vertically downward).
 > 
 > Also, a zigzag2 behavior introduces an extra [degree of freedom (DOF)](https://en.wikipedia.org/wiki/Degrees_of_freedom_(mechanics))
-> in order to disambiguate the state of the spring, as the generalized displacement $U$ is not enough to fully define its state.
+> in order to disambiguate the state of the spring, as the generalized displacement $u$ is not enough to fully define its state.
 > Using a **zigzag** behavior instead when the curve does not curve back helps keep the number of DOFs low.
 
 
 #### Contact behavior
+A **contact** behavior is described by a generalized force-displacement curve that
+is perfectly zero for large displacement $u \geq \alpha_\Delta - \alpha_0$ and yields a relatively strong repulsion force for low displacement $u<\alpha_\Delta - \alpha_0$.
+More precisely, the generalized force-displacement curve is given by
+
+$$
+f(u) = \begin{cases}
+    0&\text{if $u \ge \alpha_\Delta - \alpha_0$}\\
+    -f_0\left(\dfrac{\alpha_\Delta - \alpha_0-u}{u_\text{c}}\right)^3&\text{if $u < \alpha_\Delta - \alpha_0$},
+\end{cases}
+$$
+
+where $f_0$ is the magnitude of the generalized force $f$ when the generalized displacement $u$ is decreased by $u_\text{c}$ from $\alpha_\Delta - \alpha_0$.
+It is useful to model contact, as a relatively significant force is generated but only below a certain threshold.
+
+`CONTACT(f0=<value1>; uc=<value2>; delta=<value3>)`
+
+
+Example: `..., CONTACT(f0=3.0; uc=0.01; delta=0.5)`
+> A spring is defined with a contact behavior. When the measure $\alpha$ of the spring becomes less than `delta=0.5`,
+> an increasingly strong repulsion generalized force is generated, reaching -`3.0` when the measure is decreased further by `0.01`, that is, when $\alpha=$ `0.5`.
+> 
+
 #### Isothermal behavior
 #### Isentropic behavior
 #### Additional notes
