@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "springable"
-version = "0.2.0"
+version = "1.0.2"
 authors = [
     {name="Paul Ducarme"},
     {email="paulducarme@hotmail.com" },
