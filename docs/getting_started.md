@@ -10,7 +10,7 @@ and you are good to go!
 
 It is supported on **Python 3.10 and above**.
 
-## Don't want to install it right now? Try the Online Notebook
+## Try online without installation
 Try `springable` online, without any installation in an [interactive online notebook](https://colab.research.google.com/github/ducarme/springable/blob/main/docs/examples/example01_getting_started/example01_getting_started.ipynb)
 
 ## Running a simulation
@@ -33,7 +33,7 @@ LOADING
 
 This file defines a spring structure composed of only one horizontal spring, clamped on the left and loaded in tension from the right.
 
-How to read or make such a file is described in the paragraph [Creating a CSV file describing the spring model](#creating-a-csv-file-describing-the-spring-model).
+How to read or make such a file is described in the paragraph [Creating a CSV file describing the spring model](creating_the_spring_model_csv_file.md).
 Many CSV file examples that describe spring structures are already available
 [here on GitHub](https://github.com/ducarme/springable/tree/main/examples-spring-model-CSV-files) for inspiration or to download.
 

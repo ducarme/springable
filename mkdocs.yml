@@ -8,6 +8,15 @@ theme:
         accent: green
     features:
       - content.code.copy
+    icon:
+        repo: fontawesome/brands/github
+    favicon: favicon.png
+    logo: favicon.png
+    font:
+      text: Roboto Serif
+      code: JetBrains Mono
+repo_url: https://github.com/ducarme/springable
+repo_name: See code on Github
 nav:
   - index.md
   - getting_started.md
@@ -15,6 +24,7 @@ nav:
   - specifying_a_nonlinear_mechanical_behavior.md
   - configuring_simulation_settings.md
   - advanced_topics.md
+  - about_and_contact.md
 #  - gallery_and_examples.md
 # - all_assets.md
 
@@ -33,3 +43,7 @@ markdown_extensions:
 extra_javascript:
   - javascripts/mathjax.js
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
+extra:
+  version:
+    provider: mike
