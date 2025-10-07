@@ -647,7 +647,7 @@ It is useful to model contact, as a relatively significant force is generated bu
 
 Example: `..., CONTACT(f0=3.0; uc=0.01; delta=0.5)`
 > A spring is defined with a contact behavior. When the measure $\alpha$ of the spring becomes less than `delta=0.5`,
-> an increasingly strong repulsion generalized force is generated, reaching -`3.0` when the measure is decreased further by `0.01`, that is, when $\alpha=$ `0.5`.
+> an increasingly strong repulsion generalized force is generated, reaching -`3.0` when the measure is decreased further by `0.01`, that is, when $\alpha=$ `0.49`.
 > 
 
 > [!NOTE]
@@ -735,7 +735,7 @@ The unit of the quantity $nRT_0$ should be a unit of energy; more precisely, it 
   Example:
   `..., FROMFILE('custom_nonlinear_behavior.csv')`
 
-  where the `custom_nonlinear_behavior.csv` is, for example,
+  where the `custom_nonlinear_behavior.csv` contains, for example,
   `BEZIER2(u_i=[0.21; -0.1; 3.14]; f_i=[1.0; -2.0; +3.0])`.
 
 
