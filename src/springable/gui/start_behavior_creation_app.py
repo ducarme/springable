@@ -1,6 +1,5 @@
 try:
     import tkinter as tk
-    raise ImportError
 except ImportError:
     raise RuntimeError(
         "Tkinter is required to start the behavior creation interface, but it is not installed. "
