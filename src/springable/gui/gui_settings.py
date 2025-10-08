@@ -2,7 +2,7 @@ from ..mechanics.mechanical_behavior import SmootherZigzag2Behavior
 from ..readwrite.keywords import usable_behaviors
 from ..mechanics.mechanical_behavior import *
 
-DEBUG = False
+DEBUG = True
 DEFAULT_NATURAL_MEASURE = 1.0
 LIST_DEFAULT_BEHAVIORS: list[MechanicalBehavior] = [
     LinearBehavior(DEFAULT_NATURAL_MEASURE, k=1.0),

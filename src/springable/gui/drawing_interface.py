@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib.artist import Artist
 from matplotlib.lines import Line2D
 from matplotlib.patches import Polygon
-from .gui_utils import SimpleToolbar, get_current_recursion_depth, get_recursion_limit
+from .gui_utils import SimpleToolbar, get_current_recursion_depth, get_recursion_limit, get_os, show_help
 from .gui_event_handler import GUIEventHandler
 from .gui_settings import XLIM, YLIM, MAX_NB_CP, ZOOMING_SCROLL_RATE
 import tkinter as tk
@@ -58,7 +58,7 @@ class DrawingSpace:
 
         fig_frame = ttk.Frame(drawing_frame)
         self.ax.set_xlabel("generalized displacement $u=\\alpha-\\alpha_0$ ")
-        self.ax.set_ylabel("generalized force $f=\\partial_{\\alpha} E$")
+        self.ax.set_ylabel("generalized force $f=\\partial_{\\alpha} e$")
         self.canvas = FigureCanvasTkAgg(fig, master=fig_frame)
         toolbar = SimpleToolbar(self.canvas, fig_frame, self._reset_axis)
         toolbar.update()
@@ -75,7 +75,40 @@ class DrawingSpace:
         self._exp_curves = []
         self._active_curve_interactor: CurveInteractor | None = None
         self.cid = self.canvas.mpl_connect("draw_event", self.on_draw)
-        self.canvas.mpl_connect("scroll_event", self._on_scroll)
+
+        # This does not work with MacOs trackpad, so commented out.
+        # self.canvas.mpl_connect("scroll_event", self._on_scroll)
+
+        # More reliable approach, herein below:
+        if get_os() == 'Linux':
+            self.canvas.get_tk_widget().bind("<Button-4>", lambda e: self._zoom("in"))
+            self.canvas.get_tk_widget().bind("<Button-5>", lambda e: self._zoom("out"))
+            self.canvas.get_tk_widget().bind("<Control-minus>", lambda e: self._zoom("out"))
+
+            # reliable control +
+            self.canvas.get_tk_widget().bind("<Control-plus>", lambda e: self._zoom("in"))
+            self.canvas.get_tk_widget().bind("<Control-equal>", lambda e: self._zoom("in"))
+            self.canvas.get_tk_widget().bind("<Shift-Control-equal>", lambda e: self._zoom("in"))
+
+
+        elif get_os() == 'Darwin':  # macos
+            self.canvas.get_tk_widget().bind("<MouseWheel>", self._on_scroll_wheel)
+            self.canvas.get_tk_widget().bind("<Command-minus>", lambda e: self._zoom("out"))
+
+            # reliable control +
+            self.canvas.get_tk_widget().bind("<Command-plus>", lambda e: self._zoom("in"))
+            self.canvas.get_tk_widget().bind("<Command-equal>", lambda e: self._zoom("in"))
+            self.canvas.get_tk_widget().bind("<Shift-Command-equal>", lambda e: self._zoom("in"))
+
+        else:  # most likely windows
+            self.canvas.get_tk_widget().bind("<MouseWheel>", self._on_scroll_wheel)
+
+            self.canvas.get_tk_widget().bind("<Control-minus>", lambda e: self._zoom("out"))
+
+            # reliable control +
+            self.canvas.get_tk_widget().bind("<Control-plus>", lambda e: self._zoom("in"))
+            self.canvas.get_tk_widget().bind("<Control-equal>", lambda e: self._zoom("in"))
+            self.canvas.get_tk_widget().bind("<Shift-Control-equal>", lambda e: self._zoom("in"))
 
 
         bottom_frame = ttk.Frame(drawing_frame)
@@ -87,6 +120,9 @@ class DrawingSpace:
                                         command=self.remove_control_point)
         self.add_cp_btn.grid(column=0, row=0)
         self.remove_cp_btn.grid(column=1, row=0)
+        help_btn = ttk.Button(bottom_frame, text='?', command=lambda: show_help(self.win))
+
+
 
         exp_frame = ttk.Frame(bottom_frame)
         self.show_exp_btn = ttk.Button(exp_frame, text='Load an experimental curve',
@@ -103,6 +139,8 @@ class DrawingSpace:
         fig_frame.grid(row=1, column=0, columnspan=3)
         self.add_remove_cp_btn_frame.grid(row=0, column=1, sticky='E')
         exp_frame.grid(row=0, column=0, sticky='W')
+        help_btn.grid(row=0, column=2, sticky='E')
+
         self.add_remove_cp_btn_frame.grid_remove()
 
         self._current_curve_name = None
@@ -119,11 +157,28 @@ class DrawingSpace:
         self._update_xaxis_limits()
         self._update_yaxis_limits()
 
-    def _on_scroll(self, event):
-        base_scale = ZOOMING_SCROLL_RATE
+    def _on_scroll_mpl(self, event):
+        # Use if you want to use to listen to events send from interface to Matplotlib, that is, if you use
+        # self.canvas.mpl_connect("scroll_event", self._on_scroll) in the constructor instead.
+        direction = "in" if event.delta > 0 else "out"
         if event.button == 'up':
-            scale = 1 / base_scale  # zoom in
+            direction = 'in'
         elif event.button == 'down':
+            direction = 'out'
+        else:
+            return
+        self._zoom(direction)
+    
+    def _on_scroll_wheel(self, event):
+        direction = "in" if event.delta > 0 else "out"
+        self._zoom(direction)
+
+
+    def _zoom(self, direction):
+        base_scale = ZOOMING_SCROLL_RATE
+        if direction == 'in':
+            scale = 1 / base_scale  # zoom in
+        elif direction == 'out':
             scale = base_scale      # zoom out
         else:
             return
@@ -158,10 +213,12 @@ class DrawingSpace:
         self.ymax_entry.insert(0, f"{new_ymax:.3g}")
 
         # reuse your update logic
-        self._update_xaxis_limits()
+        self._update_xaxis_limits(redraw=False)
         self._update_yaxis_limits()
 
-    def _update_xaxis_limits(self, *args):
+
+
+    def _update_xaxis_limits(self, redraw=True):
         try:
             xmin = float(self.xmin_entry.get())
             xmax = float(self.xmax_entry.get())
@@ -177,9 +234,10 @@ class DrawingSpace:
                 self._xaxis_line.set_data([xmin, xmax], [0, 0])
                 self.handler.update_xlimits(xmin, xmax)
                 # update() is called through the handler
-                self.canvas.draw()
+                if redraw:
+                    self.canvas.draw()
 
-    def _update_yaxis_limits(self, *args):
+    def _update_yaxis_limits(self, redraw=True):
         try:
             ymin = float(self.ymin_entry.get())
             ymax = float(self.ymax_entry.get())
@@ -194,7 +252,8 @@ class DrawingSpace:
                 self.ax.yaxis.set_major_locator(AutoLocator())
                 self._yaxis_line.set_data([0, 0], [ymin, ymax])
                 self.update()  # manual update() is needed because the handler is not notified
-                self.canvas.draw()
+                if redraw:
+                    self.canvas.draw()
 
     def print_curves(self):
         print('Curves:')

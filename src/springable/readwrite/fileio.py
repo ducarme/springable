@@ -212,7 +212,7 @@ def load_graphics_settings(graphics_settings: str | tuple | list):
 
 def read_experimental_force_displacement_data(filepath,
                                               displacement_column_index=0, force_column_index=1, delimiter=','):
-    """ read a force displacement data from a csv file. Force and dispalcement values should be in separate columns.
+    """ read a force displacement data from a csv file. Force and displacement values should be in separate columns.
     Skips header automatically. """
     exp_displacements = []
     exp_forces = []

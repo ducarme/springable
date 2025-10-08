@@ -3,6 +3,10 @@ import tkinter.ttk as ttk
 from typing import Callable
 from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
 import sys
+import platform
+
+def get_os():
+    return platform.system()
 
 
 def ask_csv_options(parent, default_u_col_index: int,
@@ -44,6 +48,26 @@ def ask_csv_options(parent, default_u_col_index: int,
     ttk.Button(container, text="OK", command=on_ok).grid(row=3, column=0, columnspan=2, pady=10)
     win.wait_window()
     return options
+
+def show_help(parent):
+    ctrl_key_name = 'CTRL' if get_os() != 'Darwin' else 'CMD' 
+
+    info_items = [
+        f"> Click and drag control points (CP) -> shape a curve",
+        f"> Press 't' -> show/hide the curve control points",
+        f"> Press '{ctrl_key_name}' and  '+' -> zoom in",
+        f"> Press '{ctrl_key_name}' and  '-' -> zoom out",
+        f"> Scroll -> zoom in and out",
+    ]
+
+    message = '\n'.join(info_items)
+
+    x = parent.winfo_x() + (parent.winfo_width() // 2) - (parent.winfo_reqwidth() // 2)
+    y = parent.winfo_y() + (parent.winfo_height() // 2) - (parent.winfo_reqheight() // 2)
+    parent.geometry(f"+{x}+{y}")
+    tk.messagebox.showinfo("Info", message, parent=parent)
+
+
 
 
 def get_current_recursion_depth():

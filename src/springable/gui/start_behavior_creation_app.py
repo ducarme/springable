@@ -1,4 +1,13 @@
-import tkinter as tk
+try:
+    import tkinter as tk
+    raise ImportError
+except ImportError:
+    raise RuntimeError(
+        "Tkinter is required to start the behavior creation interface, but it is not installed. "
+        "On macOS, install Python from python.org or install Tcl/Tk via Homebrew:\n"
+        "    brew install python-tk"
+    )
+
 import tkinter.ttk as ttk
 from .control_panel_interface import BehaviorNotebook
 from .drawing_interface import DrawingSpace
