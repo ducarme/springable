@@ -58,6 +58,11 @@ class Result:
     def get_model(self) -> Model:
         return self._model
     
+    def solution_describes_a_force_driven_loading(self) -> bool:
+        return True
+    
+    def solution_describes_a_displacement_driven_loading(self) -> bool:
+        return len(self._model.get_loaded_nodes()) == 1
 
     def check_if_solution_usable(self):
         if self._is_solution_unusable:
@@ -72,6 +77,17 @@ class Result:
             if self._is_loading_solution_unusable and check_usability:
                 raise UnusableSolution
             return self._f[self._starting_index:]
+        
+    def get_energy(self, include_preloading=False, check_usability=True) -> np.ndarray:
+        q0 = self.get_model().get_assembly().get_coordinates().copy()
+        u = self.get_displacements(include_preloading, check_usability)
+        energy = np.empty(u.shape[0])
+        for i in range(u.shape[0]):
+            self.get_model().get_assembly().set_coordinates(q0 + u[i, :])
+            energy[i] = self.get_model().get_assembly().compute_elastic_energy()
+        self.get_model().get_assembly().set_coordinates(q0)
+        return energy
+
 
     def get_node_forces(self, _node: Node, direction: str, include_preloading=False, check_usability=True):
         if include_preloading:

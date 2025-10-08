@@ -1,6 +1,7 @@
 from ..mechanics.static_solver import Result
 from ..mechanics import model, assembly
-from ..mechanics.result_processing import extract_loading_path, extract_unloading_path, LoadingPathEmpty, DiscontinuityInTheSolutionPath
+from ..mechanics.result_processing import (extract_loading_path, extract_unloading_path,
+                                           LoadingPathEmpty, DiscontinuityInTheSolutionPath, LoadingPathIsNotDescribedBySolution)
 from .drawing import ModelDrawing
 from . import visual_helpers, plot
 from . import figure_formatting as ff
@@ -517,6 +518,20 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                 )
                 plt.close(fig=fig)
                 return
+            except LoadingPathIsNotDescribedBySolution:
+                extra_info = ""
+                if po.drive_mode == 'displacement':
+                    extra_info += ("To extract the displacement-driven path from a simulation, "
+                    "only a single degree of freedom can be loaded for the final loadstep, "
+                    "as the solver treats multiple loads (within a loadstep) as evolving proportionally in force, not displacement.\n"
+                    "TIP: you might want to split your multi-load final loadstep into multiple loadsteps with a single load in the final loadstep, "
+                    "using the 'then' keyword in the LOADING section. See documentation for more details:\n"
+                    "https://paulducarme.com/springable/creating_the_spring_model_csv_file/#the-loading-section"
+                    "\nIf this explanation is unclear, feel free to send an email to the author at paulducarme@hotmail.com, who is going to "
+                    "do his best to answer quickly.")
+                print(f"Cannot make the animation in {ao.drive_mode}-driven mode, "
+                      f"because the model does not describe a {po.drive_mode}-driven loading. " + extra_info)
+                pass
         else:
             frame_indices = np.round(np.linspace(0, u.shape[0] - 1, ao.nb_frames)).astype(int)
 

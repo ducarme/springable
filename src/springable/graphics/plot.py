@@ -1,5 +1,6 @@
 from ..mechanics.static_solver import Result, UnusableSolution
-from ..mechanics.result_processing import extract_branches, extract_loading_path, extract_unloading_path, LoadingPathEmpty, DiscontinuityInTheSolutionPath
+from ..mechanics.result_processing import (extract_branches, extract_loading_path, extract_unloading_path,
+                                           LoadingPathEmpty, DiscontinuityInTheSolutionPath, LoadingPathIsNotDescribedBySolution)
 from ..mechanics.stability_states import StabilityStates
 from .default_graphics_settings import PlotOptions
 from . import figure_formatting as ff
@@ -259,6 +260,20 @@ def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: Plot
                   f"Run a more refined simulation to find a valid solution"
                   f" (use a smaller 'radius' value in the solver settings)."
             )
+            pass
+        except LoadingPathIsNotDescribedBySolution:
+            extra_info = ""
+            if po.drive_mode == 'displacement':
+                extra_info += ("To extract the displacement-driven path from a simulation, "
+                "only a single degree of freedom can be loaded for the final loadstep, "
+                "as the solver treats multiple loads (within a loadstep) as evolving proportionally in force, not displacement.\n"
+                "TIP: you might want to split your multi-load final loadstep into multiple loadsteps with a single load in the final loadstep, "
+                "using the 'then' keyword in the LOADING section. See documentation for more details:\n"
+                "https://paulducarme.com/springable/creating_the_spring_model_csv_file/#the-loading-section"
+                "\nIf this explanation is unclear, feel free to send an email to the author at paulducarme@hotmail.com, who is going to "
+                "do his best to answer quickly.")
+            print(f"Cannot draw the {po.drive_mode}-driven path or snapping arrows, "
+                  f"because the model does not describe a {po.drive_mode}-driven loading. " + extra_info)
             pass
     elif po.driven_path_only:
         raise ValueError('Inconsistent plot options: "driven_path_only == True", and "drive_mode == "none"')

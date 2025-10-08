@@ -1043,7 +1043,7 @@ class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
         return np.zeros_like(t)
     
     def _int_bda_fun(self, t):
-        return self._raw_int_bda_fun(t)
+        return self._raw_int_bda_fun(t / self.tmax)
 
     def get_a_extrema(self) -> np.ndarray:
         return spw.get_extrema(self._k_u, self._x_u, self._delta) * self.tmax

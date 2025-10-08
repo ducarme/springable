@@ -66,11 +66,10 @@ class Model:
     def get_force_vectors_preloading_step_list(self):
         return self._force_vector_step_list[:-1]
 
-    def get_force_vector(self):
+    def get_force_vector(self) -> np.ndarray:
         if len(self._force_vector_step_list) > 0:
             return self._force_vector_step_list[-1]
-        else:
-            return None
+
 
 
     def get_force_vectors_step_list(self):
