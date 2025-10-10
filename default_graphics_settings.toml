@@ -22,6 +22,10 @@ driven_path_only = false
 loading_sequence = "cycle"
 # "loading", "cycle", "loading_unloading"
 show_snapping_arrows = true
+all_snapping_arrows = false
+# if true (when show_snapping_arrow is true), it will show snapping arrow for every possible transition, regardless of the loading sequence,
+# else only the snapping arrows encountered during the prescribed loading sequence
+
 snapping_arrow_style = '-'
 drive_mode = "none"
 # "none" (nothing driven), "force" (force-driven), "displacement" (displacement-driven)
@@ -94,11 +98,12 @@ label_for_unstable_points = 'unstable'
 driven_path_color = "#444444"
 size_for_driven_path = 0.4
 # scaling of the default markersize for driven path
-snapping_arrow_color = "#aaaaaa"
+snapping_arrow_color_loading = "#ff0000"
+snapping_arrow_color_unloading = "#0000ff"
 # only has an effect if "show_snapping_arrow" is true
-snapping_arrow_opacity = 0.35
+snapping_arrow_opacity = 1.0
 # only has an effect if "show_snapping_arrow" is true
-snapping_arrow_width = 2.5
+snapping_arrow_width = 1.75
 # only has an effect if "show_snapping_arrow" is true
 snapping_arrow_headwidth = 0.2
 # only has an effect if "show_snapping_arrow" is true

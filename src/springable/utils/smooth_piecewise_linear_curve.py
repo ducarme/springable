@@ -285,6 +285,8 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import numpy as np
 
+    # 'ZIGZAG2(mode=-1; u_i=[1; 0.1; 0.321; 0.800]; f_i=[1; 0.04; 0.042; 1]; epsilon=5.000E-01)'
+
     _a = [2, -1, -2, -1, 5]
     _a2 = [1, 1, -1, 1, 1]
     _x = [1, 2, 3, 4]

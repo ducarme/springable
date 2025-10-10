@@ -26,6 +26,7 @@ class PlotOptions(Updatable):
     driven_path_only: bool = False
     loading_sequence: str = 'cycle'
     show_snapping_arrows: bool = True
+    all_snapping_arrows: bool = False
     plot_style: str = 'points'
     drive_mode: str = 'none'
     color_mode: str = 'stability'
@@ -60,10 +61,11 @@ class PlotOptions(Updatable):
     label_for_unstable_points: str = 'unstable'
     driven_path_color: str = '#444444'
     size_for_driven_path: float = 0.4
-    snapping_arrow_color: str = '#aaaaaa'
-    snapping_arrow_opacity: float = 0.35
+    snapping_arrow_color_loading: str = '#ff0000'
+    snapping_arrow_color_unloading: str = '#0000ff'
+    snapping_arrow_opacity: float = 1.0
     snapping_arrow_style: str = '-'
-    snapping_arrow_width: float = 2.5
+    snapping_arrow_width: float = 1.75
     snapping_arrow_headwidth: float = 0.2
     snapping_arrow_headlength: float = 0.4
     size_for_stable_points: float = 1.

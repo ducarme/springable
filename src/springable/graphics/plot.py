@@ -1,5 +1,5 @@
 from ..mechanics.static_solver import Result, UnusableSolution
-from ..mechanics.result_processing import (extract_branches, extract_loading_path, extract_unloading_path,
+from ..mechanics.result_processing import (extract_branches, extract_loading_path, extract_unloading_path, extract_all_transitions,
                                            LoadingPathEmpty, DiscontinuityInTheSolutionPath, LoadingPathIsNotDescribedBySolution)
 from ..mechanics.stability_states import StabilityStates
 from .default_graphics_settings import PlotOptions
@@ -165,6 +165,9 @@ def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: Plot
             (loading_path_indices,
              loading_critical_indices,
              loading_restabilization_indices) = extract_loading_path(result, po.drive_mode)
+            unloading_critical_indices = []
+            unloading_restabilization_indices = []
+
             if po.loading_sequence in ('cycle', 'loading_unloading'):
                 unloading_start_index = loading_path_indices[-1] if po.loading_sequence == 'cycle' else -1
                 (unloading_path_indices,
@@ -231,25 +234,42 @@ def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: Plot
 
             if po.show_snapping_arrows:
                 if po.drive_mode in ('force', 'displacement'):
-                    nb_transitions = min(len(critical_indices), len(restabilization_indices))
-                    for i in range(nb_transitions):
-                        start = np.array((x[critical_indices[i]], y[critical_indices[i]]))
-                        end = np.array((x[restabilization_indices[i]], y[restabilization_indices[i]]))
+                    if po.all_snapping_arrows:
+                        _, transitions = extract_all_transitions(result, po.drive_mode)
+                        loading_critical_indices = [transition['next_critical_index']
+                                                    for transition in transitions
+                                                    if transition['next_branch_index'] is not None]
+                        loading_restabilization_indices = [transition['next_restabilization_index']
+                                                           for transition in transitions
+                                                           if transition['next_branch_index'] is not None]
+                        unloading_critical_indices = [transition['previous_critical_index']
+                                                      for transition in transitions
+                                                      if transition['previous_branch_index'] is not None]
+                        unloading_restabilization_indices = [transition['previous_restabilization_index']
+                                                             for transition in transitions
+                                                             if transition['previous_branch_index'] is not None]
+                    
+                    for l, (cr_indices, re_indices) in enumerate(zip([loading_critical_indices, unloading_critical_indices],
+                                                                     [loading_restabilization_indices, unloading_restabilization_indices])):
+                        nb_transitions = min(len(cr_indices), len(re_indices))
+                        for i in range(nb_transitions):
+                            start = np.array((x[cr_indices[i]], y[cr_indices[i]]))
+                            end = np.array((x[re_indices[i]], y[re_indices[i]]))
 
-                        ax.annotate(
-                            "",
-                            xy=start,
-                            xytext=end,
-                            arrowprops=dict(
-                                arrowstyle=ArrowStyle.CurveA(head_length=po.snapping_arrow_headlength,
-                                                             head_width=po.snapping_arrow_headwidth),
-                                color=po.snapping_arrow_color,
-                                alpha=po.snapping_arrow_opacity,
-                                linewidth=po.snapping_arrow_width,
-                                ls=po.snapping_arrow_style,
-                                shrinkA=0.0, shrinkB=0.0,
-                            ),
-                            annotation_clip=False)
+                            ax.annotate(
+                                "",
+                                xy=start,
+                                xytext=end,
+                                arrowprops=dict(
+                                    arrowstyle=ArrowStyle.CurveA(head_length=po.snapping_arrow_headlength,
+                                                                 head_width=po.snapping_arrow_headwidth),
+                                    color=po.snapping_arrow_color_loading if  l==0 else po.snapping_arrow_color_unloading,
+                                    alpha=po.snapping_arrow_opacity,
+                                    linewidth=po.snapping_arrow_width,
+                                    ls=po.snapping_arrow_style,
+                                    shrinkA=0.0, shrinkB=0.0,
+                                ),
+                                annotation_clip=False)
         except LoadingPathEmpty:
             print(f"Cannot draw the {po.drive_mode}-driven path, "
                   f"because not stable points have been found under these loading conditions")

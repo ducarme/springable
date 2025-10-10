@@ -317,6 +317,7 @@ def read_solving_process_info(save_dir, save_name='solving_process_info.csv'):
 
 
 def write_results(result: static_solver.Result, save_dir: str):
+    result.set_assembly_to_initial_state()
     np.savetxt(os.path.join(save_dir, 'displacements.csv'),
                result.get_displacements(include_preloading=True, check_usability=False), delimiter=',')
     np.savetxt(os.path.join(save_dir, 'forces.csv'),

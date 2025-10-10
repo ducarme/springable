@@ -426,30 +426,6 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
         ax1.set_ylim(*ylim)
         ax1.set_aspect('equal', 'box')
 
-        _model = _result.get_model()
-        u = _result.get_displacements()
-        forces_after_preloading = _result.get_forces()[0]
-        _natural_coordinates = _model.get_assembly().get_coordinates()
-        _model.get_assembly().set_coordinates(_natural_coordinates + u[0, :])
-        blocked_nodes_directions_step_list = _model.get_blocked_nodes_directions_step_list()
-        for blocked_nodes_directions in blocked_nodes_directions_step_list:
-            _model.get_assembly().block_nodes_along_directions(*blocked_nodes_directions)
-
-        if all_force_amounts is not None:
-            force_amounts = {loaded_node: amounts[0] for loaded_node, amounts in all_force_amounts.items()}
-        else:
-            force_amounts = None
-
-        if all_preforce_amounts is not None:
-            preforce_amounts = {loaded_node: amounts[0] for loaded_node, amounts in all_preforce_amounts.items()}
-        else:
-            preforce_amounts = None
-        _model_drawing = ModelDrawing(ax1, _model, aa, characteristic_length,
-                                      element_color_handler=element_color_handler,
-                                      element_opacity_handler=element_opacity_handler,
-                                      force_color_handler=force_color_handler, force_amounts=force_amounts,
-                                      force_vector_after_preloading=forces_after_preloading,
-                                      preforce_amounts=preforce_amounts)
 
         deformation, force = _result.get_equilibrium_path()
         if ao.drive_mode != 'none':
@@ -533,7 +509,7 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                       f"because the model does not describe a {po.drive_mode}-driven loading. " + extra_info)
                 pass
         else:
-            frame_indices = np.round(np.linspace(0, u.shape[0] - 1, ao.nb_frames)).astype(int)
+            frame_indices = np.round(np.linspace(0, len(deformation) - 1, ao.nb_frames)).astype(int)
 
         dot = None
         if ao.side_plot:
@@ -570,7 +546,31 @@ def animate(_result: Result, save_dir, save_name: str = None, show=True,
                     and po.drive_mode in ('force', 'displacement'))):
                 ax2.legend(numpoints=5, markerscale=1.5)
 
+        # PREPARE FOR ANIMATION
+        u = _result.get_displacements()
+        _model = _result.get_model()
+        forces_after_preloading = _result.get_forces()[0]
+        _natural_coordinates = _model.get_assembly().get_coordinates()
+        _model.get_assembly().set_coordinates(_natural_coordinates + u[0, :])
+        blocked_nodes_directions_step_list = _model.get_blocked_nodes_directions_step_list()
+        for blocked_nodes_directions in blocked_nodes_directions_step_list:
+            _model.get_assembly().block_nodes_along_directions(*blocked_nodes_directions)
 
+        if all_force_amounts is not None:
+            force_amounts = {loaded_node: amounts[0] for loaded_node, amounts in all_force_amounts.items()}
+        else:
+            force_amounts = None
+
+        if all_preforce_amounts is not None:
+            preforce_amounts = {loaded_node: amounts[0] for loaded_node, amounts in all_preforce_amounts.items()}
+        else:
+            preforce_amounts = None
+        _model_drawing = ModelDrawing(ax1, _model, aa, characteristic_length,
+                                      element_color_handler=element_color_handler,
+                                      element_opacity_handler=element_opacity_handler,
+                                      force_color_handler=force_color_handler, force_amounts=force_amounts,
+                                      force_vector_after_preloading=forces_after_preloading,
+                                      preforce_amounts=preforce_amounts)
         def update(i):
             # update assembly
             _model.get_assembly().set_coordinates(_natural_coordinates + u[i, :])

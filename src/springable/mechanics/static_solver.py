@@ -27,6 +27,18 @@ class Result:
                  equilibrium_displacements, equilibrium_forces, equilibrium_stability, equilibrium_eigval_stats,
                  step_indices, solving_process_info: dict | None = None):
         self._model = model
+        self._q0 = model.get_assembly().get_coordinates().copy()
+        free_nodes = []
+        free_directions = []
+        for n in model.get_assembly().get_nodes():
+            if not n.is_fixed_horizontally:
+                free_nodes.append(n)
+                free_directions.append('X')
+            if not n._fixed_vertically:
+                free_nodes.append(n)
+                free_directions.append('Y')
+        self._initially_free_nodes_and_directions = free_nodes, free_directions
+
         self._u = equilibrium_displacements
         self._f = equilibrium_forces
         self._stability = equilibrium_stability
@@ -55,6 +67,11 @@ class Result:
                     self._starting_index = index
                     self._is_loading_solution_unusable = False
 
+    def set_assembly_to_initial_state(self):
+        self._model.get_assembly().set_coordinates(self._q0)
+        self._model.get_assembly().release_nodes_along_directions(*self._initially_free_nodes_and_directions)
+
+
     def get_model(self) -> Model:
         return self._model
     
@@ -78,14 +95,22 @@ class Result:
                 raise UnusableSolution
             return self._f[self._starting_index:]
         
-    def get_energy(self, include_preloading=False, check_usability=True) -> np.ndarray:
-        q0 = self.get_model().get_assembly().get_coordinates().copy()
+    def compute_energy(self, include_preloading=False, check_usability=True) -> np.ndarray:
+        self.set_assembly_to_initial_state()
         u = self.get_displacements(include_preloading, check_usability)
         energy = np.empty(u.shape[0])
         for i in range(u.shape[0]):
-            self.get_model().get_assembly().set_coordinates(q0 + u[i, :])
+            self.get_model().get_assembly().set_coordinates(self._q0 + u[i, :])
             energy[i] = self.get_model().get_assembly().compute_elastic_energy()
-        self.get_model().get_assembly().set_coordinates(q0)
+        self.set_assembly_to_initial_state()
+        return energy
+    
+    def compute_energy_at_state_index(self, index: int, include_preloading=False, check_usability=True) -> float:
+        self.set_assembly_to_initial_state()
+        u = self.get_displacements(include_preloading, check_usability)
+        self.get_model().get_assembly().set_coordinates(self._q0 + u[index, :])
+        energy = self.get_model().get_assembly().compute_elastic_energy()
+        self.set_assembly_to_initial_state()
         return energy
 
 
@@ -119,64 +144,64 @@ class Result:
                 raise UnusableSolution
             return self._u[self._starting_index:, self._model.get_assembly().get_dof_index(_node, direction)]
 
-    def get_internal_force_from_element_index(self, element_index: int, include_preloading=False, check_usability=True):
+    def compute_internal_force_from_element_index(self, element_index: int, include_preloading=False, check_usability=True):
+        self.set_assembly_to_initial_state()
         el = self.get_model().get_assembly().get_elements()[element_index]
-        q0 = self.get_model().get_assembly().get_coordinates().copy()
         u = self.get_displacements(include_preloading, check_usability)
         internal_force = np.empty(u.shape[0])
         for i in range(u.shape[0]):
-            self.get_model().get_assembly().set_coordinates(q0 + u[i, :])
+            self.get_model().get_assembly().set_coordinates(self._q0 + u[i, :])
             internal_force[i] = el.compute_generalized_force()
-        self.get_model().get_assembly().set_coordinates(q0)
+        self.set_assembly_to_initial_state()
         return internal_force
     
-    def get_stiffness_from_element_index(self, element_index: int, include_preloading=False, check_usability=True):
+    def compute_stiffness_from_element_index(self, element_index: int, include_preloading=False, check_usability=True):
+        self.set_assembly_to_initial_state()
         el = self.get_model().get_assembly().get_elements()[element_index]
-        q0 = self.get_model().get_assembly().get_coordinates().copy()
         u = self.get_displacements(include_preloading, check_usability)
         stiffness = np.empty(u.shape[0])
         for i in range(u.shape[0]):
-            self.get_model().get_assembly().set_coordinates(q0 + u[i, :])
+            self.get_model().get_assembly().set_coordinates(self._q0 + u[i, :])
             stiffness[i] = el.compute_generalized_stiffness()
-        self.get_model().get_assembly().set_coordinates(q0)
+        self.set_assembly_to_initial_state()
         return stiffness
     
-    def get_measure_from_element_index(self, element_index: int, include_preloading=False, check_usability=True):
+    def compute_measure_from_element_index(self, element_index: int, include_preloading=False, check_usability=True):
+        self.set_assembly_to_initial_state()
         el = self.get_model().get_assembly().get_elements()[element_index]
-        q0 = self.get_model().get_assembly().get_coordinates().copy()
         u = self.get_displacements(include_preloading, check_usability)
         measure = np.empty(u.shape[0])
         for i in range(u.shape[0]):
-            self.get_model().get_assembly().set_coordinates(q0 + u[i, :])
+            self.get_model().get_assembly().set_coordinates(self._q0 + u[i, :])
             measure[i] = el.get_shape().compute(output_mode=Shape.MEASURE)
-        self.get_model().get_assembly().set_coordinates(q0)
+        self.set_assembly_to_initial_state()
         return measure
     
-    def get_measure_from_element_index_at_state_findex(self, element_index: int, findex: float, include_preloading=False, check_usability=True) -> float:
+    def compute_measure_from_element_index_at_state_findex(self, element_index: int, findex: float, include_preloading=False, check_usability=True) -> float:
+        self.set_assembly_to_initial_state()
         el = self.get_model().get_assembly().get_elements()[element_index]
-        q0 = self.get_model().get_assembly().get_coordinates().copy()
         u = self.get_displacements(include_preloading, check_usability)
         i0 = min(max(0, int(findex)), u.shape[0]-1)
         i1 = min(i0 + 1, u.shape[0]-1)
-        q_i = q0 + interp1d([i0, i1], u[[i0, i1], :], axis=0)(findex)
+        q_i = self._q0 + interp1d([i0, i1], u[[i0, i1], :], axis=0)(findex)
         self.get_model().get_assembly().set_coordinates(q_i)
         measure = el.get_shape().compute(output_mode=Shape.MEASURE)
-        self.get_model().get_assembly().set_coordinates(q0)
+        self.set_assembly_to_initial_state()
         return measure
     
-    def get_generalized_displacement_from_element_index(self, element_index: int, include_preloading=False, check_usability=True):
-        alpha = self.get_measure_from_element_index(element_index, include_preloading, check_usability)
+    def compute_generalized_displacement_from_element_index(self, element_index: int, include_preloading=False, check_usability=True):
+        alpha = self.compute_measure_from_element_index(element_index, include_preloading, check_usability)
         alpha0 = self.get_model().get_assembly().get_elements()[element_index].get_behavior().get_natural_measure()
         return alpha - alpha0
     
-    def get_elemental_hysteron_ids_at_state_index(self, i, include_preloading=False, check_usability=True):
-        q0 = self.get_model().get_assembly().get_coordinates().copy()
+    def compute_elemental_hysteron_ids_at_state_index(self, i, include_preloading=False, check_usability=True):
+        self.set_assembly_to_initial_state()
         u = self.get_displacements(include_preloading, check_usability)
         elemental_hysteron_ids = []
-        self.get_model().get_assembly().set_coordinates(q0 + u[i, :])
+        self.get_model().get_assembly().set_coordinates(self._q0 + u[i, :])
         for el in self.get_model().get_assembly().get_elements():
             elemental_hysteron_ids.append(el.get_hysteron_branch_id()) 
-        self.get_model().get_assembly().set_coordinates(q0)
+        self.set_assembly_to_initial_state()
         return elemental_hysteron_ids
 
     def get_stability(self, include_preloading=False, check_usability=True):
@@ -332,6 +357,16 @@ class StaticSolver:
     def solve(self) -> Result:
         # this function assumes starting from an equilibrium point
         initial_coordinates = self._assembly.get_coordinates()
+        initially_free_nodes = []
+        initially_free_directions = []
+        for n in self._model.get_assembly().get_nodes():
+            if not n.is_fixed_horizontally:
+                initially_free_nodes.append(n)
+                initially_free_directions.append('X')
+            if not n._fixed_vertically:
+                initially_free_nodes.append(n)
+                initially_free_directions.append('Y')
+
         step_force_vectors = self._model.get_force_vectors_preloading_step_list() + [self._model.get_force_vector()]
         max_displacement_map_step_list = self._model.get_max_displacement_map_preloading_step_list() + [
             self._model.get_max_displacement_map()]
@@ -344,8 +379,8 @@ class StaticSolver:
         
         if u.ndim == 2:
             self._assembly.set_coordinates(initial_coordinates)
-        for blocked_nodes, directions in blocked_nodes_directions_step_list:
-            self._assembly.release_nodes_along_directions(blocked_nodes, directions)
+        self._assembly.release_nodes_along_directions(initially_free_nodes, initially_free_directions)
+        
         return Result(self._model, u, f, stability, eigval_stats, step_indices, solving_process_info=info)
 
     def guide_spring_assembly_to_natural_configuration(self):

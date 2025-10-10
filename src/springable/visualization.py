@@ -63,7 +63,7 @@ def visualize_scan_results(scan_results_dir: str, save_dir: str = '',
                                                          show=go.show_parametric_fd_plots, **plot_options)
                 if postprocessing is not None:
                     for pp in postprocessing:
-                        plot.parametric_curve(pp['postprocessing_fun'], _results(subsave_dirs), design_parameter_name,
+                        plot.parametric_curve(pp['processing_fun'], _results(subsave_dirs), design_parameter_name,
                                               par_name_to_par_data[design_parameter_name], parameter_values,
                                               save_dir, save_name=f'{pp["save_name"]}_{design_parameter_name}',
                                               xlabel=pp['xlabel'], ylabel=pp['ylabel'],
@@ -84,7 +84,7 @@ def visualize_scan_results(scan_results_dir: str, save_dir: str = '',
                                                      show=go.show_parametric_fd_plots, **plot_options)
             if postprocessing is not None:
                 for pp in postprocessing:
-                    plot.parametric_curve(pp['postprocessing_fun'], _results(subsave_dirs), 'sim #',
+                    plot.parametric_curve(pp['processing_fun'], _results(subsave_dirs), 'sim #',
                                           dummy_parameter_data, np.arange(0, len(all_sim_names)).tolist(),
                                           save_dir, save_name=f'{pp["save_name"]}',
                                           xlabel=pp['xlabel'], ylabel=pp['ylabel'],
@@ -159,7 +159,7 @@ def visualize_result(result: static_solver.Result | str, save_dir: str = '',
                 at_least_one = True
                 if go.show_custom_plot:
                     print(f"Custom {pp['save_name']} plot is drawn in a new window. Close the window to continue...")
-                plot.curve(pp['postprocessing_fun'], result, save_dir, save_name=pp['save_name'],
+                plot.curve(pp['processing_fun'], result, save_dir, save_name=pp['save_name'],
                            show=go.show_custom_plot, xlabel=pp['xlabel'], ylabel=pp['ylabel'], **plot_options)
         if go.generate_animation:
             if postprocessing is None:
@@ -170,7 +170,7 @@ def visualize_result(result: static_solver.Result | str, save_dir: str = '',
             else:
                 for pp in postprocessing:
                     at_least_one = True
-                    animation.animate(result, save_dir, show=go.show_animation,
+                    animation.animate(result, save_dir, save_name=f'anim_{pp["save_name"]}', show=go.show_animation,
                                     plot_options=plot_options, assembly_appearance=assembly_appearance,
                                     post_processing=pp,
                                     **animation_options)
