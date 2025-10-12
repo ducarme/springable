@@ -323,8 +323,8 @@ class SimpleEval(object):  # pylint: disable=too-few-public-methods
             ast.Assign: self._eval_assign,
             ast.AugAssign: self._eval_aug_assign,
             ast.Import: self._eval_import,
-            ast.Num: self._eval_num,
-            ast.Str: self._eval_str,
+            #ast.Num: self._eval_num,
+            #ast.Str: self._eval_str,
             ast.Name: self._eval_name,
             ast.UnaryOp: self._eval_unaryop,
             ast.BinOp: self._eval_binop,
@@ -335,7 +335,7 @@ class SimpleEval(object):  # pylint: disable=too-few-public-methods
             ast.keyword: self._eval_keyword,
             ast.Subscript: self._eval_subscript,
             ast.Attribute: self._eval_attribute,
-            ast.Index: self._eval_index,
+            #ast.Index: self._eval_index,
             ast.Slice: self._eval_slice,
         }
 
