@@ -25,7 +25,7 @@ On top of that, the library allows you to define the energy potential of each in
 
 - [Getting started](getting_started)
     - [Installation](getting_started/#installation)
-    - [Don't want to install it right now? Try the Online Notebook](getting_started/#dont-want-to-install-it-right-now-try-the-online-notebook)
+    - [Don't want to install it right now? Try the Online Notebook](getting_started/#try-online-without-any-installation)
     - [Running a simulation](getting_started/#running-a-simulation)
 - [Creating a CSV file describing the spring model (+examples)](creating_the_spring_model_csv_file)
 - [Specifying a nonlinear mechanical behavior (+examples)](specifying_a_nonlinear_mechanical_behavior)

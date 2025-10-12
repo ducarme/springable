@@ -10,33 +10,44 @@ and you are good to go!
 It is supported on **Python 3.10 and above**.
 
 ??? tip "Install `springable` a virtual environment (easy & recommended)"
-    It is recommended to install `springable` in a virtual environment. Create a folder and use the terminal to navigate to that folder and enter
+    It is recommended to install `springable` in a virtual environment. Create a folder, use the terminal to navigate to that folder and enter
     === "Windows"
         ``` console
         python -m venv venv
         ```
+        to create the virtual environment. A folder named `venv` is automatically created in your folder. To activate the virtual environment, run
+
         ``` console
         venv\Scripts\activate
         ```
+        in the terminal. From now on, every installation only lives in the virtual environment. Install `springable` by entering
         ``` console
         pip install springable
         ```
+        in the terminal.
     === "Macbook/Apple"
         ``` console
         python3 -m venv venv
         ```
+        to create the virtual environment. A folder named `venv` is automatically created in your folder. To activate the virtual environment, run
         ``` console
         source venv/bin/activate
         ```
+        in the terminal. From now on, every installation only lives in the virtual environment. Install `springable` by entering
         ``` console
         pip install springable
         ```
+        in the terminal.
 
     A [virtual environment](https://www.w3schools.com/python/python_virtualenv.asp) is like a mini Python setup just for one project. It keeps its own copy of Python and its own folder for packages. This way:
 
     * you can install packages without touching the global Python installation;
     * different projects can use different versions of the same package without conflicts;
-    * when you’re done, you can just delete the environment and it won’t affect anything else on your computer.
+    * when you’re done, you can just deactivate the environment by entering
+    ``` console
+    deactivate
+    ```
+    in the terminal. You can re-activate it later as shown above (no need to re-create it of course).
 
 ??? failure "Error message: 'Could not find a version that satisfies the requirement springable'?"
     If you see a message similar to
@@ -73,7 +84,7 @@ It is supported on **Python 3.10 and above**.
     
     You need however to have Python installed on your computer to run a Python script. You can find instructions on how to install Python on your computer in the next help box.
 
-    The text you write in a Python script needs to follows some rules and syntax in order for Python to be able to understand and execute it. Those rules form the Python programming language. To run spring simulations with `springable`, you won't have to write any Python scripts yourself. You can just copy-paste the scripts shown in this guide. **No knowledge of the Python language is required**. If you want to know more about Python, even though it is not required, you can find great tutorials online, such as [this one](https://realpython.com/learning-paths/python-basics/).
+    The text you write in a Python script needs to follow some rules and syntax in order for Python to be able to understand and execute it. Those rules form the Python programming language. To run spring simulations with `springable`, you won't have to write any Python scripts yourself. You can just copy-paste the scripts shown in this guide. **No knowledge of the Python language is required**. If you want to know more about Python, even though it is not required, you can find great tutorials online, such as [this one](https://realpython.com/learning-paths/python-basics/).
 
 
 ??? question "Do I have Python installed on my computer? If so, which version?"
@@ -117,7 +128,7 @@ It is supported on **Python 3.10 and above**.
 
     Double-click on what has been downloaded and follow the instructions that will appear on screen.
 
-    After the installation is completed, re-open the terminal and run
+    After the installation is completed, **re-open the terminal** and run
     === "Windows"
         ``` console
         python --version
@@ -146,7 +157,7 @@ It is supported on **Python 3.10 and above**.
     in a cell at the start of your document.
 
 
-## Try online without installation
+## Try online without any installation
 Try `springable` online, without any installation in an [interactive online notebook](https://colab.research.google.com/github/ducarme/springable/blob/main/docs/examples/example01_getting_started/example01_getting_started.ipynb)
 
 ## Running a simulation

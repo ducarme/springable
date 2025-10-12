@@ -35,6 +35,9 @@ and you are good to go!
 
 It is supported on **Python 3.10 and above**.
 
+> [!NOTE]
+> Not too familiar with Python or installing packages from the terminal? Some extra help is provided [here](https://paulducarme.com/springable/getting_started/).
+
 ## Don't want to install it right now? Try the Online Notebook
 Try `springable` online, without any installation in an [interactive online notebook](https://colab.research.google.com/github/ducarme/springable/blob/main/docs/examples/example01_getting_started/example01_getting_started.ipynb)
 
@@ -440,7 +443,7 @@ LOADING
 * Empty lines have no semantic meaning. Adding/removing some will not change the spring model.
 * `#` is used to indicate a line comment. Each line starting with `#` will be ignored when reading the file.
 * Parameters can be combined in mathematical expression in all sections but `PARAMETERS`. Supported operations and functions include
-`(...)`, `+`, `-`, `*`, `/`, `**` (exponentiation), `SQRT(...)` (square root), `SIN(...)` (sine), `COS(...)` (cosine), `TAN(...)` (tangent), `ARCSIN`(...) (arc-sine), `ARCCOS(...)` (arc-cosine), `ARCTAN(...) (arc-tangent)`.
+`(...)`, `+`, `-`, `*`, `/`, `**` (exponentiation), `SQRT(...)` (square root), `SIN(...)` (sine), `COS(...)` (cosine), `TAN(...)` (tangent), `ARCSIN(...)` (arc-sine), `ARCCOS(...)` (arc-cosine), `ARCTAN(...)` (arc-tangent).
 * The value π can be used without defining it in the section `PARAMETERS` with the keyword `PI`.
 * If your spring assembly does not include a certain type of spring, feel free to leave the corresponding section empty (header only) or to omit it completely (no header and no content).
 

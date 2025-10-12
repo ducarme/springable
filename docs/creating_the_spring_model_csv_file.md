@@ -44,7 +44,8 @@ Each section is described in details herein below.
 + [The `SPRINGS` section](#the-springs-section)
 + [The `ANGULAR SPRINGS` section](#the-angular-springs-section)
 + [The `AREA SPRINGS` section](#the-area-springs-section)
-+ [The `PATH SPRINGS` section](#the-line-springs-section)
++ [The `PATH SPRINGS` section](#the-path-springs-section)
++ [The `DISTANCE SPRINGS` section](#the-distance-springs-section)
 + [The `LOADING` section](#the-loading-section)
 + [A complete example](#a-complete-example)
 + [Additional notes](#additional-notes)
@@ -267,14 +268,15 @@ three specified nodes. The mechanical behavior describes its intrinsic force-dis
 (the distance spring follows [Hooke's law](https://en.wikipedia.org/wiki/Hooke%27s_law)) or a nonlinear one
 (see section [Specifying a nonlinear mechanical behavior](specifying_a_nonlinear_mechanical_behavior.md). To model contact, it is convenient to use a [CONTACT](specifying_a_nonlinear_mechanical_behavior.md#contact-behavior) nonlinear behavior.
 
-To define a distance spring, a line with the following structure is added to the section `DISTANCE SPRINGS`:\
+To define a distance spring, a line with the following structure is added to the section `DISTANCE SPRINGS`:
+
 `<node index>-<node index>-<node index>, <mechanical behavior>, [natural length]`.
 
 * `<node index>` is the index of a first node (the point),
 * `<node index>` is the index of the second node (to form the line),
 * `<node index>` is the index of the third node (to form the line),
 * `<mechanical behavior>` is the mechanical behavior of the distance spring. To specify a **linear** distance spring,
-the mechanical behavior is simply the **spring constant** (positive float), that is the slope of its tension-displacement curve.
+the mechanical behavior is simply the **spring constant** (positive float), that is the slope of its force-displacement curve.
 * `[natural length]` is the natural length of the distance spring (float). 
 It is an optional parameter; if not provided the natural length of the distance spring will automatically be set to the distance defined by the three nodes as created in the `NODES` section.
 

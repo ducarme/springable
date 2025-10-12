@@ -10,7 +10,7 @@ For a longitudinal spring, that curve will be interpreted as a *force-displaceme
     of the spring in its natural configuration (wherein no force is generated and no elastic energy is stored).
 
 
-Multiple types of intrinsic mechanical behavior can be specified in the [spring model CSV file](#creating-a-csv-file-describing-the-spring-model).
+Multiple types of intrinsic mechanical behavior can be specified in the [spring model CSV file](creating_the_spring_model_csv_file.md).
 The faster way to get familiar with them is by running the **behavior creation graphical user interface**. To do that create the following python script
 
 ```python
@@ -39,8 +39,6 @@ By playing around with the interface, you will be able to create various general
 + [Contact behavior](#contact-behavior)
 + [Isothermal gas behavior](#isothermal-behavior)
 + [Isentropic gas behavior](#isentropic-behavior)
-+ [Additional notes](#additional-notes-1)
-
 
 ## Linear behavior
 For a **linear** generalized force-displacement curve $f=ku$, where $k$ is the spring constant.
