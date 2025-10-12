@@ -181,11 +181,9 @@ LOADING
 This file defines a spring structure composed of only one horizontal spring, clamped on the left and loaded in tension from the right.
 
 How to read or make such a file is described in the paragraph [Creating a CSV file describing the spring model](creating_the_spring_model_csv_file.md).
-Many CSV file examples that describe spring structures are already available
-[here on GitHub](https://github.com/ducarme/springable/tree/main/examples-spring-model-CSV-files) for inspiration or to download.
+Many CSV file examples that describe spring structures are already available [on this page](many_examples.md), to help get started and familiar with the syntax and language.
 
 Next, we create a Python script (a text file saved with the extension *.py*), with the following content
-
 ```python title="my_first_simulation.py"
 """
 Python script example to learn how to use the package springable
@@ -247,4 +245,4 @@ After running the command, three media files are generated, shown and saved.
 
 !!! tip
     Many settings can be tuned to change of the appearance of the spring structure, plots settings, colors, animation fps and resolution, etc.
-    See paragraph [Configuring simulation settings](configuring_simulation_settings.md) for more details.
+    See page [Configuring simulation settings](configuring_simulation_settings.md) for more details.

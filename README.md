@@ -752,9 +752,7 @@ by computing all the equilibrium points), while graphics settings determines wha
 (previously computed by the solver), and how it is going to look like.
 
 All default solver and graphics settings along with useful documentation are listed in the files
-`default_solver_settings.toml` and `default_graphics_settings.toml` respectively. They are available
-[here on GitHub](https://github.com/ducarme/springable).
-
+`default_solver_settings.toml` and `default_graphics_settings.toml` available in the [Github repository](https://github.com/ducarme/springable/), [here](https://github.com/ducarme/springable/blob/main/default_solver_settings.toml) and [here](https://github.com/ducarme/springable/blob/main/default_graphics_settings.toml), respectively.
 
 When you wish to change a setting (let's say a solver setting),
 create a [TOML file](https://toml.io/en/), that is a text file saved with extension *.toml*. You can use the NotePad (Windows)

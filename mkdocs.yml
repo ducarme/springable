@@ -21,12 +21,12 @@ repo_name: See code on Github
 nav:
   - index.md
   - getting_started.md
+  - many_examples.md
   - creating_the_spring_model_csv_file.md
   - specifying_a_nonlinear_mechanical_behavior.md
   - configuring_simulation_settings.md
   - advanced_topics.md
   - about_and_contact.md
-#  - gallery_and_examples.md
 # - all_assets.md
 
 markdown_extensions:
@@ -42,6 +42,7 @@ markdown_extensions:
       prepend: true
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.snippets
 
 
 extra_javascript:
