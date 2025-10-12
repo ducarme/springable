@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from tkinter import filedialog, messagebox, Tk
-from .gui_utils import show_popup, get_current_recursion_depth, get_recursion_limit, ask_csv_options
+from .gui_utils import show_popup, ask_csv_options
 from ..mechanics.mechanical_behavior import *
 from ..utils import bezier_curve
 from ..readwrite.interpreting import behavior_to_text

@@ -8,6 +8,7 @@ theme:
         accent: green
     features:
       - content.code.copy
+      - content.tabs.link
     icon:
         repo: fontawesome/brands/github
     favicon: favicon.png
@@ -33,17 +34,17 @@ markdown_extensions:
   - md_in_html
   - admonition
   - pymdownx.details
+  - pymdownx.keys
   - pymdownx.arithmatex:
       generic: true
   - pymdownx.superfences
   - pymdownx.blocks.caption:
       prepend: true
+  - pymdownx.tabbed:
+      alternate_style: true
 
 
 extra_javascript:
   - javascripts/mathjax.js
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
 
-extra:
-  version:
-    provider: mike

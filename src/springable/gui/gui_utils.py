@@ -53,11 +53,10 @@ def show_help(parent):
     ctrl_key_name = 'CTRL' if get_os() != 'Darwin' else 'CMD' 
 
     info_items = [
-        f"> Click and drag control points (CP) -> shape a curve",
-        f"> Press 't' -> show/hide the curve control points",
-        f"> Press '{ctrl_key_name}' and  '+' -> zoom in",
-        f"> Press '{ctrl_key_name}' and  '-' -> zoom out",
-        f"> Scroll -> zoom in and out",
+        f"> Click & drag control points (CP) to shape a curve;",
+        f"> Press t to show/hide the curve's CP;",
+        f"> Press {ctrl_key_name} &  +/- to zoom in/out;",
+        f"> Scroll to zoom in/out;",
     ]
 
     message = '\n'.join(info_items)

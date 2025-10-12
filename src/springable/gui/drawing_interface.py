@@ -81,8 +81,8 @@ class DrawingSpace:
 
         # More reliable approach, herein below:
         if get_os() == 'Linux':
-            self.canvas.get_tk_widget().bind("<Button-4>", lambda e: self._zoom("in"))
-            self.canvas.get_tk_widget().bind("<Button-5>", lambda e: self._zoom("out"))
+            self.cid_b4 = self.canvas.get_tk_widget().bind("<Button-4>", lambda e: self._zoom("in"))
+            self.cid_b5 = self.canvas.get_tk_widget().bind("<Button-5>", lambda e: self._zoom("out"))
             self.canvas.get_tk_widget().bind("<Control-minus>", lambda e: self._zoom("out"))
 
             # reliable control +
@@ -92,7 +92,7 @@ class DrawingSpace:
 
 
         elif get_os() == 'Darwin':  # macos
-            self.canvas.get_tk_widget().bind("<MouseWheel>", self._on_scroll_wheel)
+            self.cid_mouse_wheel = self.canvas.get_tk_widget().bind("<MouseWheel>", self._on_scroll_wheel)
             self.canvas.get_tk_widget().bind("<Command-minus>", lambda e: self._zoom("out"))
 
             # reliable control +
@@ -101,8 +101,7 @@ class DrawingSpace:
             self.canvas.get_tk_widget().bind("<Shift-Command-equal>", lambda e: self._zoom("in"))
 
         else:  # most likely windows
-            self.canvas.get_tk_widget().bind("<MouseWheel>", self._on_scroll_wheel)
-
+            self.cid_mouse_wheel = self.canvas.get_tk_widget().bind("<MouseWheel>", self._on_scroll_wheel)
             self.canvas.get_tk_widget().bind("<Control-minus>", lambda e: self._zoom("out"))
 
             # reliable control +
@@ -157,21 +156,39 @@ class DrawingSpace:
         self._update_xaxis_limits()
         self._update_yaxis_limits()
 
-    def _on_scroll_mpl(self, event):
-        # Use if you want to use to listen to events send from interface to Matplotlib, that is, if you use
-        # self.canvas.mpl_connect("scroll_event", self._on_scroll) in the constructor instead.
-        direction = "in" if event.delta > 0 else "out"
-        if event.button == 'up':
-            direction = 'in'
-        elif event.button == 'down':
-            direction = 'out'
-        else:
-            return
-        self._zoom(direction)
+    # def _on_scroll_mpl(self, event):
+    #     # Use if you want to use to listen to events send from interface to Matplotlib, that is, if you use
+    #     # self.canvas.mpl_connect("scroll_event", self._on_scroll) in the constructor instead.
+    #     direction = "in" if event.delta > 0 else "out"
+    #     if event.button == 'up':
+    #         direction = 'in'
+    #     elif event.button == 'down':
+    #         direction = 'out'
+    #     else:
+    #         return
+    #     self._zoom(direction)
     
     def _on_scroll_wheel(self, event):
-        direction = "in" if event.delta > 0 else "out"
-        self._zoom(direction)
+        if get_current_recursion_depth() > 0.8 * get_recursion_limit():
+            if get_os() == 'Linux':
+                self.canvas.get_tk_widget().unbind("<Button-4>", self.cid_b4)
+                self.canvas.get_tk_widget().unbind("<button-5>", self.cid_b5)
+
+                direction = "in" if event.delta > 0 else "out"
+                self._zoom(direction)
+
+                self.cid_b4 = self.canvas.get_tk_widget().bind("<Button-4>", lambda e: self._zoom("in"))
+                self.cid_b5 = self.canvas.get_tk_widget().bind("<Button-5>", lambda e: self._zoom("out"))
+            else:  # windows, mac os
+                self.canvas.get_tk_widget().unbind("<MouseWheel>", self.cid_mouse_wheel)
+
+                direction = "in" if event.delta > 0 else "out"
+                self._zoom(direction)
+
+                self.cid_mouse_wheel = self.canvas.get_tk_widget().bind("<MouseWheel>", self._on_scroll_wheel)
+        else:
+            direction = "in" if event.delta > 0 else "out"
+            self._zoom(direction)
 
 
     def _zoom(self, direction):
