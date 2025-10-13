@@ -19,6 +19,6 @@ Releases: https://pypi.org/project/springable/
 Paul Ducarme, 2021-2025
 """
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __author__ = 'Paul Ducarme (website: paulducarme.com, contact: paulducarme@hotmail.com)'
 __credits__ = 'AMOLF & ARCNL'
