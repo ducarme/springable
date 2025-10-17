@@ -176,6 +176,10 @@ class BehaviorTab:
         self._save_btn = ttk.Button(save_pnl, text='Save...',
                                     command=self._on_save_button_clicked)
 
+        self._add_png_var = tk.BooleanVar(value=False)
+        self._add_png_btn = ttk.Checkbutton(save_pnl, text='+ PNG', variable=self._add_png_var, onvalue=True, offvalue=False)
+        self._add_pdf_var = tk.BooleanVar(value=False)
+        self._add_pdf_btn = ttk.Checkbutton(save_pnl, text='+ PDF', variable=self._add_pdf_var, onvalue=True, offvalue=False)
         self._specify_natural_measure_var = tk.BooleanVar(value=False)
         self._specify_natural_measure_btn = ttk.Checkbutton(save_pnl,
                                                             text='specify alpha 0',
@@ -185,6 +189,8 @@ class BehaviorTab:
         general_btn_frame.grid(column=0, row=0, sticky='NW')
         self._copy_btn.grid(column=0, row=0, sticky='W')
         self._save_btn.grid(column=1, row=0, sticky='W')
+        self._add_pdf_btn.grid(column=3, row=0, sticky='W')
+        self._add_png_btn.grid(column=4, row=0, sticky='W')
         self._specify_natural_measure_btn.grid(column=2, row=0, sticky='W')
 
         behavior_type_menu.grid(column=0, row=1, sticky='NW')
@@ -301,7 +307,7 @@ class BehaviorTab:
         return self._specify_natural_measure_var.get()
 
     def _on_save_button_clicked(self):
-        self._handler.write_behavior(self._name)
+        self._handler.save_behavior(self._name, add_png=self._add_png_var.get(), add_pdf=self._add_pdf_var.get())
 
     def _on_load_from_file_button(self):
         # SEND EVENT to handler

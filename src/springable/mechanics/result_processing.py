@@ -106,6 +106,8 @@ def extract_all_transitions(result: Result, drive_mode: str, check_energy_releas
                     # total work in during snapping
                     work_in = work_in_preload + work_in_additional
 
+                    # print(f"current branch={i}")
+                    # print(f"next branch={j}")
                     # print(f"{work_in_preload=:.3E}")
                     # print(f"{work_in_additional=:.3E}")
                     # print(f"{work_in=:.3E}")
@@ -121,6 +123,7 @@ def extract_all_transitions(result: Result, drive_mode: str, check_energy_releas
                     transitions[-1]['next_elastic_energy_jump'] = elastic_energy_jump
                     transitions[-1]['next_work_in'] = work_in
                     break
+                    
         if critical_minus is not None:
             for jj, branch_j in enumerate(branches[::-1]):
                 j = len(branches) - 1 - jj
@@ -143,6 +146,7 @@ def extract_all_transitions(result: Result, drive_mode: str, check_energy_releas
                     # total work in during snapping
                     work_in = work_in_preload + work_in_additional
 
+                    # print(f"previous branch={j}")
                     # print(f"{work_in_preload=:.3E}")
                     # print(f"{work_in_additional=:.3E}")
                     # print(f"{work_in=:.3E}")
@@ -158,6 +162,7 @@ def extract_all_transitions(result: Result, drive_mode: str, check_energy_releas
                     transitions[-1]['previous_elastic_energy_jump'] = elastic_energy_jump
                     transitions[-1]['previous_work_in'] = work_in
                     break
+                    
     return branches, transitions
 
 

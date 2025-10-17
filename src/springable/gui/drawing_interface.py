@@ -4,7 +4,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Polygon
 from .gui_utils import SimpleToolbar, get_current_recursion_depth, get_recursion_limit, get_os, show_help
 from .gui_event_handler import GUIEventHandler
-from .gui_settings import XLIM, YLIM, MAX_NB_CP, ZOOMING_SCROLL_RATE
+from .gui_settings import *
 import tkinter as tk
 import tkinter.ttk as ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -16,7 +16,7 @@ class DrawingSpace:
     def __init__(self, drawing_frame: ttk.Frame, handler: GUIEventHandler, window: tk.Tk):
         self.win = window
         self.handler = handler
-        fig = Figure(figsize=(6, 4.5))
+        fig = Figure(figsize=(FIG_WIDTH, FIG_HEIGHT))
         self._bg = None
         self.ax = fig.add_subplot()
 
@@ -143,6 +143,9 @@ class DrawingSpace:
         self.add_remove_cp_btn_frame.grid_remove()
 
         self._current_curve_name = None
+
+    def get_xylim(self):
+        return self.ax.get_xlim(), self.ax.get_ylim()
 
     def _reset_axis(self):
         self.xmin_entry.delete(0, tk.END)

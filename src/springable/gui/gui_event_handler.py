@@ -5,8 +5,7 @@ from ..mechanics.mechanical_behavior import *
 from ..utils import bezier_curve
 from ..readwrite.interpreting import behavior_to_text
 from ..readwrite import fileio
-from .gui_settings import DEFAULT_BEHAVIORS, DEFAULT_NATURAL_MEASURE, XLIM, NB_SAMPLES, FORCE_COLUMN_INDEX, \
-    DISPLACEMENT_COLUMN_INDEX, DELIMITER, OOB_TOL, FMAX, SAMPLING
+from .gui_settings import *
 
 import numpy as np
 
@@ -388,7 +387,6 @@ class GUIEventHandler:
             self._drawing_space.draw_exp_curve(u, f)
             return True
 
-
     def remove_experimental_curve(self):
         if print_messages:
             print(f'Drawing space GUI sent event to handler to handle the removal of the last added experimental curve',
@@ -521,7 +519,7 @@ class GUIEventHandler:
     def show_popup(self, message: str, duration: int):
         show_popup(self._behavior_notebook.win, message, duration)
 
-    def write_behavior(self, tab_name):
+    def save_behavior(self, tab_name, add_png: bool, add_pdf: bool):
         if print_messages:
             print(f'Notebook GUI sent event to handler to write the behavior named {tab_name} into a CSV file',
                       flush=True)
@@ -533,6 +531,35 @@ class GUIEventHandler:
         )
         b = self._behaviors[tab_name]
         if file_path:
+            if add_png or add_pdf:
+                if isinstance(b, UnivariateBehavior):
+                    u = np.linspace(self._umin, self._umax, self._nb_samples)
+                    f = b.gradient_energy(b.get_natural_measure() + u)[0]
+                elif isinstance(b, BivariateBehavior):
+                    t = np.linspace(-1.25*b.tmax, 1.25*b.tmax, self._nb_samples)
+                    u = b.a(t)
+                    f = b.b(t)
+                else:
+                    raise ValueError('Unknown behavior family')
+                fig = plt.figure(figsize=(FIG_WIDTH, FIG_HEIGHT))
+                ax = fig.add_subplot()
+                ax.plot(u, f, 'k-', lw=1)
+                xlim, ylim = self._drawing_space.get_xylim()
+                ax.set_xlim(xlim)
+                ax.set_ylim(ylim)
+                ax.set_xlabel(XLABEL_FOR_SAVING)
+                ax.set_ylabel(YLABEL_FOR_SAVING)
+                try:
+                    if add_png:
+                        png_filepath = file_path.rstrip('csv') + 'png'
+                        fig.savefig(png_filepath, transparent=SAVE_AS_TRANSPARENT, dpi=300)
+                    if add_pdf:
+                        pdf_filepath = file_path.rstrip('csv') + 'pdf'
+                        fig.savefig(pdf_filepath, transparent=SAVE_AS_TRANSPARENT)
+                except Exception as e:
+                    messagebox.showerror("Error", f"Error while trying to save as png/pdf. {e}")
+                plt.close(fig)
+
             try:
                 specify_natural_measure = self._behavior_notebook.get_specify_natural_measure_state(tab_name)
                 fileio.write_behavior(b, file_path, '.3E', specify_natural_measure)

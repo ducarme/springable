@@ -27,8 +27,15 @@ INITIALLY_SELECTED_BEHAVIOR_INDEX = next(i for i, b in enumerate(DEFAULT_BEHAVIO
 ZOOMING_SCROLL_RATE = 1.1
 
 NB_SAMPLES = 400
+FIG_WIDTH = 6
+FIG_HEIGHT = 4.5
 XLIM = (-1., 5.)
 YLIM = (-2., 2.5)
+XLABEL = "generalized displacement $u=\\alpha-\\alpha_0$ "
+YLABEL = "generalized force $f=\\partial_{\\alpha} e$"
+XLABEL_FOR_SAVING = "$U$ "
+YLABEL_FOR_SAVING = "$F$"
+SAVE_AS_TRANSPARENT = False
 
 MAX_NB_CP = 18 # max number of control points,
 # for behaviors controllable by control points
