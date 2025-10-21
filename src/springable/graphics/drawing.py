@@ -182,8 +182,16 @@ class PathDrawing(ShapeDrawing):
     def __init__(self, path: shape.PathLength, is_hysteron, ax: plt.Axes,
                  color: str, opacity: float, aa: AssemblyAppearanceOptions):
         super().__init__(path, None, is_hysteron, ax, color, opacity, aa)
-        coordinates = self._shape.get_nodal_coordinates()
-        x, y = coordinates[::2], coordinates[1::2]
+        segments = path.get_shapes()
+        x0, y0 = segments[0].get_nodal_coordinates()[:2]
+        x = [x0]
+        y = [y0]
+        for seg in segments:
+            xi, yi = seg.get_nodal_coordinates()[2:]
+            x.append(xi)
+            y.append(yi)
+        x, y = np.array(x), np.array(y)
+
         lengths = [0.0]
         for i in range(len(x) - 1):
             lengths.append(lengths[-1] + shape.SegmentLength.calculate_length(x[i], y[i], x[i + 1], y[i + 1]))
@@ -202,8 +210,15 @@ class PathDrawing(ShapeDrawing):
     def update(self, color, opacity):
         super().update(color, opacity)
         graphic0, graphic1 = self._graphics
-        coordinates = self._shape.get_nodal_coordinates()
-        x, y = coordinates[::2], coordinates[1::2]
+        segments = self._shape.get_shapes()
+        x0, y0 = segments[0].get_nodal_coordinates()[:2]
+        x = [x0]
+        y = [y0]
+        for seg in segments:
+            xi, yi = seg.get_nodal_coordinates()[2:]
+            x.append(xi)
+            y.append(yi)
+        x, y = np.array(x), np.array(y)
         lengths = [0.0]
         for i in range(len(x) - 1):
             lengths.append(lengths[-1] + shape.SegmentLength.calculate_length(x[i], y[i], x[i + 1], y[i + 1]))
@@ -219,7 +234,7 @@ class PathDrawing(ShapeDrawing):
         if opacity is not None:
             graphic0.set_alpha(opacity)
         if self._is_hysteron:
-            self._hysteron_label_position = (np.mean(coordinates[::2]), np.mean(coordinates[1::2]))
+            self._hysteron_label_position = (np.mean(x), np.mean(y))
 
 
 class DistanceDrawing(ShapeDrawing):

@@ -519,8 +519,8 @@ class DrawingSpace:
         if self._active_curve_interactor is not None:
             name = self._active_curve_interactor.name
             cp_x, cp_y = self.curve_control_points[name]
-            if cp_x.shape[0] <= 3:
-                self.handler.show_popup('Min 3 control points!', 750)
+            if cp_x.shape[0] <= 2:
+                self.handler.show_popup('Min 2 control points!', 750)
                 return
             new_cp_x = cp_x[:-1].copy()
             new_cp_y = cp_y[:-1].copy()

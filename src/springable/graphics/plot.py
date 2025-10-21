@@ -439,14 +439,6 @@ def curve(processing_fun: callable, result: Result,
 
         ax.set_xlabel(xlabel if xlabel is not None else po.default_xlabel)
         ax.set_ylabel(ylabel if ylabel is not None else po.default_ylabel)
-        if xlim is not None:
-            ax.set_xlim(xlim)
-        elif po.enforce_xlim:
-            ax.set_xlim((po.xmin, po.xmax))
-        if ylim is not None:
-            ax.set_ylim(ylim)
-        elif po.enforce_ylim:
-            ax.set_ylim((po.ymin, po.ymax))
         spines = []
         spines += ['left'] if po.show_left_spine else []
         spines += ['right'] if po.show_right_spine else []
@@ -455,6 +447,14 @@ def curve(processing_fun: callable, result: Result,
         if po.hide_ticklabels:
             ax.set_xticklabels([])
             ax.set_yticklabels([])
+        if xlim is not None:
+            ax.set_xlim(xlim)
+        elif po.enforce_xlim:
+            ax.set_xlim((po.xmin, po.xmax))
+        if ylim is not None:
+            ax.set_ylim(ylim)
+        elif po.enforce_ylim:
+            ax.set_ylim((po.ymin, po.ymax))
         ff.adjust_spines(ax, po.spine_offset, spines)
         ff.adjust_figure_layout(fig)
         if afterplot is not None:

@@ -3,7 +3,7 @@ from tkinter import filedialog, messagebox, Tk
 from .gui_utils import show_popup, ask_csv_options
 from ..mechanics.mechanical_behavior import *
 from ..utils import bezier_curve
-from ..readwrite.interpreting import behavior_to_text
+from ..readwrite.interpreting import behavior_to_text, text_to_behavior
 from ..readwrite import fileio
 from .gui_settings import *
 
@@ -365,14 +365,17 @@ class GUIEventHandler:
             )
             if file_path:
                 csv_options = ask_csv_options(self._win, self._default_u_col_index, self._default_f_col_index, self._default_del)
-                self._default_u_col_index = csv_options['u_col_index']
-                self._default_f_col_index = csv_options['f_col_index']
-                self._default_del = csv_options['delimiter']
+                if csv_options:
+                    self._default_u_col_index = csv_options['u_col_index']
+                    self._default_f_col_index = csv_options['f_col_index']
+                    self._default_del = csv_options['delimiter']
 
-                u, f = fileio.read_experimental_force_displacement_data(file_path,
-                                                                        displacement_column_index=csv_options['u_col_index'],
-                                                                        force_column_index=csv_options['f_col_index'],
-                                                                        delimiter=csv_options['delimiter'])
+                    u, f = fileio.read_experimental_force_displacement_data(file_path,
+                                                                            displacement_column_index=csv_options['u_col_index'],
+                                                                            force_column_index=csv_options['f_col_index'],
+                                                                            delimiter=csv_options['delimiter'])
+                else:
+                    return False
             else:
                 return False
             if u.shape[0] == 0 or f.shape[0] == 0:
@@ -392,6 +395,52 @@ class GUIEventHandler:
             print(f'Drawing space GUI sent event to handler to handle the removal of the last added experimental curve',
                       flush=True)
         self._drawing_space.remove_exp_curve()
+
+
+    def update_behavior_from_text(self, tab_name):
+        if print_messages:
+            print(f'Notebook GUI sent event to handler to handle the update of the behavior named {tab_name}',
+                      flush=True)
+
+        behavior_text = self._behavior_notebook.open_edit_behavior_win(tab_name)
+
+        if not behavior_text:
+            return False
+
+        try:
+            b = text_to_behavior(behavior_text)
+        except InvalidBehaviorParameters as e:
+            messagebox.showerror("Error", f"Invalid behavior parameters. {e.get_message()}")
+            return False
+        except Exception as e:
+            messagebox.showerror("Error", f"Error: {e}")
+            return False
+        else:
+            # from this point, we assume that the behavior is valid and everything will be updated correctly
+            # else is probably not needed in this case,
+            # because all except clauses end with 'return'
+            self._behaviors[tab_name] = b
+            self._behavior_errors[tab_name] = ''
+            if isinstance(b, (BezierBehavior, Bezier2Behavior,
+                              PiecewiseBehavior, ZigzagBehavior, Zigzag2Behavior, Spline2Behavior, SmootherZigzag2Behavior)):
+                cp_x, cp_y = b.get_control_points()
+                if isinstance(b, UnivariateBehavior):
+                    u = np.linspace(self._umin, self._umax, self._nb_samples)
+                    f = b.gradient_energy(b.get_natural_measure() + u)[0]
+                elif isinstance(b, BivariateBehavior):
+                    t = np.linspace(-1.25*b.tmax, 1.25*b.tmax, self._nb_samples)
+                    u = b.a(t)
+                    f = b.b(t)
+                else:
+                    raise ValueError('Unknown behavior family')
+                self._drawing_space.load_new_curve(tab_name, u, f, True, cp_x, cp_y)
+            else:
+                u = np.linspace(self._umin, self._umax, self._nb_samples)
+                f = b.gradient_energy(b.get_natural_measure() + u)[0]
+                self._drawing_space.load_new_curve(tab_name, u, f, False)
+            return True
+
+
 
     def update_behavior_parameter_from_control_points(self, name):
         if print_messages:
@@ -507,6 +556,41 @@ class GUIEventHandler:
     def _get_behavior_text(self, tab_name: str, specify_natural_measure: bool, fmt='.2E') -> str:
         return behavior_to_text(self._behaviors[tab_name],
                                 fmt=fmt, full_name=True, specify_natural_measure=specify_natural_measure)
+    
+    def request_behavior_string_even_if_invalid(self, tab_name: str, specify_natural_measure: bool, fmt='.2E') -> str:
+        return behavior_to_text(self._behaviors[tab_name],
+                                fmt=fmt, full_name=True, specify_natural_measure=specify_natural_measure)
+    
+    def is_behavior_string_invalid(self, behavior_string, natural_measure: float) -> str:
+        """ if valid return an empty str, else the error message"""
+        error = ''
+        try:
+            b = text_to_behavior(behavior_string, natural_measure=natural_measure)
+        except InvalidBehaviorParameters as e:
+            error = e.get_message()
+        except Exception as e:
+            error = "Invalid syntax"
+        else:
+            try:
+                if isinstance(b, (BezierBehavior, Bezier2Behavior,
+                                 PiecewiseBehavior, ZigzagBehavior, Zigzag2Behavior, Spline2Behavior, SmootherZigzag2Behavior)):
+                    if isinstance(b, UnivariateBehavior):
+                        u = np.linspace(self._umin, self._umax, self._nb_samples)
+                        f = b.gradient_energy(natural_measure + u)[0]
+
+                    elif isinstance(b, BivariateBehavior):
+                        t = np.linspace(-1.25*b.tmax, 1.25*b.tmax, self._nb_samples)
+                        u = b.a(t)
+                        f = b.b(t)
+                    else:
+                        raise ValueError
+                else:
+                    u = np.linspace(self._umin, self._umax, self._nb_samples)
+                    f = b.gradient_energy(natural_measure + u)[0]
+            except Exception as e:
+                error = "Ill-defined behavior"
+        return error
+
 
     def copy_behavior_to_clipboard(self, tab_name):
         specify_natural_measure = self._behavior_notebook.get_specify_natural_measure_state(tab_name)

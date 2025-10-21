@@ -85,7 +85,7 @@ color_for_stabilizable_points = "#ffdd95"
 color_for_unstable_points = "#dd9843"
 
 # herein below colors to indicate the stability of equilibrium branches
-# only used when 'plot_style=lines'
+# only used when 'plot_style=line'
 style_for_stable_branches = '-'
 style_for_stabilizable_branches = '--'
 style_for_unstable_branches = ':'
@@ -224,10 +224,3 @@ force_default_color = '#000000'
 force_vector_length_scaling = 1.0
 force_vector_connection = "tail"
 force_vector_linewidth = 1.0  # only has an effect if 'force_vector_style' is 'basic'
-
-enforce_xlim = false
-enforce_ylim = false
-xmin = 0
-ymin = 0
-xmax = 1
-ymax = 1

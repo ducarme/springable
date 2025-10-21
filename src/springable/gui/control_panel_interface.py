@@ -3,7 +3,6 @@ import tkinter.ttk as ttk
 from .gui_utils import slider_panel, Tooltip, get_recursion_limit, get_current_recursion_depth
 from .gui_event_handler import GUIEventHandler
 from .gui_settings import DEFAULT_BEHAVIORS, INITIALLY_SELECTED_BEHAVIOR_INDEX
-from ..mechanics.mechanical_behavior import MechanicalBehavior
 
 
 class BehaviorNotebook:
@@ -121,6 +120,84 @@ class BehaviorNotebook:
             if name == tab_name:
                 return tab.set_behavior_validity(valid)
         raise ValueError("Unknown name")
+    
+
+    def open_edit_behavior_win(self, name):
+        popup = tk.Toplevel(self.win)
+        popup.title("Edit behavior")
+        popup.transient(self.win)
+        popup.grab_set()
+        popup.resizable(False, False)  # prevent resizing
+        result = {'behavior_text': ''}
+        
+        initial_behavior_string_w_nm = self.handler.request_behavior_string_even_if_invalid(name, True)
+        initial_behavior_string, natural_measure_str = initial_behavior_string_w_nm.split(',')
+        open_idx = initial_behavior_string.find('(')
+        close_idx = initial_behavior_string.rfind(')')
+        behavior_type_str = initial_behavior_string[:open_idx]
+        behavior_content_str = initial_behavior_string[open_idx+1:close_idx]
+
+        lbl = ttk.Label(popup, text="Enter the behavior parameters"+ "\n/" + "-"*90 + "\\", anchor="center", justify="center")
+        lbl.grid(row=0, column=1, columnspan=2)
+        behavior_type_label_start = ttk.Label(popup, text=f"{behavior_type_str}(")
+        behavior_type_label_end = ttk.Label(popup, text=")" + "," + natural_measure_str)
+        text_var = tk.StringVar(value=behavior_content_str)
+        entry = ttk.Entry(popup, textvariable=text_var, width=80)
+
+        behavior_type_label_start.grid(row=1, column=0)
+        entry.grid(row=1, column=1, columnspan=2)
+        behavior_type_label_end.grid(row=1, column=3) 
+
+        error_label = ttk.Label(popup, text="", foreground="red")
+        error_text_var = tk.StringVar(popup, value="")
+        Tooltip(error_label, error_text_var)
+        error_label.grid(row=2, column=1, columnspan=2)
+
+        ok_button = ttk.Button(popup, text="OK", state="disabled")
+        ok_button.grid(row=3, column=1)
+        cancel_button = ttk.Button(popup, text="Cancel", command=popup.destroy)
+        cancel_button.grid(row=3, column=2)
+
+
+        def validate(*_):
+            behavior_str = behavior_type_str + '(' + entry.get() + ')'
+            error = self.handler.is_behavior_string_invalid(behavior_str, float(natural_measure_str))
+            error_text_var.set(error)
+
+            if error:
+                error_msg = (error if error in ('Invalid syntax', 'Ill-defined_behavior')
+                             else 'Invalid parameters')
+                error_label.config(text=error_msg)
+                ok_button.config(state="disabled")
+                return False
+            else:
+                error_label.config(text="")
+                ok_button.config(state="normal")
+                return True
+
+        def submit():
+            result['behavior_text'] = behavior_type_str + '(' + entry.get() + '), ' + natural_measure_str
+            popup.destroy()
+
+        ok_button.config(command=submit)
+        entry.bind("<KeyRelease>", validate)
+        entry.focus()
+        validate()
+
+
+        popup.update_idletasks()
+        width = max(400, popup.winfo_width())
+        height = popup.winfo_height()
+        parent_x = self.win.winfo_rootx()
+        parent_y = self.win.winfo_rooty()
+        parent_w = self.win.winfo_width()
+        parent_h = self.win.winfo_height()
+        x = parent_x + (parent_w // 2) - (width // 2)
+        y = parent_y + (parent_h // 2) - (height // 2)
+        popup.geometry(f"{width}x{height}+{x}+{y}")
+
+        popup.wait_window()
+        return result['behavior_text']
 
 
 class BehaviorTab:
@@ -145,6 +222,15 @@ class BehaviorTab:
         self._behavior_text_var = tk.StringVar(value="...")
         self.behavior_text_entry = ttk.Entry(self.tab, textvariable=self._behavior_text_var,
                                              width=60, foreground="green")
+        
+        # Create a right-click (context) menu
+        context_menu = tk.Menu(self._bn.win, tearoff=0)
+        context_menu.add_command(label="Edit", command=self._on_edit_button_clicked)
+        def show_menu(event):
+            context_menu.tk_popup(event.x_root, event.y_root)
+        self.behavior_text_entry.bind("<Button-3>", show_menu)
+        
+        
         self.behavior_text_entry.state(['readonly'])
         self.behavior_text_tooltip = Tooltip(self.behavior_text_entry, self._behavior_text_var)
 
@@ -175,6 +261,8 @@ class BehaviorTab:
                                     command=self._on_copy_button_clicked)
         self._save_btn = ttk.Button(save_pnl, text='Save...',
                                     command=self._on_save_button_clicked)
+        self._edit_btn = ttk.Button(save_pnl, text='Edit...',
+                                    command=self._on_edit_button_clicked)
 
         self._add_png_var = tk.BooleanVar(value=False)
         self._add_png_btn = ttk.Checkbutton(save_pnl, text='+ PNG', variable=self._add_png_var, onvalue=True, offvalue=False)
@@ -189,9 +277,10 @@ class BehaviorTab:
         general_btn_frame.grid(column=0, row=0, sticky='NW')
         self._copy_btn.grid(column=0, row=0, sticky='W')
         self._save_btn.grid(column=1, row=0, sticky='W')
+        self._specify_natural_measure_btn.grid(column=2, row=0, sticky='W')
         self._add_pdf_btn.grid(column=3, row=0, sticky='W')
         self._add_png_btn.grid(column=4, row=0, sticky='W')
-        self._specify_natural_measure_btn.grid(column=2, row=0, sticky='W')
+        
 
         behavior_type_menu.grid(column=0, row=1, sticky='NW')
         self._remove_btn.grid(column=0, row=1, sticky='NW')
@@ -345,6 +434,7 @@ class BehaviorTab:
     def _on_copy_button_clicked(self):
         self._handler.copy_behavior_to_clipboard(self._name)
 
+    
     def set_behavior_text(self, behavior_text: str):
         return self._behavior_text_var.set(behavior_text)
 
@@ -357,3 +447,36 @@ class BehaviorTab:
             self.behavior_text_entry.config(foreground='red')
             self._save_btn.state(['disabled'])
             self._copy_btn.state(['disabled'])
+
+    def _on_edit_button_clicked(self):
+        success = self._handler.update_behavior_from_text(self._name)
+        if success:
+            # UPDATE WIDGETS based on updated information fetched from handler
+            # fetch updated info from handler
+            behavior_type_name = self._handler.get_behavior_type_name(self._name)
+            parameters = self._handler.get_behavior_parameters(self._name)
+            natural_measure = self._handler.get_behavior_natural_measure(self._name)
+
+            # set behavior type value in the dropdown menu
+            self._behavior_type_var.set(behavior_type_name)
+
+            # remove current parameter-slider panel
+            self._currently_displayed_alpha_par_pnl.grid_remove()
+
+            # make new parameter-alpha0-slider frame
+            alpha_and_parameters_panel = ttk.Frame(self.tab)
+            start_row = 0
+            parameter_sliders = self._add_parameter_sliders_to_panel(alpha_and_parameters_panel, start_row, parameters)
+            start_row = len(parameter_sliders) * 2
+            alpha0 = natural_measure
+            alpha0_slider = slider_panel(alpha_and_parameters_panel, 'alpha0', alpha0,
+                                         alpha0 / 2,
+                                         max(alpha0 * 3 / 2, 1.0),
+                                         self._update_natural_measure, row=start_row)
+            self.alpha_and_parameter_panels[behavior_type_name] = (alpha_and_parameters_panel,
+                                                                   parameter_sliders, alpha0_slider)
+            alpha_and_parameters_panel.grid(column=0, row=2)
+            self._currently_displayed_alpha_par_pnl = alpha_and_parameters_panel
+            self._handler.update_behavior_text(self._name)
+            self._handler.show_popup('Edited successfully!', 500)
+        

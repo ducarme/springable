@@ -5,6 +5,7 @@ from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
 import sys
 import platform
 
+
 def get_os():
     return platform.system()
 
@@ -14,6 +15,7 @@ def ask_csv_options(parent, default_u_col_index: int,
                     default_del: str, title="CSV options"):
     win = tk.Toplevel(parent)
     win.title(title)
+    win.transient(parent)
     win.grab_set() 
     win.resizable(False, False)
 
@@ -23,15 +25,15 @@ def ask_csv_options(parent, default_u_col_index: int,
     container.grid(row=0, column=0)
     container.grid_columnconfigure(0, weight=1)
 
-    tk.Label(container, text="Displacement column #:").grid(row=0, column=0, sticky="e", padx=5, pady=5)
+    ttk.Label(container, text="Displacement column #:").grid(row=0, column=0, sticky="e", padx=5, pady=5)
     a_var = tk.IntVar(value=default_u_col_index+1)
     ttk.Spinbox(container, from_=1, to=99, textvariable=a_var, width=6).grid(row=0, column=1, padx=5)
 
-    tk.Label(container, text="Force column #:").grid(row=1, column=0, sticky="e", padx=5, pady=5)
+    ttk.Label(container, text="Force column #:").grid(row=1, column=0, sticky="e", padx=5, pady=5)
     b_var = tk.IntVar(value=default_f_col_index+1)
     ttk.Spinbox(container, from_=1, to=99, textvariable=b_var, width=6).grid(row=1, column=1, padx=5)
 
-    tk.Label(container, text="Delimiter:").grid(row=2, column=0, sticky="ne", padx=5, pady=5)
+    ttk.Label(container, text="Delimiter:").grid(row=2, column=0, sticky="ne", padx=5, pady=5)
     delim_var = tk.StringVar(value=default_del)
     frame = ttk.Frame(container)
     frame.grid(row=2, column=1, sticky="w")
@@ -46,6 +48,18 @@ def ask_csv_options(parent, default_u_col_index: int,
         win.destroy()
 
     ttk.Button(container, text="OK", command=on_ok).grid(row=3, column=0, columnspan=2, pady=10)
+    
+    win.update_idletasks()
+    width = win.winfo_width()
+    height = win.winfo_height()
+    parent_x = parent.winfo_rootx()
+    parent_y = parent.winfo_rooty()
+    parent_w = parent.winfo_width()
+    parent_h = parent.winfo_height()
+    x = parent_x + (parent_w // 2) - (width // 2)
+    y = parent_y + (parent_h // 2) - (height // 2)
+    win.geometry(f"{width}x{height}+{x}+{y}")
+
     win.wait_window()
     return options
 
@@ -57,6 +71,7 @@ def show_help(parent):
         f"> Press t to show/hide the curve's CP;",
         f"> Press {ctrl_key_name} &  +/- to zoom in/out;",
         f"> Scroll to zoom in/out;",
+        f"> Curve can also be modified by right-clicking on the behavior text on the right and clicking 'Edit';"
     ]
 
     message = '\n'.join(info_items)

@@ -461,6 +461,8 @@ class BezierBehavior(UnivariateBehavior, ControllableByPoints):
         self.update(u_i=u_i, f_i=f_i)
 
     def _check(self):
+        if len(self._parameters['u_i']) != len(self._parameters['f_i']):
+            raise InvalidBehaviorParameters("u_i and f_i must contain the same number of elements")
         u_coefs = np.array([0.0] + self._parameters['u_i'])
         if not bezier_curve.is_monotonic(u_coefs):
             raise InvalidBehaviorParameters("The Bezier behavior does not describe a function. "
@@ -634,6 +636,8 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
         super().__init__(natural_measure, mode=mode)
         self._parameters['u_i'] = u_i
         self._parameters['f_i'] = f_i
+        if len(self._parameters['u_i']) != len(self._parameters['f_i']):
+            raise InvalidBehaviorParameters("u_i and f_i must contain the same number of elements")
 
         # to update in the update()
         self._n = len(self._parameters['u_i'])
@@ -644,6 +648,13 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
 
         self._check()
         self._make()
+
+    def _check(self):
+        if len(self._parameters['u_i']) != len(self._parameters['f_i']):
+            raise InvalidBehaviorParameters("u_i and f_i must contain the same number of elements")
+        super()._check()
+
+
     
     def _compute_tmax(self) -> float:
         return np.sum(np.abs(np.diff(self._parameters['u_i'], prepend=0.0)))
@@ -717,6 +728,9 @@ class Bezier2Behavior(BivariateBehavior, ControllableByPoints):
 
     def update(self, natural_measure=None, /, **parameters):
         super().update(natural_measure, **parameters)
+        if len(self._parameters['u_i']) != len(self._parameters['f_i']):
+            raise InvalidBehaviorParameters('u_i and f_i must contain the same number of elements')
+
         self._a_coefs = np.array([0.0] + self._parameters['u_i'])
         self._b_coefs = np.array([0.0] + self._parameters['f_i'])
         self._n = len(self._parameters['u_i'])
@@ -826,6 +840,8 @@ class PiecewiseBehavior(UnivariateBehavior, ControllableByPoints):
 
     def _check(self):
         k, u, us = self._parameters['k_i'], self._parameters['u_i'], self._parameters['us']
+        if len(k) != len(u) + 1:
+            raise InvalidBehaviorParameters("The number of slopes k_i minus one should be equal to the number of transitions u_i")
         mode = self._parameters['mode']
         if mode not in (-1, 0, 1):
             raise InvalidBehaviorParameters('The mode should be -1, 0 or +1 (integer; no float number allowed).')
@@ -917,6 +933,8 @@ class ZigzagBehavior(UnivariateBehavior, ControllableByPoints):
 
     def _check(self):
         u_i, f_i, epsilon = self._parameters['u_i'], self._parameters['f_i'], self._parameters['epsilon']
+        if len(self._parameters['u_i']) < 2:
+            raise InvalidBehaviorParameters("At least two entries are required in u_i and f_i")
         mode = self._parameters['mode']
         if mode not in (-1, 0, 1):
             raise InvalidBehaviorParameters('The mode should be -1, 0 or +1 (integer; no float number allowed).')
@@ -988,6 +1006,12 @@ class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
         self._parameters['u_i'] = u_i
         self._parameters['f_i'] = f_i
         self._parameters['epsilon'] = epsilon
+
+        if len(u_i) != len(f_i):
+            raise InvalidBehaviorParameters('u_i and f_i must contain the same number of elements')
+
+        if len(u_i) < 2:
+            raise InvalidBehaviorParameters('At least entries are required in u_i and f_i')
         
 
         n = len(u_i) + 1
@@ -1053,6 +1077,8 @@ class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
 
     def _check(self):
         u_i, f_i, epsilon = self._parameters['u_i'], self._parameters['f_i'], self._parameters['epsilon']
+        if len(u_i) < 2:
+            raise InvalidBehaviorParameters('At least entries are required in u_i and f_i')
         if not 0.0 < epsilon < 1.0:
             raise InvalidBehaviorParameters(f'Parameter epsilon must be between 0 and 1 (current value: {epsilon:.3E})')
         if len(u_i) != len(f_i):
@@ -1072,6 +1098,12 @@ class Zigzag2Behavior(BivariateBehavior, ControllableByPoints):
         u_i = self._parameters['u_i']
         f_i = self._parameters['f_i']
         epsilon = self._parameters['epsilon']
+
+        if len(u_i) < 2:
+            raise InvalidBehaviorParameters('At least entries are required in u_i and f_i')
+
+        if len(u_i) != len(f_i):
+            raise InvalidBehaviorParameters('u_i and f_i must contain the same number of elements')
 
         # to check in 'update' method before _check()
         if not 0.0 < epsilon < 1.0:
@@ -1162,6 +1194,8 @@ class SmootherZigzag2Behavior(BivariateBehavior, ControllableByPoints):
 
     def _check(self):
         u_i, f_i, epsilon = self._parameters['u_i'], self._parameters['f_i'], self._parameters['epsilon']
+        if len(self._parameters['u_i']) != len(self._parameters['f_i']):
+            raise InvalidBehaviorParameters("u_i and f_i must contain the same number of elements")
         if not 0.0 < epsilon < 1.0:
             raise InvalidBehaviorParameters(f'Parameter epsilon must be between 0 and 1 (current value: {epsilon:.3E})')
         if len(u_i) != len(f_i):
