@@ -121,10 +121,10 @@ It is supported on **Python 3.10 and above**.
     
     So, if the terminal replied with `Python 2.7.1` or `Python 3.9.12` for example, you will have to install a more recent version of Python. It is not complicated: the instructions are available in the next help box. As Python is backward compatible, upgrading to a more recent version should in principle not affect the way previous Python programs (that you might have already created) run.
 
-    If the terminal replied with `Python 3.10.0` or `Python 3.13.4` for example, you are good to go. We recommend to create a virtual environment first before running `pip install springable`, as detailed the help box named "Install `springable` in a virtual environment".
+    If the terminal replied with `Python 3.10.0` or `Python 3.13.4` for example, you are good to go. We recommend to create a virtual environment first before running `pip install springable`, as detailed in the help box named "Install `springable` in a virtual environment".
 
 ??? question "How to install/upgrade Python?"
-    If you do not have Python installed or if your Python version is older than 3.10, you need to install the latest version of Python. The easiest and recommended way to do that is to simply download Python from the official website [python.org/download](https://www.python.org/downloads/).
+    If you do not have Python installed or if your Python version is older than 3.10, you need to install the latest version of Python. The easiest and recommended way to do that is to simply download Python from the official website [python.org/downloads](https://www.python.org/downloads/).
 
     Double-click on what has been downloaded and follow the instructions that will appear on screen.
 
@@ -158,7 +158,7 @@ It is supported on **Python 3.10 and above**.
 
 
 ## Try online without any installation
-Try `springable` online, without any installation in an [interactive online notebook](https://colab.research.google.com/github/ducarme/springable/blob/main/docs/examples/example01_getting_started/example01_getting_started.ipynb)
+You don't want to install it right now? No problem, try `springable` online, without any installation in an [interactive online notebook](https://colab.research.google.com/github/ducarme/springable/blob/main/docs/examples/example01_getting_started/example01_getting_started.ipynb)
 
 ## Running a simulation
 To start a simulation, we first create the file 

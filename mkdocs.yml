@@ -25,6 +25,7 @@ nav:
   - creating_the_spring_model_csv_file.md
   - specifying_a_nonlinear_mechanical_behavior.md
   - configuring_simulation_settings.md
+  - theory.md
   - advanced_topics.md
   - about_and_contact.md
 # - all_assets.md
