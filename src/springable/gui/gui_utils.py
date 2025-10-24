@@ -71,7 +71,7 @@ def show_help(parent):
         f"> Press t to show/hide the curve's CP;",
         f"> Press {ctrl_key_name} &  +/- to zoom in/out;",
         f"> Scroll to zoom in/out;",
-        f"> Curve can also be modified by right-clicking on the behavior text on the right and clicking 'Edit';"
+        f"> Curve can also be modified by clicking on the behavior text on the right;"
     ]
 
     message = '\n'.join(info_items)

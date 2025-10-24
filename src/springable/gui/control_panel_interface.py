@@ -154,6 +154,7 @@ class BehaviorNotebook:
         error_label.grid(row=2, column=1, columnspan=2)
 
         ok_button = ttk.Button(popup, text="OK", state="disabled")
+        popup.bind("<Return>", lambda event: ok_button.invoke())
         ok_button.grid(row=3, column=1)
         cancel_button = ttk.Button(popup, text="Cancel", command=popup.destroy)
         cancel_button.grid(row=3, column=2)
@@ -222,13 +223,16 @@ class BehaviorTab:
         self._behavior_text_var = tk.StringVar(value="...")
         self.behavior_text_entry = ttk.Entry(self.tab, textvariable=self._behavior_text_var,
                                              width=60, foreground="green")
+
+        self.behavior_text_entry.bind("<Button-1>", lambda *args: self._start_editing_behavior())
+           
         
         # Create a right-click (context) menu
-        context_menu = tk.Menu(self._bn.win, tearoff=0)
-        context_menu.add_command(label="Edit", command=self._on_edit_button_clicked)
-        def show_menu(event):
-            context_menu.tk_popup(event.x_root, event.y_root)
-        self.behavior_text_entry.bind("<Button-3>", show_menu)
+        # context_menu = tk.Menu(self._bn.win, tearoff=0)
+        # context_menu.add_command(label="Edit", command=self._on_edit_button_clicked)
+        # def show_menu(event):
+        #     context_menu.tk_popup(event.x_root, event.y_root)
+        # self.behavior_text_entry.bind("<Button-3>", show_menu)
         
         
         self.behavior_text_entry.state(['readonly'])
@@ -262,7 +266,7 @@ class BehaviorTab:
         self._save_btn = ttk.Button(save_pnl, text='Save...',
                                     command=self._on_save_button_clicked)
         self._edit_btn = ttk.Button(save_pnl, text='Edit...',
-                                    command=self._on_edit_button_clicked)
+                                    command=self._start_editing_behavior)
 
         self._add_png_var = tk.BooleanVar(value=False)
         self._add_png_btn = ttk.Checkbutton(save_pnl, text='+ PNG', variable=self._add_png_var, onvalue=True, offvalue=False)
@@ -448,7 +452,7 @@ class BehaviorTab:
             self._save_btn.state(['disabled'])
             self._copy_btn.state(['disabled'])
 
-    def _on_edit_button_clicked(self):
+    def _start_editing_behavior(self):
         success = self._handler.update_behavior_from_text(self._name)
         if success:
             # UPDATE WIDGETS based on updated information fetched from handler

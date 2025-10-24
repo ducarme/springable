@@ -11,7 +11,7 @@ import os.path
 
 def solve_model(_model: model.Model | str,
                 solver_settings: dict | str = None,
-                print_custom_solver_settings=False) -> static_solver.Result:
+                print_custom_solver_settings=False, disable_assembly_guidance=False) -> static_solver.Result:
     if not isinstance(_model, model.Model):
         _model = io.read_model(_model)
         if not isinstance(_model, model.Model):
@@ -40,7 +40,8 @@ def solve_model(_model: model.Model | str,
             print('Solving with default solver settings...')
 
     slv = static_solver.StaticSolver(_model, **solver_settings)
-    slv.guide_spring_assembly_to_natural_configuration()
+    if not disable_assembly_guidance:
+        slv.guide_spring_assembly_to_natural_configuration()
     return slv.solve()
 
 

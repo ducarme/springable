@@ -183,7 +183,7 @@ class Result:
         u = self.get_displacements(include_preloading, check_usability)
         i0 = min(max(0, int(findex)), u.shape[0]-1)
         i1 = min(i0 + 1, u.shape[0]-1)
-        q_i = self._q0 + interp1d([i0, i1], u[[i0, i1], :], axis=0)(findex)
+        q_i = self._q0 + interp1d([i0, i1], u[[i0, i1], :], axis=0, fill_value='extrapolate')(findex)
         self.get_model().get_assembly().set_coordinates(q_i)
         measure = el.get_shape().compute(output_mode=Shape.MEASURE)
         self.set_assembly_to_initial_state()
@@ -568,8 +568,9 @@ class StaticSolver:
                     root_choice_criteria = (previous_delta_lambda_inc is None
                                             or np.inner(delta_u_hat, previous_delta_u_inc) >= 0)
                     root_sign = +1 if root_choice_criteria else -1
-                    if previous_delta_u_inc is None and equilibrium_eigval_stats[0][0] < 0.0:
-                        root_sign *= -1
+                    if previous_delta_u_inc is None:  # if first increment of the loadstep
+                        if np.inner(delta_u_hat, g/norm_g) < 0.0:  # if the displacement is in the opposite direction of the load at the first increment
+                            root_sign *= -1
 
                     delta_lambda_ite *= root_sign
 
@@ -818,7 +819,7 @@ class StaticSolver:
 
                     # Checking if the max number of iteration has been reached. If yes, the solving process is aborted.
                     if i == i_max:
-                        raise MaxNbIterationsReached
+                        raise MaxNbIncrementsReached
 
                     if verbose:
                         update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max,
@@ -830,12 +831,12 @@ class StaticSolver:
                                                         total_nb_increment_retries, total_nb_singular_matrices_avoided,
                                                         nb_limit_points_detected, nb_bifurcation_points_detected)
 
-        except MaxNbIterationsReached:
+        except MaxNbIncrementsReached:
             if verbose:
                 reason = '--> max nb of increments has been reached\r\n'
                 update_progress(f'Solving progress (step {current_step}/{nb_steps})', force_progress, i, i_max, reason,
                                 stability=equilibrium_stability[-1])
-                termination_reason = 'max nb iterations reached'
+                termination_reason = 'max nb increments reached'
                 _print_message_with_final_solving_stats('Full equilibrium path was not retrieved',
                                                         i, stiffness_matrix_eval_counter, linear_system_solving_counter,
                                                         total_nb_increment_retries, total_nb_singular_matrices_avoided,
@@ -1223,8 +1224,8 @@ class ConvergenceError(Exception):
     """ raise this when the algorithm cannot converge """
 
 
-class MaxNbIterationsReached(Exception):
-    """ raise this when the max number of iteration is reached """
+class MaxNbIncrementsReached(Exception):
+    """ raise this when the max number of increments is reached """
 
 
 class MaxDisplacementReached(Exception):
