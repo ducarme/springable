@@ -534,7 +534,8 @@ class BezierBehavior(UnivariateBehavior, ControllableByPoints):
             self._make()
 
     @classmethod
-    def compute_fitting_parameters(cls, force_displacement_curves: list[tuple], degree: int, clamp_last=False, show=False):
+    def compute_fitting_parameters(cls, force_displacement_curves: list[tuple], degree: int, clamp_last=False, show=False,
+                                   u_guess: list = None, f_guess: list = None):
         umax = np.min([np.max(fd_curve[0]) for fd_curve in force_displacement_curves])
         fmax = np.min([np.max(fd_curve[1]) for fd_curve in force_displacement_curves])
         nb_samples = 500
@@ -563,9 +564,16 @@ class BezierBehavior(UnivariateBehavior, ControllableByPoints):
                     mismatch += np.sum((f_exp - f_fit) ** 2)
             return mismatch
 
+        if u_guess is None:
+            u_guess = np.linspace(1 / degree, 1.0, degree) * umax
+        else:
+            u_guess = np.array(u_guess)
 
-        u_guess = np.linspace(1 / degree, 1.0, degree) * umax
-        f_guess = np.linspace(1 / degree, 1.0, degree) * fmax
+        if f_guess is None:
+            f_guess = np.linspace(1 / degree, 1.0, degree) * fmax
+        else:
+            f_guess = np.array(f_guess)
+            
         if clamp_last:
             u_guess = u_guess[:-1]
             f_guess = f_guess[:-1]
