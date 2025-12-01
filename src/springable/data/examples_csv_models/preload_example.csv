@@ -1,0 +1,17 @@
+PARAMETERS
+preloading_force, 0.4, [0.0; 1.0; 5]
+k, 1.0
+l, 1.0
+theta0, 30
+NODES
+0, 0.0, 0.0, 1, 1
+1, 2*l*COS(theta0/180*PI), 0.0, 0, 1
+2, 1*l*COS(theta0/180*PI), l*SIN(theta0/180*PI), 0, 0
+SPRINGS
+0-1, k
+0-2, 100*k
+1-2, 100*k
+LOADING
+1, X, -preloading_force
+then
+2, Y, -1.0
