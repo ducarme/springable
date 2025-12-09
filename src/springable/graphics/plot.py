@@ -13,7 +13,7 @@ import typing
 
 def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: PlotOptions, color, label, zorder=1.0):
     po = plot_options
-    x, y = processing_fun(result)
+    data = np.array(processing_fun(result))
     stability_colors = [po.color_for_stable_points,
                         po.color_for_stabilizable_points,
                         po.color_for_unstable_points]
@@ -34,9 +34,9 @@ def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: Plot
         branches = extract_branches(result)
 
         if po.plot_style == 'points':
-            ax.plot(x, y, 'k-', linewidth=0.5, zorder=zorder)
+            ax.plot(*data, 'k-', linewidth=0.5, zorder=zorder)
 
-        if color is None:  # then color is determined by 'color_mode' set in the plot options
+        if color is None:  # then color is determined by 'color_mode' that is set in the plot_options po
 
             if po.color_mode == 'stability':
                 # then each point is colored by its stability
@@ -51,7 +51,7 @@ def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: Plot
                         lbl_i = ''
                     for j, branch in enumerate(branches[stability_state]):
                         zorder -= 0.01
-                        ax.plot(x[branch], y[branch],
+                        ax.plot(*data[:, branch],
                                 ls='' if po.plot_style == 'points' else stability_styles[i],
                                 lw=po.default_linewidth,
                                 solid_capstyle='round',
@@ -70,7 +70,7 @@ def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: Plot
                 max_eigval_magnitude = np.max(np.abs(lowest_eigval))
                 cn = plt.Normalize(vmin=-max_eigval_magnitude, vmax=max_eigval_magnitude, clip=True)
                 sm = mcm.ScalarMappable(norm=cn, cmap=cm)
-                ax.scatter(x, y, c=sm.to_rgba(lowest_eigval), s=po.default_markersize,
+                ax.scatter(*data, c=sm.to_rgba(lowest_eigval), s=po.default_markersize,
                            marker=po.default_marker, label=label if label is not None else '', zorder=1)
                 cbar = plt.colorbar(sm, cax=None, ax=ax)
                 if po.color_mode == 'min_eigval_fd':
@@ -86,7 +86,7 @@ def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: Plot
                 cm = plt.get_cmap(po.nb_negative_eigval_colormap, np.max(nb_negative_eigval) + 1)
                 cn = plt.Normalize(vmin=0 - 0.5, vmax=np.max(nb_negative_eigval) + 0.5, clip=True)
                 sm = mcm.ScalarMappable(norm=cn, cmap=cm)
-                ax.scatter(x, y, c=sm.to_rgba(nb_negative_eigval), s=po.default_markersize,
+                ax.scatter(*data, c=sm.to_rgba(nb_negative_eigval), s=po.default_markersize,
                            marker=po.default_marker, label=label if label is not None else '', zorder=1)
 
                 cbar = plt.colorbar(sm, cax=None, ax=ax, ticks=np.arange(0, np.max(nb_negative_eigval) + 1))
@@ -112,7 +112,7 @@ def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: Plot
                 cm = po.energy_colormap
                 cn = plt.Normalize(vmin=min_energy, vmax=max_energy, clip=True)
                 sm = mcm.ScalarMappable(norm=cn, cmap=cm)
-                ax.scatter(x, y, c=sm.to_rgba(energies), s=po.default_markersize,
+                ax.scatter(*data, c=sm.to_rgba(energies), s=po.default_markersize,
                            marker=po.default_marker, label=label if label is not None else '', zorder=1)
                 cbar = plt.colorbar(sm, cax=None, ax=ax)
                 cbar.ax.set_title('energy', loc='left')
@@ -120,7 +120,7 @@ def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: Plot
             else:  # 'color_mode' is 'none' or something else
                 # then the default color is used
                 if po.plot_style == 'points':
-                    ax.plot(x, y, po.default_marker,
+                    ax.plot(*data, po.default_marker,
                             color=po.default_color,
                             alpha=po.default_opacity,
                             markersize=po.default_markersize,
@@ -130,7 +130,7 @@ def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: Plot
                                                          StabilityStates.STABILIZABLE,
                                                          StabilityStates.UNSTABLE]):
                         for j, branch in enumerate(branches[stability_state]):
-                            ax.plot(x[branch], y[branch],
+                            ax.plot(*data[:, branch],
                                     ls=stability_styles[i],
                                     lw=po.default_linewidth,
                                     solid_capstyle='round',
@@ -149,7 +149,7 @@ def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: Plot
                 else:
                     lbl_i = ''
                 for j, branch in enumerate(branches[stability_state]):
-                    ax.plot(x[branch], y[branch],
+                    ax.plot(*data[:, branch],
                             ls='' if po.plot_style == 'points' else stability_styles[i],
                             lw=po.default_linewidth,
                             solid_capstyle='round',
@@ -193,7 +193,7 @@ def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: Plot
 
             if po.show_driven_path:
                 if po.plot_style == 'points':
-                    ax.plot(x[path_indices], y[path_indices], ls='',
+                    ax.plot(*data[:, path_indices], ls='',
                             markersize=po.size_for_driven_path * po.default_markersize,
                             marker=po.default_marker,
                             color=color if color is not None else po.driven_path_color,
@@ -202,37 +202,37 @@ def curve_in_ax(processing_fun, result: Result, ax: plt.Axes, plot_options: Plot
                 else:
                     nb_transitions = min(len(critical_indices), len(restabilization_indices))
                     if nb_transitions == 0:
-                        ax.plot(x[path_indices], y[path_indices],
+                        ax.plot(*data[:, path_indices],
                                 ls='-',
                                 lw=po.default_linewidth * po.size_for_driven_path,
                                 color=color if color is not None else po.driven_path_color,
                                 label=lbl,
                                 zorder=1.1)
                     else:  # at least one snapping event
-                        ax.plot(x[path_indices[0]:critical_indices[0]],
-                                y[path_indices[0]:critical_indices[0]],
+                        ax.plot(*data[:, path_indices[0]:critical_indices[0]],
                                 ls='-',
                                 lw=po.default_linewidth * po.size_for_driven_path,
                                 color=color if color is not None else po.driven_path_color,
                                 label=lbl,
                                 zorder=1.1)
                         for i in range(1, nb_transitions):
-                            ax.plot(x[restabilization_indices[i-1]:critical_indices[i]],
-                                    y[restabilization_indices[i-1]:critical_indices[i]],
+                            ax.plot(*data[:, restabilization_indices[i-1]:critical_indices[i]],
                                     ls='-',
                                     lw=po.default_linewidth * po.size_for_driven_path,
                                     color=color if color is not None else po.driven_path_color,
                                     label=lbl,
                                     zorder=1.1)
-                        ax.plot(x[restabilization_indices[-1]:path_indices[-1]],
-                                y[restabilization_indices[-1]:path_indices[-1]],
+                        ax.plot(*data[:,restabilization_indices[-1]:path_indices[-1]],
                                 ls='-',
                                 lw=po.default_linewidth * po.size_for_driven_path,
                                 color=color if color is not None else po.driven_path_color,
                                 label=lbl,
                                 zorder=1.1)
 
-            if po.show_snapping_arrows:
+            if po.show_snapping_arrows and data.shape[0] == 2:
+                # will only show it if 2d plot, because ax.annotate does not work in 3d plots.
+                # In the future, it could be adjusted with different types of arrow...
+                x, y = data[0, :], data[1, :]
                 if po.drive_mode in ('force', 'displacement'):
                     if po.all_snapping_arrows:
                         _, transitions = extract_all_transitions(result, po.drive_mode)
@@ -411,9 +411,9 @@ def force_displacement_curve(result: Result, save_dir=None, save_name=None, colo
           xlim=xlim, ylim=ylim, preplot=preplot, afterplot=afterplot, **plot_options)
 
 
-def curve(processing_fun: callable, result: Result,
+def curve(processing_fun: callable, results: Result | list[Result],
           save_dir=None, save_name=None, color=None, label=None, show=True,
-          xlabel=None, ylabel=None, xlim=None, ylim=None, preplot=None, afterplot=None,
+          xlabel=None, ylabel=None, zlabel=None, xlim=None, ylim=None, zlim=None, preplot=None, afterplot=None, plot3d_options: tuple[float, float] = None,
           **plot_options):
     if save_dir is None and show is None:
         print("Plot-making cancelled because no save directory and show = False")
@@ -421,15 +421,33 @@ def curve(processing_fun: callable, result: Result,
     po = PlotOptions()
     po.update(**plot_options)
 
+    if isinstance(results, Result):
+        results = [results]
+    
+
     with plt.style.context(po.stylesheet):
-        result.check_if_solution_usable()
-        
-        fig, ax = plt.subplots(figsize=(po.figure_width, po.figure_height))
-        ax.set_box_aspect(po.axis_box_aspect)
+        in_3d = plot3d_options is not None
+        fig, ax = plt.subplots(figsize=(po.figure_width, po.figure_height),
+                               subplot_kw={'projection': '3d'} if in_3d else {})
+        if not in_3d:
+            ax.set_box_aspect(po.axis_box_aspect)
         if preplot is not None:
             preplot(fig, ax)
+        
+        at_least_one_valid = False
+        for i, result in enumerate(results):
+            try:
+                result.check_if_solution_usable()
+            except UnusableSolution:
+                if len(results) == 1:
+                    print("The curve could not be plotted because the result is unusable.")
+                    plt.close()
+                    break
+                else:
+                    print(f"The curve #{i+1} could not be plotted because the result #{i+1} is unusable.")
+                    continue
 
-        curve_in_ax(processing_fun, result, ax, po, color=color, label=label)
+            curve_in_ax(processing_fun, result, ax, po, color=color, label=label)
 
         if (label is not None
                 or (po.show_stability_legend and po.color_mode == 'stability')
@@ -439,6 +457,8 @@ def curve(processing_fun: callable, result: Result,
 
         ax.set_xlabel(xlabel if xlabel is not None else po.default_xlabel)
         ax.set_ylabel(ylabel if ylabel is not None else po.default_ylabel)
+        if in_3d:
+            ax.set_zlabel(zlabel if zlabel is not None else '')
         spines = []
         spines += ['left'] if po.show_left_spine else []
         spines += ['right'] if po.show_right_spine else []
@@ -447,6 +467,8 @@ def curve(processing_fun: callable, result: Result,
         if po.hide_ticklabels:
             ax.set_xticklabels([])
             ax.set_yticklabels([])
+            if in_3d:
+                ax.set_zticklabels([])
         if xlim is not None:
             ax.set_xlim(xlim)
         elif po.enforce_xlim:
@@ -455,8 +477,16 @@ def curve(processing_fun: callable, result: Result,
             ax.set_ylim(ylim)
         elif po.enforce_ylim:
             ax.set_ylim((po.ymin, po.ymax))
-        ff.adjust_spines(ax, po.spine_offset, spines)
-        ff.adjust_figure_layout(fig)
+        if in_3d:
+            if zlim is not None:
+                ax.set_zlim(zlim)
+        
+        if in_3d:
+            ax.view_init(elev=plot3d_options[0], azim=plot3d_options[1])
+        
+        if not in_3d:
+            ff.adjust_spines(ax, po.spine_offset, spines)
+            ff.adjust_figure_layout(fig)
         if afterplot is not None:
             afterplot(fig, ax)
         if save_dir is not None:

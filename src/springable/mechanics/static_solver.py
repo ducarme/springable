@@ -114,7 +114,7 @@ class Result:
         return energy
 
 
-    def get_node_forces(self, _node: Node, direction: str, include_preloading=False, check_usability=True):
+    def get_node_forces(self, _node: Node | int, direction: str, include_preloading=False, check_usability=True):
         if include_preloading:
             if self._is_solution_unusable and check_usability:
                 raise UnusableSolution
@@ -134,7 +134,7 @@ class Result:
                 raise UnusableSolution
             return self._u[self._starting_index:]
 
-    def get_node_displacements(self, _node: Node, direction: str, include_preloading=False, check_usability=True):
+    def get_node_displacements(self, _node: Node | int, direction: str, include_preloading=False, check_usability=True):
         if include_preloading:
             if self._is_solution_unusable and check_usability:
                 raise UnusableSolution

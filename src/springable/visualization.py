@@ -204,15 +204,21 @@ def make_force_displacement_plot(result, save_dir, show=True,
     p_options.update(plot_options)
     plot.force_displacement_curve(result, save_dir, show=show, xlim=xlim, ylim=ylim, **p_options)
 
-def make_custom_plot(post_processing, result, save_dir, show=True,
-                     graphics_settings=None, xlim=None, ylim=None,
-                     preplot=None, afterplot=None, **plot_options):
-    result = load_result(result)
+def make_custom_plot(post_processing, results, save_dir, show=True,
+                     graphics_settings=None, xlim=None, ylim=None, zlim=None,
+                     preplot=None, afterplot=None, plot3d_options: tuple[float, float] = None, **plot_options):
     _, p_options, _, _ = io.load_graphics_settings(graphics_settings)
     p_options.update(plot_options)
-    plot.curve(post_processing['processing_fun'], result, save_dir, save_name=post_processing['save_name'],
-               show=show, xlim=xlim, ylim=ylim, xlabel=post_processing['xlabel'], ylabel=post_processing['ylabel'],
-               preplot=preplot, afterplot=afterplot, **p_options)
+
+    if not isinstance(results, (list, tuple)):
+        results = [results]
+
+    results = [load_result(res) for res in results]
+    plot.curve(post_processing['processing_fun'], results, save_dir, save_name=post_processing['save_name'],
+               show=show, xlim=xlim, ylim=ylim, zlim=zlim,
+               xlabel=post_processing['xlabel'], ylabel=post_processing['ylabel'], zlabel=post_processing.get('zlabel', None),
+               preplot=preplot, afterplot=afterplot,
+               plot3d_options=plot3d_options,**p_options)
 
 
 def make_model_drawing(mdl: str | model.Model, save_dir,

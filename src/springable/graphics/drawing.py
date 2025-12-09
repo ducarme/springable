@@ -542,7 +542,7 @@ class NodeDrawing(Drawing):
                                                    markersize=6 * self._aa.node_size,
                                                    markerfacecolor=self._aa.node_color,
                                                    markeredgecolor=self._aa.node_edgecolor,
-                                                   markeredgewidth=self._aa.node_edgewidth*0.5)[0]
+                                                   markeredgewidth=self._aa.node_edgewidth*0.75)[0]
 
         self._node_graphic = self._ax.plot([self._node.get_x()], [self._node.get_y()], zorder=5.0,
                                            marker=marker,
@@ -883,6 +883,7 @@ class ModelDrawing(Drawing):
     def _make(self):
         assembly_drawing = AssemblyDrawing(self._ax, self._assembly, self._characteristic_length, self._aa,
                                            self._element_color_handler, self._element_opacity_handler)
+        
         force_drawings = set()
         if self._aa.show_forces:
             for _node in self._loaded_nodes:

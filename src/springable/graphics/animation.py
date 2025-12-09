@@ -228,15 +228,14 @@ def draw_equilibrium_state(res: Result,
                            state_index: int = None,
                            start_of_loadstep_index: int  = None,
                            end_of_loadstep_index: int = None,
-                           threshold_nodal_displacement=None,
-                           threshold_nodal_external_force=None,
+                           threshold_nodal_displacement: int =None,
+                           threshold_nodal_external_force: int =None,
                            save_dir=None, save_name='state',
                            show=True,
                            characteristic_length: float = None,
                            xlim: tuple[float, float] = None,
                            ylim:  tuple[float, float] = None,
                            **assembly_appearance):
-
 
     aa = AssemblyAppearanceOptions()
     aa.update(**assembly_appearance)
@@ -274,14 +273,6 @@ def draw_equilibrium_state(res: Result,
         print('Cannot draw equilibrium state, because no state has been specified.')
         return
 
-    loadstep_index = res.get_step_indices()[state_index]
-    initial_coordinates = mdl.get_assembly().get_coordinates().copy()
-    mdl.get_assembly().set_coordinates(initial_coordinates + u[state_index, :])
-    blocked_nodes_directions_step_list = mdl.get_blocked_nodes_directions_step_list()
-    for ls_ix, blocked_nodes_directions in enumerate(blocked_nodes_directions_step_list):
-        if ls_ix <= loadstep_index:
-            mdl.get_assembly().block_nodes_along_directions(*blocked_nodes_directions)
-
     (bounds,
      characteristic_length_,
      element_color_handler,
@@ -300,8 +291,18 @@ def draw_equilibrium_state(res: Result,
     else:
         preforce_amounts = None
 
-    forces_after_preloading = np.sum(mdl.get_force_vectors_step_list()[:loadstep_index], axis=0)
+    res.set_assembly_to_initial_state()
 
+
+    loadstep_index = res.get_step_indices()[state_index]
+    initial_coordinates =  mdl.get_assembly().get_coordinates().copy()
+    mdl.get_assembly().set_coordinates(initial_coordinates + u[state_index, :])
+    blocked_nodes_directions_step_list = mdl.get_blocked_nodes_directions_step_list()
+    for ls_ix, blocked_nodes_directions in enumerate(blocked_nodes_directions_step_list):
+        if ls_ix <= loadstep_index:
+            mdl.get_assembly().block_nodes_along_directions(*blocked_nodes_directions)
+
+    forces_after_preloading = np.sum(mdl.get_force_vectors_step_list()[:loadstep_index], axis=0)
 
     with plt.style.context(aa.stylesheet):
         fig = plt.figure()
@@ -309,12 +310,14 @@ def draw_equilibrium_state(res: Result,
         ax.set_aspect('equal')
         characteristic_length = characteristic_length if characteristic_length is not None else characteristic_length_
 
+
         _model_drawing = ModelDrawing(ax, mdl, aa, characteristic_length,
                                       element_color_handler=element_color_handler,
                                       element_opacity_handler=element_opacity_handler,
                                       force_color_handler=force_color_handler, force_amounts=force_amounts,
                                       force_vector_after_preloading=forces_after_preloading,
                                       preforce_amounts=preforce_amounts)
+        
 
         xmin, ymin, xmax, ymax = bounds
         assembly_span = max(xmax - xmin, ymax - ymin)
@@ -349,6 +352,7 @@ def draw_equilibrium_state(res: Result,
         mdl.get_assembly().set_coordinates(initial_coordinates)
         for blocked_nodes_directions in blocked_nodes_directions_step_list:
             mdl.get_assembly().release_nodes_along_directions(*blocked_nodes_directions)
+
 
 
 

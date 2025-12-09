@@ -322,12 +322,14 @@ def compute_pathpatch_vertices(polys, compute_code=True):
 
 
 def scan_result_and_compute_quantities_for_animations(_result: Result, assembly_appearance: AssemblyAppearanceOptions,):
+    _result.set_assembly_to_initial_state()
     aa = assembly_appearance
     _assembly = _result.get_model().get_assembly()
     u = _result.get_displacements(include_preloading=True)
     f = _result.get_forces(include_preloading=True)
-
     _initial_coordinates = _assembly.get_coordinates()
+
+
     xmin = ymin = np.inf
     xmax = ymax = -np.inf
     element_color_handler = None
@@ -336,7 +338,7 @@ def scan_result_and_compute_quantities_for_animations(_result: Result, assembly_
     force_amounts = {}
     preforce_amounts = {}
     assembly_scanned = False
-    start = _result.get_starting_index()
+    start = _result.get_starting_index()  # start of the final loadstep
     n = u.shape[0] - start
     characteristic_lengths = []
     if aa.coloring_mode != 'none':
@@ -447,7 +449,6 @@ def scan_result_and_compute_quantities_for_animations(_result: Result, assembly_
                 xmax = max(xmax, bounds[2])
                 ymax = max(ymax, bounds[3])
                 characteristic_lengths.append(_assembly.compute_characteristic_length())
-            _assembly.set_coordinates(_initial_coordinates)
             assembly_scanned = True
 
             match aa.coloring_mode:
@@ -480,8 +481,8 @@ def scan_result_and_compute_quantities_for_animations(_result: Result, assembly_
             xmax = max(xmax, bounds[2])
             ymax = max(ymax, bounds[3])
             characteristic_lengths.append(_assembly.compute_characteristic_length())
-        _assembly.set_coordinates(_initial_coordinates)
 
+    _result.set_assembly_to_initial_state()
     characteristic_length = np.quantile(characteristic_lengths, 0.75)
     force_amounts = force_amounts if force_amounts else None
     preforce_amounts = preforce_amounts if preforce_amounts else None
