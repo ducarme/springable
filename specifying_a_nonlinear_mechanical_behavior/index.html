@@ -1,0 +1,1257 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../creating_the_spring_model_csv_file/">
+      
+      
+        <link rel="next" href="../configuring_simulation_settings/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
+    
+    
+      
+        <title>Specifying a nonlinear mechanical behavior - springable</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Serif:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto Serif";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="green">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#linear-behavior" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="springable" class="md-header__button md-logo" aria-label="springable" data-md-component="logo">
+      
+  <img src="../favicon.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            springable
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Specifying a nonlinear mechanical behavior
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ducarme/springable" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    See code on Github
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="springable" class="md-nav__button md-logo" aria-label="springable" data-md-component="logo">
+      
+  <img src="../favicon.png" alt="logo">
+
+    </a>
+    springable
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ducarme/springable" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    See code on Github
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../many_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Some examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../creating_the_spring_model_csv_file/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Creating the spring model csv file
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specifying a nonlinear mechanical behavior
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specifying a nonlinear mechanical behavior
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#linear-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linear behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logarithmic-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logarithmic behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bezier-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bezier behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bezier2-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bezier2 behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#piecewise-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Piecewise behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zigzag-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Zigzag behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zigzag2-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Zigzag2 behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contact-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contact behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#isothermal-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Isothermal behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#isentropic-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Isentropic behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Additional notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuring_simulation_settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuring simulation settings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_topics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced topics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../about_and_contact/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About and contact
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#linear-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linear behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logarithmic-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logarithmic behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bezier-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bezier behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bezier2-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bezier2 behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#piecewise-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Piecewise behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zigzag-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Zigzag behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zigzag2-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Zigzag2 behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contact-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contact behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#isothermal-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Isothermal behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#isentropic-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Isentropic behavior
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Additional notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+  <h1>Specifying a nonlinear mechanical behavior</h1>
+
+<p>In <code>springable</code>, each spring (longitudinal, angular, etc) has its own intrinsic mechanical behavior.
+An intrinsic mechanical behavior is fully characterized by a <strong>generalized force-displacement curve</strong>.
+For a longitudinal spring, that curve will be interpreted as a <em>force-displacement</em> curve. For a angular spring, as a
+<em>torque-angle change</em> curve. For an area spring, as a <em>2d pressure-area change</em> curve. Etc.</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>Mathematically speaking, the generalized force <span class="arithmatex">\(f\)</span> is defined as the derivative of the elastic energy with respect to the <em>measure</em> <span class="arithmatex">\(\alpha\)</span>
+of the spring. The measure <span class="arithmatex">\(\alpha\)</span> is the <em>length</em> for a longitudinal spring, the <em>angle</em> for a angular spring, the <em>area</em> for an area spring, etc.
+The generalized displacement <span class="arithmatex">\(u\)</span> is defined as the difference between the current measure <span class="arithmatex">\(\alpha\)</span> and the <em>natural</em> measure <span class="arithmatex">\(\alpha_0\)</span>, that is, the measure
+of the spring in its natural configuration (wherein no force is generated and no elastic energy is stored).</p>
+</div>
+<p>Multiple types of intrinsic mechanical behavior can be specified in the <a href="../creating_the_spring_model_csv_file/">spring model CSV file</a>.
+The faster way to get familiar with them is by running the <strong>behavior creation graphical user interface</strong>. To do that create the following python script</p>
+<p><div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Python script &#39;start_behavior_creation_interface.py&#39;</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">springable.behavior_creation</span><span class="w"> </span><span class="kn">import</span> <span class="n">start</span>
+
+<span class="n">start</span><span class="p">()</span>
+</code></pre></div>
+and run it (in the terminal, that would be done using <code>python start_behavior_creation_interface.py</code>).</p>
+<p>A window named <em>Behavior creation</em> should pop up on your screen</p>
+<p align="center"><img src="https://github.com/user-attachments/assets/ee0ccc8b-a02e-418b-be0f-9bb68738fb0b" height="320px"/></p>
+
+<p>By playing around with the interface, you will be able to create various generalized force-displacement curves and generate the corresponding code to use in the
+<a href="#creating-a-csv-file-describing-the-spring-model">spring model CSV file</a>. Herein below, more details are provided about the various types of mechanical behavior.</p>
+<ul>
+<li><a href="#linear-behavior">Linear behavior</a></li>
+<li><a href="#logarithmic-behavior">Logarithmic behavior</a></li>
+<li><a href="#bezier-behavior">Bezier behavior</a></li>
+<li><a href="#bezier2-behavior">Bezier2 behavior</a></li>
+<li><a href="#piecewise-behavior">Piecewise behavior</a></li>
+<li><a href="#zigzag-behavior">Zigzag behavior</a></li>
+<li><a href="#zigzag2-behavior">Zigzag2 behavior</a></li>
+<li><a href="#contact-behavior">Contact behavior</a></li>
+<li><a href="#isothermal-behavior">Isothermal gas behavior</a></li>
+<li><a href="#isentropic-behavior">Isentropic gas behavior</a></li>
+</ul>
+<h2 id="linear-behavior">Linear behavior</h2>
+<p>For a <strong>linear</strong> generalized force-displacement curve <span class="arithmatex">\(f=ku\)</span>, where <span class="arithmatex">\(k\)</span> is the spring constant.</p>
+<p><code>LINEAR(k=&lt;value&gt;)</code> or <code>&lt;value&gt;</code></p>
+<p>Example: <code>..., LINEAR(k=2.0)</code> or equivalently <code>..., 2.0</code></p>
+<blockquote>
+<p>A spring with a linear behavior characterized by a spring constant <code>2.0</code> is defined.</p>
+<figure>
+<figcaption></figcaption>
+<p><img alt="" src="https://github.com/user-attachments/assets/0dfeb1ca-3857-4d09-8bf5-36228dbc2a85" width="300" /></p>
+</figure>
+</blockquote>
+<details class="question">
+<summary>Units?</summary>
+<p>The unit of <span class="arithmatex">\(k\)</span> should be the unit of the generalized force <span class="arithmatex">\(f\)</span>
+divided by the unit of the generalized displacement <span class="arithmatex">\(u\)</span>.</p>
+</details>
+<h2 id="logarithmic-behavior">Logarithmic behavior</h2>
+<p>A <strong>logarithmic</strong> behavior is defined by a generalized force-displacement curve given by
+<span class="arithmatex">\(f=k\alpha_0\ln(\alpha/\alpha_0)\)</span>, <span class="arithmatex">\(u=\alpha-\alpha_0\)</span>. It is useful to prevent springs from having a zero measure
+(longitudinal springs with zero length, angular springs with zero angle, etc),
+as the generalized force approaches infinity as the measure gets close to zero.</p>
+<p><code>LOGARITHMIC(k=&lt;spring constant&gt;)</code></p>
+<p>Example: <code>... , LOGARITHMIC(k=2.0)</code></p>
+<blockquote>
+<p>A spring with a logarithmic behavior characterized by <span class="arithmatex">\(k\)</span> equals <code>2.0</code> is defined.</p>
+<figure>
+<figcaption></figcaption>
+<p><img alt="" src="https://github.com/user-attachments/assets/c53f1391-81bb-467c-bf56-4a6ebf2f5306" width="300" /></p>
+</figure>
+</blockquote>
+<details class="question">
+<summary>Isn't the parameter <span class="arithmatex">\(\alpha_0\)</span> missing?</summary>
+<p>It seems like we are missing the parameter <span class="arithmatex">\(\alpha_0\)</span> in the specification (only <span class="arithmatex">\(k\)</span> is provided). This is not a problem; remember that the value of <span class="arithmatex">\(\alpha_0\)</span> is
+in fact automatically set to the value of the spring measure in the state defined by <a href="../creating_the_spring_model_csv_file/#the-nodes-section">the <code>NODES</code> section</a>, when not provided.
+If you want to assign a value for <span class="arithmatex">\(\alpha_0\)</span>, you can do it by adding a comma followed by the <span class="arithmatex">\(\alpha_0\)</span> value.</p>
+<p>Example: <code>... , LOGARITHMIC(k=2.0), 2.5</code></p>
+<blockquote>
+<p>A spring is defined with a behavior of type <code>LOGARITHMIC</code> with <code>k=2.0</code> and a natural measure <code>2.5</code>.</p>
+</blockquote>
+</details>
+<details class="question">
+<summary>Units?</summary>
+<p>The unit of <span class="arithmatex">\(k\)</span> should be the unit of the generalized force <span class="arithmatex">\(f\)</span>
+divided by the unit of the generalized displacement <span class="arithmatex">\(u\)</span>.</p>
+</details>
+<h2 id="bezier-behavior">Bezier behavior</h2>
+<p>A <strong>Bezier</strong> behavior is described by a generalized force-displacement curve defined as a <a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve">Bezier curve</a>.
+More precisely, the <span class="arithmatex">\(f-u\)</span> curve is given by <span class="arithmatex">\(f(t)=\sum_{i=1}^n f_i b_{i,n}(t)\)</span> and <span class="arithmatex">\(u(t)=\sum_{i=1}^n u_i b_{i,n}(t)\)</span>, where <span class="arithmatex">\(u_i\)</span> and <span class="arithmatex">\(f_i\)</span> describe
+the coordinates of <a href="https://en.wikipedia.org/wiki/Control_point_(mathematics)">control points</a>,
+<span class="arithmatex">\(b_{i,n}\)</span> are the <a href="https://en.wikipedia.org/wiki/Bernstein_polynomial">Bernstein polynomials</a> of degree <span class="arithmatex">\(n\)</span>,
+and <span class="arithmatex">\(t\)</span> is the curve parameter that runs from 0 to 1.</p>
+<p><code>BEZIER(u_i=[&lt;value_11&gt;; &lt;value_12&gt;; ...;&lt;value_1n&gt;]; f_i=[&lt;value_21&gt;; &lt;value_22&gt;; ...; &lt;value_2n&gt;])</code></p>
+<p>Example: <code>..., BEZIER(u_i=[1.0;1.2;3.0];f_i=[2.0;-3.0;2.4])</code></p>
+<blockquote>
+<p>A spring is defined with a generalized force-displacement relation described as a Bezier curve of degree 3
+with control points (0, 0), (<code>1.0</code>, <code>2.0</code>), (<code>1.2</code>, <code>-3.0</code>) and (<code>3.0</code>, <code>2.4</code>).</p>
+<figure>
+<figcaption></figcaption>
+<p><img _="," align="right" alt="" src="https://github.com/user-attachments/assets/34446134-1988-4691-a261-865f25290b22" width="300" /></p>
+</figure>
+</blockquote>
+<details class="question">
+<summary>Units?</summary>
+<p>The unit of each <span class="arithmatex">\(u_i\)</span> should be the unit of the generalized displacement <span class="arithmatex">\(u\)</span>.
+The unit of each <span class="arithmatex">\(f_i\)</span> should be the unit of the generalized force <span class="arithmatex">\(f\)</span>.</p>
+</details>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For a generalized displacement <span class="arithmatex">\(u\)</span> larger than <span class="arithmatex">\(u_n\)</span>, the corresponding generalized force is extrapolated linearly based on the slope at the last control point.
+Also, the generalized force-displacement relation is defined for negative generalized displacements <span class="arithmatex">\(u&lt;0\)</span> by imposing the symmetry <span class="arithmatex">\(f(u&lt;0)=-f(|u|)\)</span>.</p>
+</div>
+<h2 id="bezier2-behavior">Bezier2 behavior</h2>
+<p>A <strong>Bezier2</strong> behavior is the same as a <a href="#bezier-behavior">Bezier behavior</a>.
+The only difference is that, unlike a Bezier behavior,
+a Bezier2 behavior is allowed to define a curve that <em>curves back</em>,
+meaning that at a certain generalized displacement value, multiple force values can exist.</p>
+<p><code>BEZIER2(u_i=[&lt;value_11&gt;; &lt;value_12&gt;; ...;&lt;value_1n&gt;]; f_i=[&lt;value_21&gt;; &lt;value_22&gt;; ...; &lt;value_2n&gt;])</code></p>
+<p>Example: <code>..., BEZIER2(u_i=[2.5;-1.0;2.0];f_i=[2.0;-1.0;1.0])</code></p>
+<blockquote>
+<p>A spring is defined with a generalized force-displacement relation described as a Bezier curve of degree 3
+with control points (0, 0), (<code>2.5</code>, <code>2.0</code>), (<code>-1.0</code>, <code>-1.0</code>) and (<code>2.0</code>, <code>1.0</code>).
+This curve curves back; it cannot be described a function <span class="arithmatex">\(f(u)\)</span>.</p>
+<figure>
+<figcaption></figcaption>
+<p><img alt="" src="https://github.com/user-attachments/assets/8f5dae45-7a2e-46bd-afe1-ff1ef5814a8c" width="300" /></p>
+</figure>
+</blockquote>
+<details class="question">
+<summary>Units?</summary>
+<p>The unit of each <span class="arithmatex">\(u_i\)</span> should be the unit of the generalized displacement <span class="arithmatex">\(u\)</span>.
+The unit of each <span class="arithmatex">\(f_i\)</span> should be the unit of the generalized force <span class="arithmatex">\(f\)</span>.</p>
+</details>
+<div class="admonition note">
+<p class="admonition-title">Important</p>
+<p>Due to implementation details, the way the curve folds and unfolds should respect some conditions. First, the curve cannot have <a href="https://en.wikipedia.org/wiki/Cusp_(singularity)">cusps</a>.
+Second, the tangent vector along the curve can never point vertically upward, as one moves along the curve from the origin
+(it is perfectly fine for the tangent to point vertically downward).</p>
+<p>Also, a Bezier2 behavior introduces an extra <a href="https://en.wikipedia.org/wiki/Degrees_of_freedom_(mechanics)">degree of freedom (DOF)</a>
+in order to disambiguate the state of the spring, as the generalized displacement <span class="arithmatex">\(u\)</span> is not enough to fully define its state.
+Using a <strong>Bezier</strong> behavior instead when the curve does not curve back helps keep the number of DOFs low.</p>
+</div>
+<h2 id="piecewise-behavior">Piecewise behavior</h2>
+<p>A <strong>piecewise</strong> behavior is defined by a <a href="https://en.wikipedia.org/wiki/Piecewise_linear_function">piecewise linear function</a>
+whose corners have been smoothed using quadratic functions. A piecewise curve composed of <span class="arithmatex">\(n&gt;1\)</span> segments is described by
+<span class="arithmatex">\(n\)</span> slopes <span class="arithmatex">\(k_i\)</span> and <span class="arithmatex">\(n-1\)</span> transition points <span class="arithmatex">\(u_i\)</span> at which the segments would connect. The quantity <span class="arithmatex">\(u_s\)</span> describes how smooth
+each corner must be. More precisely, around each corner <span class="arithmatex">\(i\)</span> located at <span class="arithmatex">\(u_i\)</span>, the curve is given by a quadratic function on the interval
+<span class="arithmatex">\(\left[u_i-u_s, u_i+u_s\right]\)</span>, instead of linear segments.
+The smoothing quadratic functions are tuned to be <a href="https://en.wikipedia.org/wiki/Smoothness">C1 continuous</a>
+with the segments they connect.</p>
+<p><code>PIECEWISE(k_i=[&lt;value_11&gt;; &lt;value_12&gt;; ...;&lt;value_1n&gt;]; u_i=[&lt;value_21&gt;; &lt;value_22&gt;; ...; &lt;value_2(n-1)&gt;]; us=&lt;value&gt;])</code></p>
+<p>Example: <code>..., PIECEWISE(k_i=[1.0;-1.0;2.0]; u_i=[1.0;2.0]; us=0.2)</code></p>
+<blockquote>
+<p>A spring is defined with a generalized force-displacement relation described as a smoothed piecewise linear curve
+composed of three segments with slopes <code>1.0</code>, <code>-1.0</code> and <code>2.0</code>,
+with the transition between the first and second segment at <code>1.0</code>
+and the transition between the second and third segment at <code>2.0</code>. The amount of smoothing is set to <code>0.2</code>.</p>
+<figure>
+<figcaption></figcaption>
+<p><img alt="" src="https://github.com/user-attachments/assets/66de0d4b-bd8a-4463-9c92-ef6190981e31" width="300" /></p>
+</figure>
+</blockquote>
+<details class="question">
+<summary>Units?</summary>
+<p>The unit of each <span class="arithmatex">\(k_i\)</span> should be the unit of the generalized force <span class="arithmatex">\(f\)</span>
+divided by the unit of the generalized displacement <span class="arithmatex">\(u\)</span>.
+The unit of each <span class="arithmatex">\(u_i\)</span> and the unit of <span class="arithmatex">\(u_s\)</span> should be the unit of the generalized displacement <span class="arithmatex">\(u\)</span>.</p>
+</details>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The quantity <span class="arithmatex">\(u_s\)</span> must be positive and lower than <span class="arithmatex">\(\min((u_1-0.0), (u_2-u_1)/2, ..., (u_{n-1}-u_{n-2})/2)\)</span>.
+Also, the generalized force-displacement relation is defined for negative generalized displacements <span class="arithmatex">\(u&lt;0\)</span>
+by imposing the symmetry <span class="arithmatex">\(f(u&lt;0)=-f(|u|)\)</span>.</p>
+</div>
+<h2 id="zigzag-behavior">Zigzag behavior</h2>
+<p>A <strong>zigzag</strong> behavior is described by a generalized force-displacement curve defined as a
+<a href="https://en.wikipedia.org/wiki/Polygonal_chain">polygonal chain</a> with smoothed corners.
+It is specified by providing the control points' coordinates <span class="arithmatex">\((u_i, f_i)\)</span>
+(coordinates of the corners of the non-smoothed polygonal chain),
+and a smoothing parameter <span class="arithmatex">\(0&lt;\epsilon&lt;1\)</span>.</p>
+<p><code>ZIGZAG(u_i=[&lt;value_11&gt;; &lt;value_12&gt;; ...;&lt;value_1n&gt;]; f_i=[&lt;value_21&gt;; &lt;value_22&gt;; ...; &lt;value_2n&gt;]; epsilon=&lt;value&gt;)</code></p>
+<p>Example: <code>..., ZIGZAG(u_i=[1.0; 2.0; 3.0]; f_i=[1.0; -0.5; 2.0]; epsilon=0.8)</code></p>
+<blockquote>
+<p>A spring is defined with a generalized force-displacement relation described as a smoothed zigzag curve
+defined by 4 control points (0, 0), (<code>1.0</code>, <code>1.0</code>), (<code>2.0</code>, <code>-0.5</code>) and (<code>3.0</code>, <code>2.0</code>). The corners are smoothed using
+<span class="arithmatex">\(\epsilon=\)</span><code>0.8</code></p>
+<figure>
+<figcaption></figcaption>
+<p><img alt="" src="https://github.com/user-attachments/assets/31c61352-53b9-4ab8-b190-0f4d326e4333" width="300" /></p>
+</figure>
+</blockquote>
+<details class="question">
+<summary>Units?</summary>
+<p>The unit of each <span class="arithmatex">\(u_i\)</span> should be the unit of the generalized displacement <span class="arithmatex">\(u\)</span>.
+The unit of each <span class="arithmatex">\(f_i\)</span> should be the unit of the generalized force <span class="arithmatex">\(f\)</span>.
+The smoothing parameter <span class="arithmatex">\(\epsilon\)</span> has no dimension.</p>
+</details>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The generalized force-displacement relation is defined for negative generalized displacements <span class="arithmatex">\(u&lt;0\)</span>
+by imposing the symmetry <span class="arithmatex">\(f(u&lt;0)=-f(|u|)\)</span>.</p>
+</div>
+<h2 id="zigzag2-behavior">Zigzag2 behavior</h2>
+<p>A <strong>zigzag2</strong> behavior is the same as a <a href="#zigzag-behavior">zigzag behavior</a>.
+The only difference is that, unlike a zigzag behavior,
+a zigzag2 behavior is allowed to define a curve that <em>curves back</em>,
+meaning that at a certain generalized displacement value, multiple force values can exist.</p>
+<p><code>ZIGZAG2(u_i=[&lt;value_11&gt;; &lt;value_12&gt;; ...;&lt;value_1n&gt;]; f_i=[&lt;value_21&gt;; &lt;value_22&gt;; ...; &lt;value_2n&gt;]; epsilon=&lt;value&gt;)</code></p>
+<p>Example: <code>..., ZIGZAG2(u_i=[2.0; 1.0; 3.0]; f_i=[2.0; 0.0; 1.0]; epsilon=0.4)</code></p>
+<blockquote>
+<p>A spring is defined with a generalized force-displacement relation described as a smoothed zigzag curve
+with control points (0, 0), (<code>2.0</code>, <code>2.0</code>), (<code>1.0</code>, <code>0.0</code>) and (<code>3.0</code>, <code>1.0</code>).
+The corners are smoothed using <span class="arithmatex">\(\epsilon=\)</span><code>0.4</code>
+This curve curves back; it cannot be described a function <span class="arithmatex">\(f(u)\)</span>.</p>
+<figure>
+<figcaption></figcaption>
+<p><img alt="" src="https://github.com/user-attachments/assets/2e44e2ca-29eb-4298-88d8-537482379d6a" width="300" /></p>
+</figure>
+</blockquote>
+<details class="question">
+<summary>Units?</summary>
+<p>The unit of each <span class="arithmatex">\(u_i\)</span> should be the unit of the generalized displacement <span class="arithmatex">\(u\)</span>.
+The unit of each <span class="arithmatex">\(f_i\)</span> should be the unit of the generalized force <span class="arithmatex">\(f\)</span>.
+The smoothing parameter <span class="arithmatex">\(\epsilon\)</span> has no dimension.</p>
+</details>
+<div class="admonition note">
+<p class="admonition-title">Important</p>
+<p>Due to implementation details, the way the curve folds and unfolds should respect some conditions. First, the curve cannot have <a href="https://en.wikipedia.org/wiki/Cusp_(singularity)">cusps</a>.
+Second, the tangent vector along the curve can never point vertically upward, as one moves along the curve from the origin
+(it is perfectly fine for the tangent to point vertically downward).</p>
+<p>Also, a zigzag2 behavior introduces an extra <a href="https://en.wikipedia.org/wiki/Degrees_of_freedom_(mechanics)">degree of freedom (DOF)</a>
+in order to disambiguate the state of the spring, as the generalized displacement <span class="arithmatex">\(u\)</span> is not enough to fully define its state.
+Using a <strong>zigzag</strong> behavior instead when the curve does not curve back helps keep the number of DOFs low.</p>
+</div>
+<h2 id="contact-behavior">Contact behavior</h2>
+<p>A <strong>contact</strong> behavior is described by a generalized force-displacement curve that
+is perfectly zero for large displacement <span class="arithmatex">\(u \geq \alpha_\Delta - \alpha_0\)</span> and yields a relatively strong repulsion force for low displacement <span class="arithmatex">\(u&lt;\alpha_\Delta - \alpha_0\)</span>.
+More precisely, the generalized force-displacement curve is given by</p>
+<div class="arithmatex">\[
+f(u) = \begin{cases}
+    0&amp;\text{if $u \ge \alpha_\Delta - \alpha_0$}\\
+    -f_0\left(\dfrac{\alpha_\Delta - \alpha_0-u}{u_\text{c}}\right)^3&amp;\text{if $u &lt; \alpha_\Delta - \alpha_0$},
+\end{cases}
+\]</div>
+<p>where <span class="arithmatex">\(f_0\)</span> is the magnitude of the generalized force <span class="arithmatex">\(f\)</span> when the generalized displacement <span class="arithmatex">\(u\)</span> is decreased by <span class="arithmatex">\(u_\text{c}\)</span> from <span class="arithmatex">\(\alpha_\Delta - \alpha_0\)</span>.
+It is useful to model contact, as a relatively significant force is generated but only below a certain threshold.</p>
+<p><code>CONTACT(f0=&lt;value1&gt;; uc=&lt;value2&gt;; delta=&lt;value3&gt;)</code></p>
+<p>Example: <code>..., CONTACT(f0=3.0; uc=0.01; delta=0.5)</code></p>
+<blockquote>
+<p>A spring is defined with a contact behavior. When the measure <span class="arithmatex">\(\alpha\)</span> of the spring becomes less than <code>delta=0.5</code>,
+an increasingly strong repulsion generalized force is generated, reaching -<code>3.0</code> when the measure is decreased further by <code>0.01</code>, that is, when <span class="arithmatex">\(\alpha=\)</span> <code>0.49</code>.
+</p>
+</blockquote>
+<!-- > ![](https://github.com/user-attachments/assets/a8f17fe5-cd4f-41fe-b7a1-65842625f7d9){width="300"}
+> ///caption
+> /// -->
+
+<details class="question">
+<summary>Units?</summary>
+<p>The unit of <span class="arithmatex">\(u_c\)</span> should be the unit of the generalized displacement <span class="arithmatex">\(u\)</span>.
+The unit of <span class="arithmatex">\(f_0\)</span> should be the unit of the generalized force <span class="arithmatex">\(f\)</span>.</p>
+</details>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For a spring with a contact behavior, the natural measure <span class="arithmatex">\(\alpha_0\)</span> does not have any effect, as the force produced by the contact behavior solely depends on the measure <span class="arithmatex">\(\alpha\)</span>; it is independent of the natural measure <span class="arithmatex">\(\alpha_0\)</span>.</p>
+</div>
+<h2 id="isothermal-behavior">Isothermal behavior</h2>
+<p>An <strong>isothermal</strong> behavior is described by a generalized force-displacement curve that respects the pressure-volume
+relation of an <a href="https://en.wikipedia.org/wiki/Ideal_gas_law">ideal gas</a> during an isothermal process (constant temperature).
+That relation can be expressed as follows,</p>
+<div class="arithmatex">\[
+p - p_0 = nRT_0 \left( 1/V - 1/V_0\right),
+\]</div>
+<p>where <span class="arithmatex">\(p_0\)</span> is the ambient pressure, <span class="arithmatex">\(V_0\)</span> is the volume of the gas at ambient pressure,
+<span class="arithmatex">\(T_0\)</span> is the temperature of the gas (constant), <span class="arithmatex">\(p\)</span> is the current pressure, <span class="arithmatex">\(V\)</span> is the current volume,
+<span class="arithmatex">\(n\)</span> is the amount of substance (constant), <span class="arithmatex">\(R\)</span> is the gas constant.</p>
+<p>More precisely, the generalized force <span class="arithmatex">\(f\)</span> plays the role of the pressure difference, <span class="arithmatex">\(f=p_0-p\)</span>,
+while the generalized displacement plays the role of volume change, <span class="arithmatex">\(u=V-V_0\)</span>. The measure <span class="arithmatex">\(\alpha\)</span> and
+natural measure <span class="arithmatex">\(\alpha_0\)</span> are mapped to <span class="arithmatex">\(\alpha=V\)</span> and <span class="arithmatex">\(\alpha_0=V_0\)</span>, respectively. The <span class="arithmatex">\(f-u\)</span> curve is therefore given by</p>
+<div class="arithmatex">\[
+f = nRT_0\frac{u}{(u+\alpha_0)\alpha_0}.
+\]</div>
+<p><code>ISOTHERMAL(n=&lt;n_value&gt;; R=&lt;R_value&gt;; T0=&lt;T0_value&gt;)</code></p>
+<p>Example: <code>..., ISOTHERMAL(n=1.0; R=8.3; T0=300)</code></p>
+<blockquote>
+<p>A spring is defined with an isothermal behavior. Its generalized force-displacement relation follows the behavior
+of <code>1</code> mole of an ideal gas at constant temperature <span class="arithmatex">\(T_0\)</span>=<code>300</code>K.</p>
+<figure>
+<figcaption></figcaption>
+<p><img alt="" src="https://github.com/user-attachments/assets/b9d2d7d8-b502-4249-9218-7e79cbf44ebd" width="300" /></p>
+</figure>
+</blockquote>
+<details class="question">
+<summary>Isn't the parameter <span class="arithmatex">\(\alpha_0=V_0\)</span> missing?</summary>
+<p>It seems like we are missing the parameter <span class="arithmatex">\(\alpha_0\)</span>, describing the volume <span class="arithmatex">\(V_0\)</span> at ambient pressure <span class="arithmatex">\(p_0\)</span>, in the specification.
+This is not a problem; remember that the value of <span class="arithmatex">\(\alpha_0\)</span> is
+in fact automatically set to the value of the spring measure in the state defined by <a href="../creating_the_spring_model_csv_file/#the-nodes-section">the <code>NODES</code> section</a>,
+when not provided.
+If you want to assign a value for <span class="arithmatex">\(\alpha_0\)</span>, you can do it by adding a comma followed by the <span class="arithmatex">\(\alpha_0\)</span> value.</p>
+<p>Example: <code>... , ISOTHERMAL(n=1.0; R=8.3; T0=300), 1.0</code></p>
+<blockquote>
+<p>A spring is defined with an isothermal behavior. Its generalized force-displacement relation follows the behavior
+of <code>1</code> mole of an ideal gas at constant temperature <span class="arithmatex">\(T_0\)</span>=<code>300</code>K. Its <em>volume</em>/measure at ambient pressure is <code>1.0</code>.</p>
+</blockquote>
+</details>
+<details class="question">
+<summary>Units?</summary>
+<p>The unit of the quantity <span class="arithmatex">\(nRT_0\)</span> should be a unit of energy; more precisely,
+it should be the unit of the generalized force <span class="arithmatex">\(f\)</span>
+multiplied by the unit of the generalized displacement <span class="arithmatex">\(u\)</span>.</p>
+</details>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A negative generalized force <span class="arithmatex">\(f&lt;0\)</span> corresponds to a compressed state
+(the pressure is greater than the ambient pressure, <span class="arithmatex">\(p&gt;p_0\)</span>). A positive generalized force <span class="arithmatex">\(f&gt;0\)</span> corresponds to
+a <em>vacuumed</em> state (the pressure is smaller than the ambient pressure, <span class="arithmatex">\(p&lt;p_0\)</span>).</p>
+</div>
+<h2 id="isentropic-behavior">Isentropic behavior</h2>
+<p>An <strong>isentropic</strong> behavior is described by a generalized force-displacement curve that respects the pressure-volume
+relation of an <a href="https://en.wikipedia.org/wiki/Ideal_gas_law">ideal gas</a> during an
+<a href="https://en.wikipedia.org/wiki/Isentropic_process">isentropic process</a> (constant entropy).
+That relation can be expressed as follows,</p>
+<div class="arithmatex">\[
+ p-p_0 = nRT_0\left(\dfrac1V\left(\dfrac{V_0}{V}\right)^{\gamma-1} - \dfrac1{V_0}\right),
+\]</div>
+<p>where <span class="arithmatex">\(p_0\)</span> is the ambient pressure, <span class="arithmatex">\(V_0\)</span> is the volume of the gas at ambient pressure,
+<span class="arithmatex">\(T_0\)</span> is the temperature of the gas at ambient pressure, <span class="arithmatex">\(p\)</span> is the current pressure, <span class="arithmatex">\(V\)</span> is the current volume,
+<span class="arithmatex">\(n\)</span> is the amount of substance (constant), <span class="arithmatex">\(R\)</span> is the gas constant and <span class="arithmatex">\(\gamma\)</span> is the
+<a href="https://en.wikipedia.org/wiki/Heat_capacity_ratio">heat capacity ratio</a> (constant).</p>
+<p>More precisely, the generalized force <span class="arithmatex">\(f\)</span> plays the role of the pressure difference, <span class="arithmatex">\(f=p_0-p\)</span>,
+while the generalized displacement plays the role of volume change, <span class="arithmatex">\(u=V-V_0\)</span>. The measure <span class="arithmatex">\(\alpha\)</span> and
+natural measure <span class="arithmatex">\(\alpha_0\)</span> are mapped to <span class="arithmatex">\(\alpha=V\)</span> and <span class="arithmatex">\(\alpha_0=V_0\)</span>, respectively. The <span class="arithmatex">\(f-u\)</span> curve is therefore given by</p>
+<div class="arithmatex">\[
+f(u) = nRT_0\left(\dfrac1{\alpha_0} - \dfrac1{u+\alpha_0}\left(\dfrac{\alpha_0}{u+\alpha_0}\right)^{\gamma-1}\right).
+\]</div>
+<p><code>ISENTROPIC(n=&lt;n_value&gt;; R=&lt;R_value&gt;; T0=&lt;T0_value&gt;; gamma=&lt;gamma_value&gt;)</code></p>
+<p>Example: <code>..., ISENTROPIC(n=1.0; R=8.3; T0=300; gamma=1.4)</code></p>
+<blockquote>
+<p>A spring is defined with an isentropic behavior. Its generalized force-displacement relation follows the behavior
+of <code>1</code> mole of an ideal gas initially at <span class="arithmatex">\(T_0\)</span>=<code>300</code>K, with <span class="arithmatex">\(\gamma\)</span>=<code>1.4</code> (heat capacity ratio of air), at constant entropy.</p>
+<figure>
+<figcaption></figcaption>
+<p><img alt="" src="https://github.com/user-attachments/assets/986d1eaf-9619-4750-924a-542f27a4c68c" width="300" /></p>
+</figure>
+</blockquote>
+<details class="question">
+<summary>Isn't the parameter <span class="arithmatex">\(\alpha_0=V_0\)</span> missing?</summary>
+<p>It seems like we are missing the parameter <span class="arithmatex">\(\alpha_0\)</span>, describing the volume <span class="arithmatex">\(V_0\)</span> at ambient pressure <span class="arithmatex">\(p_0\)</span>, in the specification.
+This is not a problem; remember that the value of <span class="arithmatex">\(\alpha_0\)</span> is
+in fact automatically set to the value of the spring measure in the state defined by <a href="../creating_the_spring_model_csv_file/#the-nodes-section">the <code>NODES</code> section</a>,
+when not provided.
+If you want to assign a value for <span class="arithmatex">\(\alpha_0\)</span>, you can do it by adding a comma followed by the <span class="arithmatex">\(\alpha_0\)</span> value.</p>
+<p>Example: <code>... , ISENTROPIC(n=1.0; R=8.3; T0=300; gamma=1.4), 1.0</code></p>
+<blockquote>
+<p>A spring is defined with an isentropic behavior. Its generalized force-displacement relation follows the behavior
+of <code>1</code> mole of an ideal gas initially at <span class="arithmatex">\(T_0\)</span>=<code>300</code>K, with <span class="arithmatex">\(\gamma\)</span>=<code>1.4</code>, at constant entropy.
+Its <em>volume</em>/measure at ambient pressure is <code>1.0</code>.</p>
+</blockquote>
+</details>
+<details class="question">
+<summary>Units?</summary>
+<p>The unit of the quantity <span class="arithmatex">\(nRT_0\)</span> should be a unit of energy;
+more precisely, it should be the unit of the generalized force <span class="arithmatex">\(f\)</span>
+multiplied by the unit of the generalized displacement <span class="arithmatex">\(u\)</span>. The heat capacity ratio <span class="arithmatex">\(\gamma\)</span> has no dimension.</p>
+</details>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A negative generalized force <span class="arithmatex">\(f&lt;0\)</span> corresponds to a compressed state
+(the pressure is greater than the ambient pressure, <span class="arithmatex">\(p&gt;p_0\)</span>). A positive generalized force <span class="arithmatex">\(f&gt;0\)</span> corresponds to
+a <em>vacuumed</em> state (the pressure is smaller than the ambient pressure, <span class="arithmatex">\(p&lt;p_0\)</span>).</p>
+</div>
+<h2 id="additional-notes">Additional notes</h2>
+<ul>
+<li>
+<p>A nonlinear behavior can be saved in a separate CSV file and used in a model file using
+<code>FROMFILE(&lt;nonlinear behavior csv file&gt;)</code></p>
+<p>Example:
+<code>..., FROMFILE('custom_nonlinear_behavior.csv')</code></p>
+<p>where the <code>custom_nonlinear_behavior.csv</code> contains, for example,</p>
+<p><code>BEZIER2(u_i=[0.21; -0.1; 3.14]; f_i=[1.0; -2.0; +3.0])</code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The natural measure <span class="arithmatex">\(\alpha_0\)</span> can optionally be specified in the CSV behavior file. For example, to set a natural measure <span class="arithmatex">\(\alpha_0=2\)</span>, we would use the following CSV behavior file:</p>
+<p><code>BEZIER2(u_i=[0.21; -0.1; 3.14]; f_i=[1.0; -2.0; +3.0]), 2.0</code>.</p>
+<p>If a natural measure <span class="arithmatex">\(\alpha_0\)</span> is also set in the CSV model file, for example,
+<code>FROMFILE('custom_nonlinear_behavior.csv'), 3.0</code>,
+it will be ignored and the natural measure remains the one specified in the CSV behavior file. In this case, the natural measure will be <code>2.0</code>, not <code>3.0</code>.</p>
+<p>If no natural measure is specified in the CSV behavior file, then the natural measure is the one specified in the CSV model file. If also not specified in CSV model file, then it will be automatically computed from the node positions as specified in <a href="../creating_the_spring_model_csv_file/#the-nodes-section">the <code>NODES</code> section</a>.</p>
+</div>
+<p>The file path to the behavior is relative to the working directory, that is, the directory from where the script is run. If the CSV behavior file lives in a subdirectory <code>path/to/behavior.csv</code> relative to the working directory, then we would use
+<code>FROMFILE('path'; 'to'; 'behavior.csv')</code></p>
+<p>To specify a CSV behavior file that would live in a subdirectory <code>relative/path/to/behavior.csv</code> relative to the CSV model file instead, we can use the keyword <code>HERE</code> that encodes the directory where the CSV model file lives (relative to the working directory) as follows:
+<code>FROMFILE(HERE; 'relative; 'path'; 'to'; 'behavior.csv')</code></p>
+</li>
+<li>
+<p>Nonlinear behaviors can be interactively created, tuned, edited, compared, copied and saved using the behavior creation graphical interface, which can be started by running the following Python script
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">springable.behavior_creation</span><span class="w"> </span><span class="kn">import</span> <span class="n">start</span>
+
+<span class="n">start</span><span class="p">()</span>
+</code></pre></div></p>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "content.tabs.link"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

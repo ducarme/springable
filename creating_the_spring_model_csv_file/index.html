@@ -1,0 +1,1173 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../many_examples/">
+      
+      
+        <link rel="next" href="../specifying_a_nonlinear_mechanical_behavior/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
+    
+    
+      
+        <title>Creating the spring model csv file - springable</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Serif:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto Serif";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="green">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#the-parameters-section" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="springable" class="md-header__button md-logo" aria-label="springable" data-md-component="logo">
+      
+  <img src="../favicon.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            springable
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Creating the spring model csv file
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ducarme/springable" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    See code on Github
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="springable" class="md-nav__button md-logo" aria-label="springable" data-md-component="logo">
+      
+  <img src="../favicon.png" alt="logo">
+
+    </a>
+    springable
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ducarme/springable" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    See code on Github
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../many_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Some examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Creating the spring model csv file
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Creating the spring model csv file
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-parameters-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The PARAMETERS section
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-nodes-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The NODES section
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-springs-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The SPRINGS section
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-angular-springs-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The ANGULAR SPRINGS section
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-area-springs-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The AREA SPRINGS section
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-path-springs-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The PATH SPRINGS section
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-distance-springs-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The DISTANCE SPRINGS section
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-loading-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The LOADING section
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-complete-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A complete example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Additional notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../specifying_a_nonlinear_mechanical_behavior/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specifying a nonlinear mechanical behavior
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuring_simulation_settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuring simulation settings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../theory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Theory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_topics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced topics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../about_and_contact/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About and contact
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-parameters-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The PARAMETERS section
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-nodes-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The NODES section
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-springs-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The SPRINGS section
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-angular-springs-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The ANGULAR SPRINGS section
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-area-springs-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The AREA SPRINGS section
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-path-springs-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The PATH SPRINGS section
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-distance-springs-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The DISTANCE SPRINGS section
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-loading-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The LOADING section
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-complete-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A complete example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Additional notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+  <h1>Creating the spring model csv file</h1>
+
+<p>The CSV file describing a valid spring model is specified as follows:</p>
+<div class="highlight"><pre><span></span><code>PARAMETERS
+&lt;parameter name&gt;, &lt;parameter value&gt;, [range]
+&lt;parameter name&gt;, &lt;parameter value&gt;, [range]
+...
+NODES
+&lt;node index&gt;, &lt;x&gt;, &lt;y&gt;, &lt;constrained x&gt;, &lt;constrained y&gt;
+&lt;node index&gt;, &lt;x&gt;, &lt;y&gt;, &lt;constrained x&gt;, &lt;constrained y&gt;
+...
+SPRINGS
+&lt;node index&gt;-&lt;node index&gt;, &lt;mechanical behavior&gt;, [natural length]
+&lt;node index&gt;-&lt;node index&gt;, &lt;mechanical behavior&gt;, [natural length]
+...
+ANGULAR SPRINGS
+&lt;node index&gt;-&lt;node index&gt;-&lt;node index&gt;, &lt;mechanical behavior&gt;, [natural angle]
+&lt;node index&gt;-&lt;node index&gt;-&lt;node index&gt;, &lt;mechanical behavior&gt;, [natural angle]
+...
+AREA SPRINGS
+&lt;node index&gt;-&lt;node index&gt;-&lt;node index&gt;-..., &lt;mechanical behavior&gt;, [natural area]
+&lt;node index&gt;-&lt;node index&gt;-&lt;node index&gt;-..., &lt;mechanical behavior&gt;, [natural area]
+...
+PATH SPRINGS
+&lt;node index&gt;-&lt;node index&gt;-&lt;node index&gt;-..., &lt;mechanical behavior&gt;, [natural length]
+&lt;node index&gt;-&lt;node index&gt;-&lt;node index&gt;-..., &lt;mechanical behavior&gt;, [natural length]
+...
+DISTANCE SPRINGS
+&lt;node index&gt;-&lt;node index&gt;-&lt;node index&gt;, &lt;mechanical behavior&gt;, [natural distance]
+&lt;node index&gt;-&lt;node index&gt;-&lt;node index&gt;, &lt;mechanical behavior&gt;, [natural distance]
+...
+LOADING
+&lt;node index&gt;, &lt;direction&gt;, &lt;force&gt;, [max displacement]
+&lt;node index&gt;, &lt;direction&gt;, &lt;force&gt;, [max displacement]
+...
+</code></pre></div>
+<p>Legend: <code>&lt;...&gt;</code>: required field, <code>[...]</code>: optional field</p>
+<p>Each section is described in details herein below.</p>
+<ul>
+<li><a href="#the-parameters-section">The <code>PARAMETERS</code> section</a></li>
+<li><a href="#the-nodes-section">The <code>NODES</code> section</a></li>
+<li><a href="#the-springs-section">The <code>SPRINGS</code> section</a></li>
+<li><a href="#the-angular-springs-section">The <code>ANGULAR SPRINGS</code> section</a></li>
+<li><a href="#the-area-springs-section">The <code>AREA SPRINGS</code> section</a></li>
+<li><a href="#the-path-springs-section">The <code>PATH SPRINGS</code> section</a></li>
+<li><a href="#the-distance-springs-section">The <code>DISTANCE SPRINGS</code> section</a></li>
+<li><a href="#the-loading-section">The <code>LOADING</code> section</a></li>
+<li><a href="#a-complete-example">A complete example</a></li>
+<li><a href="#additional-notes">Additional notes</a></li>
+</ul>
+<h4 id="the-parameters-section">The <code>PARAMETERS</code> section</h4>
+<p>The <code>PARAMETERS</code> section serves to define some parameters that can be used to in the next sections. To define a parameter, a line with the following structure is added to the section <code>PARAMETERS</code>:</p>
+<p><code>&lt;parameter name&gt;, &lt;parameter value&gt;</code>.</p>
+<ul>
+<li><code>&lt;parameter name&gt;</code> is the name of the parameter (character string <strong>without</strong> quotes).</li>
+<li><code>&lt;parameter value&gt;</code> is the value of the parameter. It can be either a float or a string (<strong>with</strong> simple quotes)</li>
+<li><code>[range]</code> (optional) is a vector of possible values the parameter can have. This field is used only when <a href="../advanced_topics/#scanning-parameters">scanning the parameter space</a>.
+The range can be specified in two different ways.<ul>
+<li>Either as a vector of n regularly-spaced values between two float.<blockquote>
+<p>Syntax: <code>[low bound; high bound; n]</code></p>
+<p>Example: <code>radius, 2.1, [2.0; 5.0; 4]</code></p>
+</blockquote>
+</li>
+<li>Either as a list of possible values.<blockquote>
+<p>Syntax: <code>{value1; value2; value3; ...}</code></p>
+<p>Example: <code>radius, 2.1, {1.0; 7.0; 8.0; 2.0}</code></p>
+</blockquote>
+</li>
+</ul>
+</li>
+</ul>
+<p>Example:
+<div class="highlight"><pre><span></span><code>PARAMETERS
+width, 2.0
+height, 1.0
+stiffness, 7.3
+</code></pre></div></p>
+<blockquote>
+<p>Three parameters - <code>width</code>, <code>height</code> and <code>stiffness</code> - are defined
+and set to values <code>2.0</code>, <code>1.0</code> and <code>7.3</code> respectively.</p>
+</blockquote>
+<h4 id="the-nodes-section">The <code>NODES</code> section</h4>
+<p>The <code>NODES</code> section serves to define the nodes composing the spring assembly, by specifying their index,
+their coordinates and the fact they are constrained or not. To define a node, a line with the following structure is added to the section <code>NODES</code>.</p>
+<p><code>&lt;node index&gt;, &lt;x&gt;, &lt;y&gt;, &lt;constrained x&gt;, &lt;constrained y&gt;</code></p>
+<ul>
+<li><code>&lt;node index&gt;</code> is a positive integer (<code>0</code>, <code>1</code>, <code>2</code>, ...) representing the index of the node being defined. Two nodes cannot have the same index.
+When nodes are defined, indices cannot be skipped (if there are four nodes in total, the indices must be <code>0</code>, <code>1</code>, <code>2</code> and <code>3</code>). The order in which the nodes are defined does not matter.</li>
+<li><code>&lt;x&gt;</code> is the horizontal coordinate of the node (float).</li>
+<li><code>&lt;y&gt;</code> is the vertical coordinate of the node (float).</li>
+<li><code>&lt;constrained x&gt;</code> is either<ul>
+<li><code>1</code> if the node cannot move horizontally,</li>
+<li><code>0</code> if the node is free to move horizontally.</li>
+</ul>
+</li>
+<li><code>&lt;constrained y&gt;</code> is either<ul>
+<li><code>1</code> if the node cannot move vertically,</li>
+<li><code>0</code> if the node is free to move vertically.</li>
+</ul>
+</li>
+</ul>
+<p>Example:
+<div class="highlight"><pre><span></span><code>NODES
+0, -width/2, 0.0, 1, 1
+1, +width/2, 0.0, 1, 1
+2, 0.0, height, 1, 0
+</code></pre></div></p>
+<blockquote>
+<p>Three nodes labelled <code>0</code>, <code>1</code> and <code>2</code> are defined at coordinates <code>(-width/2, 0.0)</code>, <code>(+width/2, 0.0)</code>, <code>(0.0, height)</code>
+respectively. Nodes <code>0</code> and <code>1</code> are constrained horizontally and vertically, while node <code>2</code> is constrained horizontally
+but free to move vertically.</p>
+</blockquote>
+<h4 id="the-springs-section">The <code>SPRINGS</code> section</h4>
+<p>The <code>SPRINGS</code> section serves to define <strong>longitudinal springs</strong>, that is, springs whose elastic energy is a function of their length.
+Each longitudinal spring is defined by the
+<strong>two nodes</strong> it connects, a <strong>mechanical behavior</strong>, and optionally its <strong>natural length</strong>,
+that is the length it has if not constrained nor loaded. If no natural length is provided, the natural length is
+automatically set to the distance between the nodes connected by the spring.</p>
+<p>The mechanical behavior describes its intrinsic axial force-displacement relation. It can be a linear behavior
+(the spring follows <a href="https://en.wikipedia.org/wiki/Hooke%27s_law">Hooke's law</a>) or a nonlinear one
+(see section <a href="../specifying_a_nonlinear_mechanical_behavior/">Specifying a nonlinear mechanical behavior</a>).</p>
+<p>To define a longitudinal spring, a line with the following structure is added to the section <code>SPRINGS</code>.</p>
+<p><code>&lt;node index&gt;-&lt;node index&gt;, &lt;mechanical behavior&gt;, [natural length]</code></p>
+<ul>
+<li><code>&lt;node index&gt;</code> is the index of one of the node connected to the spring.</li>
+<li><code>&lt;node index&gt;</code> is the index of the other node connected to the spring.</li>
+<li><code>&lt;mechanical behavior&gt;</code> is the axial mechanical behavior of the spring. To specify a <strong>linear</strong> longitudinal spring,
+the mechanical behavior is simply the <strong>spring constant</strong> (positive float).</li>
+<li><code>[natural length]</code> is the natural length of the spring connecting both nodes (positive float). 
+It is an optional parameter; if not provided the natural length of the spring element will automatically be set to the
+distance between both nodes as created in the <code>NODES</code> section.</li>
+</ul>
+<p>Example:
+<div class="highlight"><pre><span></span><code>SPRINGS
+0-2, stiffness
+1-2, stiffness
+</code></pre></div></p>
+<blockquote>
+<p>Two linear longitudinal springs are defined. Both are characterized by the spring constant value <code>stiffness</code>.
+No natural length was provided, so their natural length will be automatically set to the distance between nodes <code>0</code>
+and <code>2</code>, and between nodes <code>1</code> and <code>2</code> as defined in the section <code>NODES</code>, respectively.</p>
+</blockquote>
+<h4 id="the-angular-springs-section">The <code>ANGULAR SPRINGS</code> section</h4>
+<p>The <code>ANGULAR SPRINGS</code> section serves to define <strong>angular springs</strong>
+(also known as <a href="https://en.wikipedia.org/wiki/Torsion_spring">torsion springs</a>), that is, springs whose elastic energy is a function of an angle. They are useful when modelling mechanical systems involving elastic bending, such as flexures for example.
+Those springs are defined by specifying <strong>three nodes</strong> A, B and C,
+which together, define the angle ABC (B is the vertex of the angle). More precisely, the angle ABC is the angle by which
+the segment BA must rotate counterclockwise (about B) to align with segment BC. The angle is always between 0 and 2π.</p>
+<p>Along with its three nodes, the <strong>mechanical behavior</strong> must be specified, and optionally the natural angle of the angular
+spring (in radians). If no natural angle is provided, the natural angle is automatically set to the angle defined by the
+three specified nodes. The mechanical behavior describes its intrinsic (torque)-(angle-change) relation. It can be a linear behavior
+(the angular spring follows <a href="https://en.wikipedia.org/wiki/Hooke%27s_law">Hooke's law</a>) or a nonlinear one
+(see section <a href="../specifying_a_nonlinear_mechanical_behavior/">Specifying a nonlinear mechanical behavior</a>).</p>
+<p>To define a angular spring, a line with the following structure is added to the section <code>ANGULAR SPRINGS</code>.</p>
+<p><code>&lt;node index&gt;-&lt;node index&gt;-&lt;node index&gt;, &lt;mechanical behavior&gt;, [natural angle]</code></p>
+<ul>
+<li><code>&lt;node index&gt;</code> is the index of node A.</li>
+<li><code>&lt;node index&gt;</code> is the index of node B.</li>
+<li><code>&lt;node index&gt;</code> is the index of node C.</li>
+<li><code>&lt;mechanical behavior&gt;</code> is the angular mechanical behavior of the angular spring. To specify a <strong>linear</strong> angular spring,
+the mechanical behavior is simply the <strong>spring constant</strong> (positive float), that is the slope of its (torque)-(angle-change) curve.</li>
+<li><code>[natural angle]</code> is the natural angle of the angular spring in radians (float in [0, 2π[). 
+It is an optional parameter; if not provided the natural angle of the angular spring will automatically be set to the
+angle defined by nodes A, B and C as created in the <code>NODES</code> section.</li>
+</ul>
+<p>Example:
+<div class="highlight"><pre><span></span><code>ANGULAR SPRINGS
+0-2-1, 1.5, PI/2
+</code></pre></div></p>
+<blockquote>
+<p>A linear angular spring is defined. The torque it creates will be determined by the difference between the angle 021
+(vertex at node <code>2</code>) and its natural angle <code>PI/2</code> (90 deg). The angle-difference versus torque relation is defined
+by the spring constant set to <code>1.5</code>.
+Note that if no natural angle was specified, the natural angle would have been automatically set to the angle defined by
+the nodes <code>0</code>, <code>1</code> and <code>2</code> as defined in the section <code>NODES</code>.</p>
+</blockquote>
+<h4 id="the-area-springs-section">The <code>AREA SPRINGS</code> section</h4>
+<p>The <code>AREA SPRINGS</code> section serves to define <strong>area springs</strong>, that is, springs whose elastic energy is a function of their area. They are useful when modelling mechanical systems involving fluids and pneumatic or hydraulic components.
+Those springs are defined by specifying <span class="arithmatex">\(n\)</span> <strong>nodes</strong> (<span class="arithmatex">\(n \ge 3\)</span>), which together define the area of a
+<a href="https://en.wikipedia.org/wiki/Simple_polygon">simple polygon</a>. More precisely, the nodes are the vertices listed sequentially that form the single closed boundary of the polygon.
+The sequence of nodes should <em>not</em> be ending with the starting node. The polygon can be convex or concave, but not self-intersecting. The boundary of the polygon can be specified by listing the vertices clockwise or counterclockwise.</p>
+<p>Along with its <span class="arithmatex">\(n\)</span> nodes, the <strong>mechanical behavior</strong> must be specified, and optionally the natural area of the area
+spring. If no natural area is provided, the natural area is automatically set to the area defined by the
+n specified nodes. The mechanical behavior describes its intrinsic (2d-pressure)-(area-change) relation. It can be a linear behavior
+(the area spring follows <a href="https://en.wikipedia.org/wiki/Hooke%27s_law">Hooke's law</a>) or a nonlinear one
+(see section <a href="../specifying_a_nonlinear_mechanical_behavior/">Specifying a nonlinear mechanical behavior</a>).</p>
+<p>To define an area spring, a line with the following structure is added to the section <code>AREA SPRINGS</code>.</p>
+<p><code>&lt;node index&gt;-&lt;node index&gt;-&lt;node index&gt;-..., &lt;mechanical behavior&gt;, [natural area]</code></p>
+<ul>
+<li><code>&lt;node index&gt;</code> is the index of a first node that form the boundary of the polygon,</li>
+<li><code>&lt;node index&gt;</code> is the index of the second node, following the first node along the boundary (clockwise or counter-clockwise),</li>
+<li><code>&lt;node index&gt;</code> is the index of the third node following the second node along the boundary (clockwise or counter-clockwise),</li>
+<li><code>&lt;node index&gt;</code> ... etc.</li>
+<li><code>&lt;mechanical behavior&gt;</code> is the areal mechanical behavior of the area spring. To specify a <strong>linear</strong> area spring,
+the mechanical behavior is simply the <strong>spring constant</strong> (positive float), that is the slope of its (2d-pressure)-(area-change) curve.</li>
+<li><code>[natural area]</code> is the natural area of the area spring (float). 
+It is an optional parameter; if not provided the natural area of the area spring will automatically be set to the
+area defined by the n nodes as created in the <code>NODES</code> section.</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To define an area spring associated to a <strong><a href="https://en.wikipedia.org/wiki/Polygon_with_holes">polygon with holes</a></strong>,
+please refer to <a href="../advanced_topics/#area-spring-with-holes">Area springs with holes</a> paragraph in the <a href="../advanced_topics/">Advanced topics</a>.</p>
+</div>
+<p>Example:
+<div class="highlight"><pre><span></span><code>AREA SPRINGS
+0-2-1, 3.0
+</code></pre></div></p>
+<blockquote>
+<p>A linear area spring is defined. The 2d-pressure it creates will be determined by the difference between the area of the polygon 0210
+and its natural area. The area-change versus 2d-pressure relation is defined
+by the spring constant set to <code>3.0</code>.
+Here, no natural area was provided, so the natural area will be automatically set to
+the area of the polygon defined by the nodes <code>0</code>, <code>2</code>, and <code>1</code> as defined in the section <code>NODES</code>.</p>
+</blockquote>
+<h4 id="the-path-springs-section">The <code>PATH SPRINGS</code> section</h4>
+<p>The <code>PATH SPRINGS</code> section serves to define <strong>path springs</strong>, that is, springs whose elastic energy is a function of their <a href="https://en.wikipedia.org/wiki/Polygonal_chain">polygonal chain</a>'s length.
+They are useful when modelling mechanical systems involving cable-driven actuation or <a href="https://en.wikipedia.org/wiki/Pulley">pulleys</a>.
+Those springs are defined by specifying  <span class="arithmatex">\(n\)</span> <strong>nodes</strong> (<span class="arithmatex">\(n \ge 2\)</span>), which together define a polygonal chain. More precisely, the nodes are the vertices listed sequentially that form the chain.
+The sequence of nodes does not need to (but can) be closed (first and last node can be different or identical).</p>
+<p>Along with its <span class="arithmatex">\(n\)</span> nodes, the <strong>mechanical behavior</strong> must be specified, and optionally the natural length of the path
+spring. If no natural length is provided, the natural length is automatically set to the length defined by the
+n specified nodes. The mechanical behavior describes its intrinsic tension-displacement relation. It can be a linear behavior
+(the path spring follows <a href="https://en.wikipedia.org/wiki/Hooke%27s_law">Hooke's law</a>) or a nonlinear one
+(see section <a href="../specifying_a_nonlinear_mechanical_behavior/">Specifying a nonlinear mechanical behavior</a>).</p>
+<p>To define a path spring, a line with the following structure is added to the section <code>PATH SPRINGS</code>.</p>
+<p><code>&lt;node index&gt;-&lt;node index&gt;-&lt;node index&gt;-..., &lt;mechanical behavior&gt;, [natural length]</code></p>
+<ul>
+<li><code>&lt;node index&gt;</code> is the index of a first node that form the polygonal chain,</li>
+<li><code>&lt;node index&gt;</code> is the index of the second node, following the first node along the chain,</li>
+<li><code>&lt;node index&gt;</code> is the index of the third node following the second node along the chain,</li>
+<li><code>&lt;node index&gt;</code> ... etc.</li>
+<li><code>&lt;mechanical behavior&gt;</code> is the mechanical behavior of the path spring. To specify a <strong>linear</strong> path spring,
+the mechanical behavior is simply the <strong>spring constant</strong> (positive float), that is the slope of its tension-displacement curve.</li>
+<li><code>[natural length]</code> is the natural length of the path spring (float). 
+It is an optional parameter; if not provided the natural length of the path spring will automatically be set to the
+length defined by the n nodes as created in the <code>NODES</code> section.</li>
+</ul>
+<p>Example:
+<div class="highlight"><pre><span></span><code>PATH SPRINGS
+0-2-1, 1.0
+</code></pre></div></p>
+<blockquote>
+<p>A linear path spring is defined. The tension it creates will be determined by the difference between its current and natural lengths.
+The displacement versus tension relation is defined by the spring constant set to <code>1.0</code>.
+Here, no natural length was provided, so the natural length will be automatically set to
+the length of the polygonal chain defined by the nodes <code>0</code>, <code>2</code>, and <code>1</code> as defined in the section <code>NODES</code>.</p>
+</blockquote>
+<h4 id="the-distance-springs-section">The <code>DISTANCE SPRINGS</code> section</h4>
+<p>The <code>DISTANCE SPRINGS</code> section serves to define <strong>distance springs</strong>, that is, springs whose elastic energy is a function of the signed distance between a point and an infinite line.
+They are useful when modelling mechanical systems involving contact.
+Those springs are defined by specifying <strong>3 nodes</strong>. The first node is the point while the last two nodes define the line. If the node is on the left of the vector formed by the last two nodes, the distance is positive, else negative.</p>
+<p>Along with its three nodes, the <strong>mechanical behavior</strong> must be specified, and optionally the natural length of the distance
+spring. If no natural length is provided, the natural length is automatically set to the length defined by the
+three specified nodes. The mechanical behavior describes its intrinsic force-displacement relation. It can be a linear behavior
+(the distance spring follows <a href="https://en.wikipedia.org/wiki/Hooke%27s_law">Hooke's law</a>) or a nonlinear one
+(see section <a href="../specifying_a_nonlinear_mechanical_behavior/">Specifying a nonlinear mechanical behavior</a>. To model contact, it is convenient to use a <a href="../specifying_a_nonlinear_mechanical_behavior/#contact-behavior">CONTACT</a> nonlinear behavior.</p>
+<p>To define a distance spring, a line with the following structure is added to the section <code>DISTANCE SPRINGS</code>:</p>
+<p><code>&lt;node index&gt;-&lt;node index&gt;-&lt;node index&gt;, &lt;mechanical behavior&gt;, [natural length]</code>.</p>
+<ul>
+<li><code>&lt;node index&gt;</code> is the index of a first node (the point),</li>
+<li><code>&lt;node index&gt;</code> is the index of the second node (to form the line),</li>
+<li><code>&lt;node index&gt;</code> is the index of the third node (to form the line),</li>
+<li><code>&lt;mechanical behavior&gt;</code> is the mechanical behavior of the distance spring. To specify a <strong>linear</strong> distance spring,
+the mechanical behavior is simply the <strong>spring constant</strong> (positive float), that is the slope of its force-displacement curve.</li>
+<li><code>[natural length]</code> is the natural length of the distance spring (float). 
+It is an optional parameter; if not provided the natural length of the distance spring will automatically be set to the distance defined by the three nodes as created in the <code>NODES</code> section.</li>
+</ul>
+<p>Example:
+<div class="highlight"><pre><span></span><code>DISTANCE SPRINGS
+0-2-1, CONTACT(f0=3.0; uc=0.02; delta=0.0)
+</code></pre></div></p>
+<blockquote>
+<p>A distance spring is defined. The force it generates is described by a <a href="#contact-behavior">CONTACT</a> nonlinear behavior. In this case, the repulsion force remains 0 as long as the signed distance is larger than <code>delta=0.0</code>. Once the signed distance is lower than <code>delta=0.0</code>, the repulsion force will grow cubically with the compression displacement, reaching <code>f0=3.0</code> when the distance is <code>delta-uc=-0.02</code>.</p>
+</blockquote>
+<h4 id="the-loading-section">The <code>LOADING</code> section</h4>
+<p>The <code>LOADING</code> section serves to set the forces applied on some specific nodes along a specific direction (horizontal or vertical).
+To define a horizontal or vertical force on a node, a line with the following structure is added to the section <code>LOADING</code>.</p>
+<p><code>&lt;node index&gt;, &lt;direction&gt;, &lt;force&gt;, [max displacement]</code></p>
+<ul>
+<li><code>&lt;node index&gt;</code> is the index of the node on which the force is applied.</li>
+<li><code>&lt;direction&gt;</code> is either:</li>
+<li><code>X</code> for a horizontal force,</li>
+<li><code>Y</code> for a vertical force.</li>
+<li><code>&lt;force&gt;</code> the signed amplitude of the force (negative or positive float)</li>
+<li><code>[max displacement]</code> is the maximum displacement of the specified node along the specified direction (positive float).
+Beyond this value, the simulation will finish (even if the force has not been reached yet).
+It is an optional parameter; if not provided, there is no maximum displacement at which the simulation can finish
+prematurely (it is the same as setting the maximum displacement to a value close to infinity).</li>
+</ul>
+<p>Example:
+<div class="highlight"><pre><span></span><code>LOADING
+2, Y, -10.0, -3.0
+</code></pre></div></p>
+<blockquote>
+<p>A force is applied on node <code>2</code>, along the <code>Y</code>-direction (vertical).
+The magnitude of the force is <code>-10</code> (it is a negative value, so the force points downward).
+The maximum displacement is set to <code>-3.0</code>, meaning that if node <code>2</code> is displaced downward by more that <code>3.0</code>,
+the simulation is assumed to have completed.</p>
+</blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>More complex loading can be specified (preloading, multiple loading steps, blocking nodes).
+Please refer to <a href="#complex-loading-descriptions">Complex loading descriptions</a> paragraph in the <a href="#advanced-topics">Advanced topics</a> for more details.</p>
+</div>
+<h4 id="a-complete-example">A complete example</h4>
+<p>This example describes a spring structure composed of two inclined linear longitudinal springs connected in the center,
+and hinging through a linear angular spring.
+<div class="highlight"><pre><span></span><code># spring model example (this is a comment)
+
+PARAMETERS
+width, 2.0
+height, 1.0
+stiffness, 7.3
+
+NODES
+0, -width/2, 0.0, 1, 1
+1, +width/2, 0.0, 1, 1
+2, 0.0, height, 1, 0
+
+SPRINGS
+0-2, stiffness
+1-2, stiffness
+ANGULAR SPRINGS
+0-2-1, 1.5, PI/2
+
+LOADING
+2, Y, -10.0, -3.0
+</code></pre></div></p>
+<h4 id="additional-notes">Additional notes</h4>
+<ul>
+<li>Empty lines have no semantic meaning. Adding/removing some will not change the spring model.</li>
+<li><code>#</code> is used to indicate a line comment. Each line starting with <code>#</code> will be ignored when reading the file.</li>
+<li>Parameters can be combined in mathematical expression in all sections but <code>PARAMETERS</code>. Supported operations include
+<code>(...)</code>, <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>SIN(...)</code> (sine), <code>COS(...)</code> (cosine), <code>TAN(...)</code> (tangent), <code>SQRT(...)</code> (square root). 
+Value π can be used without defining it in the section <code>PARAMETERS</code> with the keyword <code>PI</code>.</li>
+<li>If your spring assembly does not include a certain type of spring, feel free to leave the corresponding section empty (header only)
+or to omit it completely (no header and no content).</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "content.tabs.link"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
