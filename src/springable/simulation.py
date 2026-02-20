@@ -106,25 +106,16 @@ def simulate_model(model_path, save_dir=None,
 
 
 def scan_parameter_space(model_path, save_dir=None, scanning_mode='separate',  # 'separate', 'together'
-                         solver_settings_path=None, graphics_settings_path=None, print_model_file=False,
+                         solver_settings: str | dict = None,
+                         graphics_settings: str | tuple[dict, dict, dict, dict] | list[dict] = None,
+                         print_model_file=False,
                          postprocessing=None) -> str:
-    if solver_settings_path is not None:
-        solver_settings = io.read_solver_settings_file(solver_settings_path)
-    else:
-        solver_settings = {}
 
     general_options = GeneralOptions()
-    if graphics_settings_path is not None:
-        graphics_settings = io.read_graphics_settings_file(graphics_settings_path)
-        (custom_general_options,
-         custom_plot_options,
-         custom_animation_options,
-         custom_assembly_appearance) = graphics_settings
-    else:
-        (custom_general_options,
-         custom_plot_options,
-         custom_animation_options,
-         custom_assembly_appearance) = {}, {}, {}, {}
+    (custom_general_options,
+     custom_plot_options,
+     custom_animation_options,
+     custom_assembly_appearance) = io.load_graphics_settings(graphics_settings)
     general_options.update(**custom_general_options)
 
     # CREATE MAIN DIRECTORY WHERE ALL SIMULATIONS WILL BE SAVED
@@ -134,14 +125,22 @@ def scan_parameter_space(model_path, save_dir=None, scanning_mode='separate',  #
         save_dir = io.mkdir(os.path.splitext(os.path.basename(model_path))[0])
     else:
         save_dir = io.mkdir(save_dir)
+
+    io.copy_model_file(save_dir, model_path)
+    
     model_drawings_dir = None
     if general_options.generate_all_model_drawings:
         model_drawings_dir = io.mkdir(os.path.join(save_dir, 'all_model_drawings'))
-    io.copy_model_file(save_dir, model_path)
-    if solver_settings_path is not None:
-        io.copy_solver_settings_file(save_dir, solver_settings_path)
-    if graphics_settings_path is not None:
-        io.copy_graphics_settings_file(save_dir, graphics_settings_path)
+
+    if isinstance(solver_settings, str):
+        io.copy_solver_settings_file(save_dir, solver_settings)
+    elif isinstance(solver_settings, dict):
+        io.write_solver_settings(solver_settings, save_dir)
+            
+    if isinstance(graphics_settings, str):
+        io.copy_graphics_settings_file(save_dir, graphics_settings)
+    elif isinstance(graphics_settings, (tuple, list)):
+        io.write_graphics_settings(graphics_settings, save_dir)
 
     # READ DEFAULT AND DESIGN PARAMETERS
     if print_model_file:
@@ -164,6 +163,7 @@ def scan_parameter_space(model_path, save_dir=None, scanning_mode='separate',  #
 
     all_sim_names = []
     par_name_to_sim_names = {}
+    solving_durations = {}
     if scanning_mode == 'separate':
         cnt = 0
         nb_simulations = sum([design_parameter_data[par_name]['nb samples'] for par_name in design_parameter_names])
@@ -192,6 +192,7 @@ def scan_parameter_space(model_path, save_dir=None, scanning_mode='separate',  #
                 design_parameters = {design_parameter_name: parameters[design_parameter_name]
                                      for design_parameter_name in design_parameter_names}
                 io.write_design_parameters(design_parameters, subsave_dir)
+                solving_durations[sim_name] =  res.get_solving_process_info()['duration (s)']
 
                 # mapping design parameters to where results are saved
                 par_name_to_sim_names[design_parameter_name].append(sim_name)
@@ -224,6 +225,7 @@ def scan_parameter_space(model_path, save_dir=None, scanning_mode='separate',  #
             # saving
             save_results(res, subsave_dir)
             io.write_design_parameters(design_parameters, subsave_dir)
+            solving_durations[sim_name] = res.get_solving_process_info()['duration (s)']
 
             # mapping design parameters to where results are saved
             all_sim_names.append(sim_name)
@@ -258,6 +260,7 @@ def scan_parameter_space(model_path, save_dir=None, scanning_mode='separate',  #
             # saving
             save_results(res, subsave_dir)
             io.write_design_parameters(design_parameters, subsave_dir)
+            solving_durations[sim_name] =  res.get_solving_process_info()['duration (s)']
 
             # mapping design parameters to where results are saved
             all_sim_names.append(sim_name)
@@ -267,7 +270,9 @@ def scan_parameter_space(model_path, save_dir=None, scanning_mode='separate',  #
         'MODEL_FILENAME': os.path.basename(model_path),
         'ALL_SIM_NAMES': all_sim_names,
         'SCANNING_MODE': scanning_mode,
-        'PARAMETER_NAME_TO_SIM_NAMES_MAPPING': par_name_to_sim_names
+        'PARAMETER_NAME_TO_SIM_NAMES_MAPPING': par_name_to_sim_names,
+        'SOLVING_DURATION_IN_SECONDS': solving_durations,
+        'TOTAL_SOLVING_DURATION_IN_SECONDS': sum(solving_durations.values()),
     }
     io.write_scanning_general_info(general_info, save_dir)
 

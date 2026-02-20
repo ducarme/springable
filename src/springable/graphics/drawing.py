@@ -542,7 +542,7 @@ class NodeDrawing(Drawing):
                                                    markersize=6 * self._aa.node_size,
                                                    markerfacecolor=self._aa.node_color,
                                                    markeredgecolor=self._aa.node_edgecolor,
-                                                   markeredgewidth=self._aa.node_edgewidth*0.75)[0]
+                                                   markeredgewidth=self._aa.node_edgewidth*0.875)[0]
 
         self._node_graphic = self._ax.plot([self._node.get_x()], [self._node.get_y()], zorder=5.0,
                                            marker=marker,
