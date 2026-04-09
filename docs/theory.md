@@ -16,7 +16,7 @@ The complete theory, the algorithm and all the derived equations are available i
 If `springable` or the **concept of flexel** has been useful for your work, your research or your projects, we strongly encourage you to cite our paper
 
 
-> Ducarme, P., Weber, B., van Hecke, M., & Overvelde, J. T. B. (2025). *Flexel ecosystem: Simulating mechanical systems from entities with arbitrarily complex mechanical responses*. arXiv. [https://doi.org/10.48550/arXiv.2510.19741](https://doi.org/10.48550/arXiv.2510.19741)
+> Ducarme, P., Weber, B., van Hecke, M., & Overvelde, J. T. B. (2026). *Flexel ecosystem: Simulating mechanical systems made from entities with arbitrarily complex mechanical responses*. EML (accepted). [https://doi.org/10.1016/j.eml.2026.102476](https://doi.org/10.1016/j.eml.2026.102476)
 
 
 ```bib
