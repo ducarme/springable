@@ -1,0 +1,40 @@
+PARAMETERS
+nb_segments, 10
+hinge_stiffness, 3.0
+segment_stiffness, 4.0
+diameter, 30.0
+NODES
+0, diameter/2*COS(-0*PI/nb_segments), diameter/2*SIN(-0*PI/nb_segments), 1, 1
+1, diameter/2*COS(-1*PI/nb_segments), diameter/2*SIN(-1*PI/nb_segments), 0, 0
+2, diameter/2*COS(-2*PI/nb_segments), diameter/2*SIN(-2*PI/nb_segments), 0, 0
+3, diameter/2*COS(-3*PI/nb_segments), diameter/2*SIN(-3*PI/nb_segments), 0, 0
+4, diameter/2*COS(-4*PI/nb_segments), diameter/2*SIN(-4*PI/nb_segments), 0, 0
+5, diameter/2*COS(-5*PI/nb_segments), diameter/2*SIN(-5*PI/nb_segments), 0, 0
+6, diameter/2*COS(-6*PI/nb_segments), diameter/2*SIN(-6*PI/nb_segments), 0, 0
+7, diameter/2*COS(-7*PI/nb_segments), diameter/2*SIN(-7*PI/nb_segments), 0, 0
+8, diameter/2*COS(-8*PI/nb_segments), diameter/2*SIN(-8*PI/nb_segments), 0, 0
+9, diameter/2*COS(-9*PI/nb_segments), diameter/2*SIN(-9*PI/nb_segments), 0, 0
+10, diameter/2*COS(-10*PI/nb_segments), diameter/2*SIN(-10*PI/nb_segments), 1, 1
+SPRINGS
+0-1, 0.98*segment_stiffness
+1-2, 0.97*segment_stiffness
+2-3, 0.99*segment_stiffness
+3-4, segment_stiffness
+4-5, 0.99*segment_stiffness
+5-6, 0.99*segment_stiffness
+6-7, 0.97*segment_stiffness
+7-8, 0.95*segment_stiffness
+8-9, 0.96*segment_stiffness
+9-10, 0.97*segment_stiffness
+ANGULAR SPRINGS
+0-1-2, hinge_stiffness
+1-2-3, hinge_stiffness
+2-3-4, hinge_stiffness
+3-4-5, hinge_stiffness
+4-5-6, hinge_stiffness
+5-6-7, hinge_stiffness
+6-7-8, hinge_stiffness
+7-8-9, hinge_stiffness
+8-9-10, hinge_stiffness
+LOADING
+5, Y, 5.0, 2*diameter
