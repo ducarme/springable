@@ -1,4 +1,4 @@
-If `springable` or the [concept of flexel](theory/) has been useful for your work, your research or your projects, we strongly encourage you to cite our paper
+If `springable` or the [concept of flexel](theory/) has been useful for your work, your research or your projects, we strongly encourage you to cite our paper below. Thank you!
 
 
 > Ducarme, P., Weber, B., van Hecke, M., & Overvelde, J. T. B. (2026). *Flexel ecosystem: Simulating mechanical systems made from entities with arbitrarily complex mechanical responses*. Extreme Mechanics Letters. [https://doi.org/10.1016/j.eml.2026.102476](https://doi.org/10.1016/j.eml.2026.102476)

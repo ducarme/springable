@@ -11,7 +11,11 @@ For a longitudinal spring, that curve will be interpreted as a *force-displaceme
 
 
 Multiple types of intrinsic mechanical behavior can be specified in the [spring model CSV file](creating_the_spring_model_csv_file.md).
-The faster way to get familiar with them is by running the **behavior creation graphical user interface**. To do that create the following python script
+
+!!! note
+    The complete mathematical formulation of the behaviors -- alongside the derived equations and some detailed examples -- is provided in the supplementary information document under Section S4 ([PDF here](https://ars.els-cdn.com/content/image/1-s2.0-S2352431626000374-mmc5.pdf)).
+
+The faster way to get familiar with the possible behaviors is by running the **behavior creation graphical user interface**. To do that create the following python script
 
 ```python
 """
