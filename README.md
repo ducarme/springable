@@ -51,7 +51,6 @@ from springable.discover import show_examples
 show_examples()
 ```
 
-
 ## How to use
 
 ### Running a simulation
@@ -87,20 +86,16 @@ Example to learn how to use the package springable
 """
 import springable.simulation as ss
 
-ss.simulate_model(model_path='my_spring_model.csv', save_dir='my_simulation_result')
+ss.simulate_model(model_path='my_spring_model.csv')
 ```
 and save it under the name - let's say - `my_first_spring_simulation.py`
 
-The function `ss.simulate_model()` takes in two arguments:
-* The `model_path` argument is the path leading to the [CSV file](https://en.wikipedia.org/wiki/Comma-separated_values)
+The function `ss.simulate_model()` takes the `model_path` argument. It is the path leading to the [CSV file](https://en.wikipedia.org/wiki/Comma-separated_values)
 that describes the model you want to simulate. In this case, we used the CSV file `my_spring_model.csv` that we have just created.
-* The `save_dir` argument is simply the name of the folder under which the simulation results will be saved. It should not exist yet; it will be created automatically when we run the script.
-It is an optional argument, if not specified, a folder will be created automatically in the working directory to store the result files.
 
 Finally, we run the Python script. This can be done in the terminal by simply executing
 
     python my_first_spring_simulation.py
-
 
 
 >[!TIP]
@@ -115,15 +110,11 @@ If `springable` or the [concept of flexel](https://paulducarme.com/springable/th
 
 Thanks in advance!
 
-
-
-
 ## Documentation
 The full documentation is available on our website [https://ducarme.github.io/springable/](https://ducarme.github.io/springable/).
 
 > [!TIP]
-> You can find the formal descriptions of the equations, the algorithm and the model file format (along with many examples) are provided in the supplementary info document (freely available as PDF [here](https://ars.els-cdn.com/content/image/1-s2.0-S2352431626000374-mmc5.pdf)).
-
+> You can find the formal descriptions of the equations, the algorithm and the model file format (along with many examples) in the supplementary info document (freely available as PDF [here](https://ars.els-cdn.com/content/image/1-s2.0-S2352431626000374-mmc5.pdf)).
 
 Herein below, the essentials!
 
