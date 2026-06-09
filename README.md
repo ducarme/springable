@@ -119,7 +119,11 @@ Thanks in advance!
 
 
 ## Documentation
-The full documentation is available on our website [https://ducarme.github.io/springable/](https://ducarme.github.io/springable/)
+The full documentation is available on our website [https://ducarme.github.io/springable/](https://ducarme.github.io/springable/).
+
+> [!TIP]
+> You can find the formal descriptions of the equations, the algorithm and the model file format (along with many examples) are provided in the supplementary info document (freely available as PDF [here](https://ars.els-cdn.com/content/image/1-s2.0-S2352431626000374-mmc5.pdf)).
+
 
 Herein below, the essentials!
 
