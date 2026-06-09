@@ -59,7 +59,7 @@ class GUIEventHandler:
     def print_behaviors(self):
         if print_messages:
             for name, behavior in self._behaviors.items():
-                print(f'{name}: {behavior_to_text(behavior, fmt='.2E', full_name=True, specify_natural_measure=True)}',
+                print(f"{name}: {behavior_to_text(behavior, fmt='.2E', full_name=True, specify_natural_measure=True)}",
                       flush=True)
 
     def connect_to_notebook(self, behavior_notebook):

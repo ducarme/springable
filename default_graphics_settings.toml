@@ -175,7 +175,6 @@ hysteron_state_txt_color = "#101010"
 show_forces = true
 hide_low_preloading_forces = false  # low forces are defined by parameter 'low_preloading_force_threshold'
 low_preloading_force_threshold = 0.0  # preloading load with magnitude below this value will not be depicted if 'hide_low_preloading_forces' is true.
-force_vector_scaling = 1.0
 spring_style = "simple"  # "simple", "elegant", "line"
 spring_nb_coils = 4  # has no effect if "spring_style" = "line"
 spring_aspect = 0.4  # is only used when "spring_style" = "elegant"
@@ -208,8 +207,8 @@ distance_spring_line_default_color = '#CECECE'
 paint_distance_spring_line_with_default_color = false
 # if true, the line from which the distance is measured will be depicted with its default color, if false its color will match the one from the distance line
 node_style = "elegant"  # "minimalist", "simple", "elegant"
-node_size = 5.
-node_color = "#101010"
+node_size = 5.0
+node_color = "#cecece"
 node_edgecolor = "#101010"
 node_edgewidth = 1.0
 show_node_numbers = false
@@ -221,6 +220,6 @@ force_vector_style = 'basic'
 preload_force_opacity = 0.65
 preload_force_default_color = '#cecece'
 force_default_color = '#000000'
-force_vector_length_scaling = 1.0
+force_vector_scaling = 1.0
 force_vector_connection = "tail"
 force_vector_linewidth = 1.0  # only has an effect if 'force_vector_style' is 'basic'
