@@ -112,10 +112,10 @@ respectively. Nodes `0` and `1` are constrained horizontally and vertically, whi
 but free to move vertically.
 
 ### The different spring sections
-Below the `NODES` section follows multiple sections that describe the elements (aka springs, aka flexels) that couple the nodes. Each section describes elements that share the same geometry (segment = longitudinal springs, angle = angular springs, rea = area springs, etc).
+Below the `NODES` section follows multiple sections that describe the elements (aka springs, aka flexels) that connect and couple the nodes together. Each section describes elements that share the same geometry (segment = longitudinal springs, angle = angular springs, area = area springs, etc).
 
 !!! note
-    The complete mathematical description of the different spring geometries -- along with many examples -- is provided in the supplementary information document under Section S4 ([PDF here](https://ars.els-cdn.com/content/image/1-s2.0-S2352431626000374-mmc5.pdf)).
+    The complete mathematical description of the different spring geometries -- along with many examples -- is provided in the supplementary information document under Section S3 (formulation) and S6 (examples) ([PDF here](https://ars.els-cdn.com/content/image/1-s2.0-S2352431626000374-mmc5.pdf)).
 
 #### The `SPRINGS` section
 The `SPRINGS` section serves to define **longitudinal springs**, that is, springs whose elastic energy is a function of their length.

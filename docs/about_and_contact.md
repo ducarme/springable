@@ -11,9 +11,11 @@ Acknowledgment:
   * The beautiful and welcoming city of [Amsterdam](https://en.wikipedia.org/wiki/Amsterdam)
 
 ### Cite us!
-If `springable` or the [concept of flexel](theory) has been useful for your work, your research or your projects, we strongly encourage you to cite our paper:
+If `springable` or the [concept of flexel](theory.md) has been useful for your work, your research or your projects, we strongly encourage you to cite our paper:
 
-> Ducarme, P., Weber, B., van Hecke, M., & Overvelde, J. T. B. (2026). *Flexel ecosystem: Simulating mechanical systems made from entities with arbitrarily complex mechanical responses*. Extreme Mechanics Letters. [https://doi.org/10.1016/j.eml.2026.102476](https://doi.org/10.1016/j.eml.2026.102476) Thanks!
+> Ducarme, P., Weber, B., van Hecke, M., & Overvelde, J. T. B. (2026). *Flexel ecosystem: Simulating mechanical systems made from entities with arbitrarily complex mechanical responses*. Extreme Mechanics Letters. [https://doi.org/10.1016/j.eml.2026.102476](https://doi.org/10.1016/j.eml.2026.102476)
+
+Thanks!
 
 ### Found a bug? Feature ideas? Questions?
 You can share it via [https://github.com/ducarme/springable/issues](https://github.com/ducarme/springable/issues)
