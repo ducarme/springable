@@ -83,7 +83,7 @@ stiffness, 7.3
 >Three parameters - `width`, `height` and `stiffness` - are defined
 > and set to values `2.0`, `1.0` and `7.3` respectively.
 
-#### The `NODES` section
+### The `NODES` section
 The `NODES` section serves to define the nodes composing the spring assembly, by specifying their index,
 their coordinates and the fact they are constrained or not. To define a node, a line with the following structure is added to the section `NODES`.
 
@@ -299,7 +299,7 @@ DISTANCE SPRINGS
 >A distance spring is defined. The force it generates is described by a [CONTACT](#contact-behavior) nonlinear behavior. In this case, the repulsion force remains 0 as long as the signed distance is larger than `delta=0.0`. Once the signed distance is lower than `delta=0.0`, the repulsion force will grow cubically with the compression displacement, reaching `f0=3.0` when the distance is `delta-uc=-0.02`.
 
 
-#### The `LOADING` section
+### The `LOADING` section
 The `LOADING` section serves to set the forces applied on some specific nodes along a specific direction (horizontal or vertical).
 To define a horizontal or vertical force on a node, a line with the following structure is added to the section `LOADING`.
 
