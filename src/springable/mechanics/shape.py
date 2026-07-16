@@ -8,7 +8,6 @@ class Shape:
     MEASURE = 0
     MEASURE_AND_JACOBIAN = 1
     MEASURE_JACOBIAN_AND_HESSIAN = 2
-    _DIMENSION = None
 
     def __init__(self, *nodes: Node):
         self._nodes = nodes
@@ -41,17 +40,12 @@ class Shape:
     def __sub__(self, other):
         return self + (-other)
     
-    @classmethod
-    def get_dimension(cls) -> int:
-        if cls._DIMENSION is None:
-            print(f'No dimension has been assigned to shape type "{cls.__name__}". Dimension will default to 1.')
-            return 1
-        return cls._DIMENSION
-
+    def get_dimension(self) -> int:
+        print(f'No dimension has been assigned to shape type "{type(self).__name__}". Dimension will default to 1.')
+        return 1
 
 class SegmentLength(Shape):
     MIN_LENGTH_ALLOWED = 1e-6
-    _DIMENSION = 1
 
     # constant matrix used to compute the hessian of the transformation
     _a = np.array([[1., 0., -1., 0.],
@@ -87,6 +81,9 @@ class SegmentLength(Shape):
         if output_mode == Shape.MEASURE_JACOBIAN_AND_HESSIAN:
             return length, dldq, d2ldq2
         raise ValueError("Unknown mode")
+    
+    def get_dimension(self) -> int:
+        return 1
 
     @staticmethod
     def calculate_length(x1, y1, x2, y2):
@@ -100,7 +97,6 @@ class DistanceBetweenTwoSegments(Shape):
 class Angle(Shape):
     MIN_ANGLE_ALLOWED = 0.05 * np.pi / 180.0
     MAX_ANGLE_ALLOWED = 2 * np.pi - MIN_ANGLE_ALLOWED
-    _DIMENSION = 0
 
     # constant matrices used to compute the hessian of the transformation
     _d2Xdq2 = np.array([[0, 0, -1, 0, 1, 0],
@@ -172,6 +168,9 @@ class Angle(Shape):
         if output_mode == Shape.MEASURE_JACOBIAN_AND_HESSIAN:
             return theta, d0dq, d20dq2
         raise ValueError("Unknown mode")
+    
+    def get_dimension(self) -> int:
+        return 0
 
     @staticmethod
     def calculate_angle(x0, y0, x1, y1, x2, y2) -> float:
@@ -193,7 +192,6 @@ class Angle(Shape):
 
 
 class SignedArea(Shape):
-    _DIMENSION = 2
     def __init__(self, *nodes):
         if len(nodes) < 3:
             raise ValueError('At least three nodes are required to define an area')
@@ -222,6 +220,9 @@ class SignedArea(Shape):
             return signed_area, jacobian_signed_area, self._hessian_signed_area
         else:
             raise ValueError('Unknown mode')
+        
+    def get_dimension(self) -> int:
+        return 2
 
     @staticmethod
     def calculate_signed_area(coordinates):
@@ -255,7 +256,6 @@ class Area(SignedArea):
 
 class SquaredDistancePointSegment(Shape):
     MIN_SQUARED_DIST_ALLOWED = 1e-12
-    _DIMENSION = 2
 
     _d2v10v10_dq2 = np.array([[2.0, 0.0, -2.0, 0.0, 0.0, 0.0],
                               [0.0, 2.0, 0.0, -2.0, 0.0, 0.0],
@@ -359,6 +359,8 @@ class SquaredDistancePointSegment(Shape):
 
             else:
                 raise ValueError('Unknown mode')
+    def get_dimension(self) -> int:
+        return 2
 
 
 class CompoundShape(Shape):
@@ -381,7 +383,6 @@ class CompoundShape(Shape):
         return self._shapes
 
 class SignedXDist(Shape):
-    _DIMENSION = 1
     def __init__(self, node0: Node, node1: Node):
         super().__init__(node0, node1)
 
@@ -402,9 +403,11 @@ class SignedXDist(Shape):
 
         else:
             raise ValueError('Unknown mode')
+    
+    def get_dimension(self) -> int:
+        return 1
 
 class SignedXDistPointToMid(Shape):
-    _DIMENSION = 1
     def __init__(self, node0: Node, node1: Node, node2):
         super().__init__(node0, node1, node2)
 
@@ -426,6 +429,9 @@ class SignedXDistPointToMid(Shape):
         else:
             raise ValueError('Unknown mode')
         
+    def get_dimension(self) -> int:
+        return 1
+        
 class SignedXDistMidToPoint(SignedXDistPointToMid):
 
     def compute(self, output_mode) \
@@ -437,7 +443,6 @@ class SignedXDistMidToPoint(SignedXDistPointToMid):
             return -out
 
 class SignedYDist(Shape):
-    _DIMENSION = 1
     def __init__(self, node0: Node, node1: Node):
         super().__init__(node0, node1)
 
@@ -459,8 +464,10 @@ class SignedYDist(Shape):
         else:
             raise ValueError('Unknown mode')
         
+    def get_dimension(self) -> int:
+        return 1
+        
 class SignedYDistPointToMid(Shape):
-    _DIMENSION = 1
     def __init__(self, node0: Node, node1: Node, node2):
         super().__init__(node0, node1, node2)
 
@@ -482,6 +489,9 @@ class SignedYDistPointToMid(Shape):
         else:
             raise ValueError('Unknown mode')
         
+    def get_dimension(self) -> int:
+        return 1
+        
 class SignedYDistMidToPoint(SignedYDistPointToMid):
 
     def compute(self, output_mode) \
@@ -493,7 +503,6 @@ class SignedYDistMidToPoint(SignedYDistPointToMid):
             return -out
 
 class DistancePointLine(CompoundShape):
-    _DIMENSION = 1
 
     def __init__(self, node0: Node, node1: Node, node2: Node):
         super().__init__(Area(node0, node1, node2), SegmentLength(node1, node2))
@@ -539,13 +548,15 @@ class DistancePointLine(CompoundShape):
 
         else:
             raise ValueError('Unknown mode')
+        
+    def get_dimension(self) -> int:
+        return 1
 
 
 class SignedDistancePointLine(CompoundShape):
     """ Shape metric that computes the signed distance between a point and a line.
     The line is specified as two nodes forming a vector. If the point is on the left of the vector,
     the distance is positive else negative. """
-    _DIMENSION = 1
 
     def __init__(self, node0: Node, node1: Node, node2: Node):
         super().__init__(SignedArea(node0, node1, node2), SegmentLength(node1, node2))
@@ -591,6 +602,9 @@ class SignedDistancePointLine(CompoundShape):
 
         else:
             raise ValueError('Unknown mode')
+        
+    def get_dimension(self) -> int:
+        return 1
 
 
 class Sum(CompoundShape):
@@ -624,6 +638,10 @@ class Sum(CompoundShape):
             local_indices = self._shape_local_dof_indices[_shape]
             hessian[np.ix_(local_indices, local_indices)] += shape_hessian
         return measure, jacobian, hessian
+    
+    def get_dimension(self) -> int:
+        return self.get_shapes()[0].get_dimension()
+    
 
 
 class Negative(CompoundShape):
@@ -639,12 +657,12 @@ class Negative(CompoundShape):
             return -shape_metric[0], -shape_metric[1]
         if output_mode == Shape.MEASURE_JACOBIAN_AND_HESSIAN:
             return -shape_metric[0], -shape_metric[1], -shape_metric[2]
-
-
+    
+    def get_dimension(self) -> int:
+        return self.get_shapes()[0].get_dimension()
 
 
 class PathLength(Sum):
-    _DIMENSION = 1
 
     def __init__(self, *nodes: Node):
         segments = []
@@ -654,7 +672,6 @@ class PathLength(Sum):
 
 
 class HoleyArea(Sum):
-    _DIMENSION = 2
     
     def __init__(self, *areas: Area):
         signed_areas = [areas[i] if i == 0 else -areas[i] for i in range(len(areas))]

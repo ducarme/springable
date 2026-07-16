@@ -633,6 +633,8 @@ class ElementDrawing(Drawing):
             color = color if color is not None else self._aa.area_spring_default_color
             opacity = opacity if opacity is not None else self._aa.area_spring_default_opacity
             shape_drawing = HoleyAreaDrawing(_shape, self._is_hysteron, self._ax, color, opacity, self._aa)
+        elif isinstance(_shape, shape.Sum):
+            return None, None, None
         else:
             print(f'Cannot draw element #{self._element.get_element_nb()} because no implementation of how to draw its shape (namely "{type(_shape).__name__  }")')
             return None, None, None

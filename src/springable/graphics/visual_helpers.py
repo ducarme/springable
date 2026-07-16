@@ -40,10 +40,10 @@ class PropertyHandler:
                 case 'energy':
                     return self._mapper(_element.compute_energy())
                 case 'generalized_force':
-                    return self._mapper[type(_element.get_shape()).get_dimension()](
+                    return self._mapper[_element.get_shape().get_dimension()](
                         _element.compute_generalized_force())
                 case 'generalized_stiffness':
-                    return self._mapper[type(_element.get_shape()).get_dimension()](
+                    return self._mapper[_element.get_shape().get_dimension()](
                         _element.compute_generalized_stiffness())
                 case _:
                     raise ValueError(f"Unknown mode {self._mode}")
@@ -388,7 +388,7 @@ def scan_result_and_compute_quantities_for_animations(_result: Result, assembly_
             if aa.color_elements:
                 existing_shape_unit_dimensions = set()
                 for _el in _assembly.get_elements():
-                    existing_shape_unit_dimensions.add(type(_el.get_shape()).get_dimension())
+                    existing_shape_unit_dimensions.add(_el.get_shape().get_dimension())
                 unit_dimensions |= existing_shape_unit_dimensions
             if aa.color_forces and aa.show_forces:
                 unit_dimensions |= {1}
@@ -417,7 +417,7 @@ def scan_result_and_compute_quantities_for_animations(_result: Result, assembly_
                             for dim in unit_dimensions:
                                 generalized_forces[dim] += [element_to_generalized_forces[el]
                                                             for el in _assembly.get_elements()
-                                                            if type(el.get_shape()).get_dimension() == dim]
+                                                            if el.get_shape().get_dimension() == dim]
                         if aa.color_forces and aa.show_forces:
                             generalized_forces[1] += [force_amount[i] for force_amount in force_amounts.values()]
                             generalized_forces[1] += [preforce_amount[i]
@@ -433,7 +433,7 @@ def scan_result_and_compute_quantities_for_animations(_result: Result, assembly_
                             for dim in unit_dimensions:
                                 generalized_stiffnesses[dim] += [element_to_generalized_stiffnesses[el]
                                                                  for el in _assembly.get_elements()
-                                                                 if type(el.get_shape()).get_dimension() == dim]
+                                                                 if el.get_shape().get_dimension() == dim]
                         if aa.color_forces and aa.show_forces:
                             generalized_stiffnesses[1] += [force_amount[i] for force_amount in force_amounts.values()]
                             generalized_stiffnesses[1] += [preforce_amount[i]

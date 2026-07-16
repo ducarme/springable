@@ -36,7 +36,6 @@ def smart_split(string, separators) -> list[str]:
 
 def parse_simple_arithmetic(string, operators='+-') -> tuple[list[str], list[str]]:
     operator_sequence = ['+']
-
     parts = []
     current = []
     bracket_level = 0
@@ -51,8 +50,11 @@ def parse_simple_arithmetic(string, operators='+-') -> tuple[list[str], list[str
             current = []
             continue
         current.append(char)
+    if bracket_level != 0:
+        more_or_less = "More" if bracket_level > 0 else "Less"
+        raise ValueError(f"{more_or_less} left brackets than right brackets.")
     parts.append(''.join(current))
-    return [part.strip(' ()') for part in parts], operator_sequence
+    return [part.strip()[1:-1].strip() for part in parts], operator_sequence
 
 
 def basic_split(string, separator) -> list[str]:
@@ -157,24 +159,39 @@ def text_to_behavior(behavior_text: str, evaluator: se.SimpleEval = None,
         return LinearBehavior(natural_measure, **{par_name: par_val})
 
 
-def _determine_usable_shape_type_name(_shape):
+def _determine_usable_shape_type_name(_shape) -> str:
     if type(_shape) in usable_shapes.keys():
         return usable_shapes.type_to_name[type(_shape)]
     elif isinstance(_shape, HoleyArea):
         return 'AREA'
+    elif isinstance(_shape, Sum):
+        return _determine_usable_shape_type_name(_shape.get_shapes()[0])
     else:
         raise NotImplementedError(f'Cannot associate a name to shape type {type(_shape)}')
 
 
 def _determine_shape_description(_shape: Shape):
-    if isinstance(_shape, HoleyArea):
+    if type(_shape) in usable_shapes.keys():
+        return '-'.join([str(_node.get_node_nb()) for _node in _shape.get_nodes()])
+    elif isinstance(_shape, HoleyArea):
         bulk = _shape.get_bulk_area()
         holes = _shape.get_holes()
         areas = (bulk,) + holes
         area_shape_descriptions = [f'({_determine_shape_description(area)})' for area in areas]
         return '-'.join(area_shape_descriptions)
-    if type(_shape) in usable_shapes.keys():
-        return '-'.join([str(_node.get_node_nb()) for _node in _shape.get_nodes()])
+    elif isinstance(_shape, Sum):
+        subshapes = _shape.get_shapes()
+        operator_strings = [""]
+        operator_strings += ["-" if isinstance(subshape, Negative) else "+" for subshape in subshapes[1:]]
+        unsigned_subshapes = [subshape if not isinstance(subshape, Negative) else subshape.get_shapes()[0]
+                              for subshape in subshapes]
+        unsigned_subshape_descriptions = [f'{_determine_shape_description(unsigned_subshape)}'
+                                          for unsigned_subshape in unsigned_subshapes]
+        shape_description = "".join(operator_string + "(" + unsigned_subshape_description + ")"
+                                    for operator_string, unsigned_subshape_description
+                                    in zip(operator_strings, unsigned_subshape_descriptions))
+        return shape_description
+
     else:
         raise NotImplementedError(f'Cannot associate a description to shape type {type(_shape)}')
 
@@ -187,20 +204,23 @@ def shape_to_text(_shape: Shape) -> tuple[str, str]:
 
 def text_to_shape(shape_text: tuple[str, str], nodes: set[Node]) -> Shape:
     shape_type_name, shape_description = shape_text
-    # if shape_type_name.startswith('COMPOUND '):
-    #     core_shape_type_name = shape_type_name.removeprefix('COMPOUND').strip()
-    #     core_shape_descriptions, operators = parse_simple_arithmetic(shape_description, operators='+-')
-    #     core_shapes = [text_to_shape((core_shape_type_name, core_shape_description), nodes)
-    #                    for core_shape_description in core_shape_descriptions]
-    #     signed_shapes = [core_shapes[i] if operators[i] == '+' else -core_shapes[i]
-    #                      for i in range(len(core_shapes))]
-    #     return Sum(*signed_shapes)
+
     if shape_type_name == 'AREA':
         if shape_description.startswith('('):
             core_area_descriptions, _ = parse_simple_arithmetic(shape_description, operators='-')
             core_areas = [text_to_shape(('AREA', core_area_description), nodes)
                           for core_area_description in core_area_descriptions]
             return HoleyArea(*core_areas)
+
+    if shape_description.startswith('('):
+        subshape_descriptions, operator_sequence = parse_simple_arithmetic(shape_description, operators="+-")
+        unsigned_subshapes = [text_to_shape((shape_type_name, subshape_description), nodes)
+                              for subshape_description in subshape_descriptions]
+        subshapes = [unsigned_subshapes[i] if operator_sequence[i] == '+'
+                    else -unsigned_subshapes[i]
+                    for i in range(len(unsigned_subshapes))]
+        return Sum(*subshapes)
+    
     try:
         shape_type = usable_shapes.name_to_type[shape_type_name]
     except KeyError:
